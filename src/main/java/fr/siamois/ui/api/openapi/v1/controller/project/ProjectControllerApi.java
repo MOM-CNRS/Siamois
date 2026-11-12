@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.controller.project;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.dto.TreePage;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -53,7 +52,6 @@ public class ProjectControllerApi {
     private final DocumentWriteOpenApiService documentWriteOpenApiService;
     private final ProjectListProjectionService projectListProjectionService;
     private final FieldQueryService fieldQueryService;
-    private final ProjectCreationProgressRegistry creationProgressRegistry;
 
     @ValuesLimit.Param(defaultValue = ValuesLimit.LIST_DEFAULT)
     @SearchMode.Param
@@ -285,41 +283,11 @@ public class ProjectControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        ProjectCreationProgress progress = creationProgressRegistry.open(caller.person().getId(), body.getProgressToken());
-        try {
-            AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang, progress);
-            ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
-            // A just-created project is never already bookmarked.
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
-        } finally {
-            progress.complete();
-        }
-    }
-
-    /**
-     * How far the creation the caller follows with a token is.
-     *
-     * @param token the token sent as {@code progressToken} with the creation
-     * @return the percentage of the creation
-     */
-    @GetMapping("/creation-progress/{token}")
-    @Operation(
-            summary = "Avancement de la création d'un projet",
-            description = "L'avancement de la création envoyée par l'appelant avec ce progressToken : la création "
-                    + "est une requête longue, que le client suit en interrogeant cette adresse pendant qu'elle court. "
-                    + "0 tant que la création n'a pas commencé ou si le jeton est inconnu."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "OK"),
-            @ApiResponse(responseCode = "401", description = "Non authentifié")
-    })
-    public ResponseEntity<ProjectCreationProgressResponse> creationProgress(
-            @Parameter(description = "Jeton envoyé dans progressToken à la création", required = true)
-            @PathVariable("token") String token) {
-        ProjectApiCaller caller = projectApiService.requireCaller();
-        return ResponseEntity.ok(new ProjectCreationProgressResponse(
-                creationProgressRegistry.percentageOf(caller.person().getId(), token)));
+        AccessibleProjectForApi row = projectApiService.createProject(caller, body, lang);
+        ProjectResourcePermissions permissions = projectApiService.permissionsFor(caller, row);
+        // A just-created project is never already bookmarked.
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProjectResponse(projectResponseMapper.toResource(row, lang, permissions, false)));
     }
 
     @PostMapping("/{id}/duplicate")

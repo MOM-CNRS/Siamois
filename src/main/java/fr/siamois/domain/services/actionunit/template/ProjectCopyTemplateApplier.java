@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionunit.template;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.config.*;
 import fr.siamois.domain.models.settings.DocumentationThesaurus;
@@ -60,7 +59,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
     }
 
     @Override
-    public void apply(UserInfo info, String templateId, Long newProjectId, ProjectCreationProgress progress) {
+    public void apply(UserInfo info, String templateId, Long newProjectId) {
         long sourceId = sourceProjectId(templateId);
         ActionUnit source = actionUnitRepository.findById(sourceId)
                 .orElseThrow(() -> new NoSuchElementException("Unknown template project: " + sourceId));
@@ -72,11 +71,8 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
 
         copyThesaurusOverrides(source, target);
         thesaurusAssigner.assignInstitutionOrCommonCore(target);
-        List<FormConfig> sourceConfigs = formConfigRepository.findAllByActionUnitId(sourceId);
-        progress.start(sourceConfigs.size());
-        for (FormConfig sourceConfig : sourceConfigs) {
+        for (FormConfig sourceConfig : formConfigRepository.findAllByActionUnitId(sourceId)) {
             copyFormConfig(sourceConfig, target);
-            progress.advance();
         }
         log.info("Project {} configured from project {}", newProjectId, sourceId);
     }

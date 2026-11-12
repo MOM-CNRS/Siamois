@@ -1,7 +1,6 @@
 package fr.siamois.domain.services;
 
 
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -325,7 +324,7 @@ class ActionUnitServiceTest {
         verify(actionUnitMapper).convert(actionUnit);
         verify(personProfileAssignmentService).addToProjectMembers(eq(expectedResult), eq(personDto), anyList());
         verify(personProfileAssignmentService).addToInstitution(eq(institutionDto), eq(personDto), anyList());
-        verify(defaultProjectIdentifierConfigSeeder).seed(eq(userInfo), eq(expectedResult.getId()), any(ProjectCreationProgress.class));
+        verify(defaultProjectIdentifierConfigSeeder).seed(userInfo, expectedResult.getId());
     }
 
     @Test
@@ -337,7 +336,7 @@ class ActionUnitServiceTest {
 
             verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
             TransactionSynchronizationManager.getSynchronizations().forEach(TransactionSynchronization::afterCommit);
-            verify(defaultProjectIdentifierConfigSeeder).seed(eq(creation.userInfo()), eq(creation.expected().getId()), any(ProjectCreationProgress.class));
+            verify(defaultProjectIdentifierConfigSeeder).seed(creation.userInfo(), creation.expected().getId());
         } finally {
             TransactionSynchronizationManager.clear();
         }
@@ -377,7 +376,7 @@ class ActionUnitServiceTest {
 
         actionUnitService.save(creation.userInfo(), creation.actionUnit(), creation.type(), "project:3");
 
-        verify(copier).apply(eq(creation.userInfo()), eq("project:3"), eq(creation.expected().getId()), any(ProjectCreationProgress.class));
+        verify(copier).apply(creation.userInfo(), "project:3", creation.expected().getId());
         verifyNoInteractions(defaultProjectIdentifierConfigSeeder);
     }
 

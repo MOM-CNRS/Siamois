@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionunit.template;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -76,12 +75,12 @@ public class KitionProjectTemplateApplier implements ProjectTemplateApplier {
     }
 
     @Override
-    public void apply(UserInfo info, String templateId, Long newProjectId, ProjectCreationProgress progress) {
+    public void apply(UserInfo info, String templateId, Long newProjectId) {
         UserInfo previous = ExecutionContextHolder.get();
         ExecutionContextHolder.set(info);
         try {
             thesaurusAssigner.assignInstitutionOrCommonCore(newProjectId);
-            applyAll(newProjectId, progress);
+            applyAll(newProjectId);
         } catch (RuntimeException e) {
             log.warn("The Kition project {} could not be fully configured from {}", newProjectId, definition.thesaurusUrl(), e);
         } finally {
@@ -93,18 +92,15 @@ public class KitionProjectTemplateApplier implements ProjectTemplateApplier {
         }
     }
 
-    private void applyAll(Long projectId, ProjectCreationProgress progress) {
-        progress.start(stepCount());
+    private void applyAll(Long projectId) {
         for (KitionProjectDefinition.Table table : definition.tables()) {
             inNewTransaction(() -> useBranchAsTypes(projectId, table));
-            progress.advance();
         }
         // each type needs its own form config before fields can be attached to it
         List<ConfiguredType> configured = new ArrayList<>();
         for (KitionProjectDefinition.Table table : definition.tables()) {
             for (KitionProjectDefinition.Type type : table.types()) {
                 configureType(projectId, table.table(), type).ifPresent(configured::add);
-                progress.advance();
             }
         }
         for (KitionProjectDefinition.BranchField branchField : definition.branchFields()) {
@@ -115,30 +111,18 @@ public class KitionProjectTemplateApplier implements ProjectTemplateApplier {
                         () -> useBranchField(projectId, type, branchField, alreadyLoaded));
                 loaded = true;
             }
-            progress.advance();
         }
         for (KitionProjectDefinition.CommonCoreField field : definition.commonCoreFields()) {
             for (ConfiguredType type : typesOf(configured, field.table(), field.types())) {
                 runSafely("common-core field " + field.fieldCode() + " on " + type.label(),
                         () -> useCommonCoreField(projectId, type, field));
             }
-            progress.advance();
         }
         for (KitionProjectDefinition.ExtraField field : definition.extraFields()) {
             for (ConfiguredType type : typesOf(configured, field.table(), field.types())) {
                 runSafely("field '" + field.name() + "' on " + type.label(), () -> addExtraField(projectId, type, field));
             }
-            progress.advance();
         }
-    }
-
-    /**
-     * The steps the template is applied in: a step per table, per type, and per field of each kind.
-     */
-    private int stepCount() {
-        int types = definition.tables().stream().mapToInt(table -> table.types().size()).sum();
-        return definition.tables().size() + types + definition.branchFields().size()
-                + definition.commonCoreFields().size() + definition.extraFields().size();
     }
 
     /** A type of the template once its form config exists in the project. */

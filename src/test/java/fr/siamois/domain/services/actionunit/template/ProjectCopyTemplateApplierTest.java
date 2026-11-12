@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.actionunit.template;
 
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.config.ConceptFieldFormConfig;
 import fr.siamois.domain.models.form.config.FieldFormConfig;
@@ -117,7 +116,7 @@ class ProjectCopyTemplateApplierTest {
         restricted.setFormConfig(original);
         when(fieldRepository.findAllByFormConfigId(1L)).thenReturn(List.of(plain, restricted));
 
-        applier.apply(null, "project:10", 20L, ProjectCreationProgress.unwatched());
+        applier.apply(null, "project:10", 20L);
 
         ArgumentCaptor<FormConfig> config = ArgumentCaptor.forClass(FormConfig.class);
         verify(formConfigRepository).save(config.capture());
@@ -147,7 +146,7 @@ class ProjectCopyTemplateApplierTest {
         original.setVocabulary(vocabulary);
         when(documentationThesaurusRepository.findByActionUnitId(10L)).thenReturn(Optional.of(original));
 
-        applier.apply(null, "project:10", 20L, ProjectCreationProgress.unwatched());
+        applier.apply(null, "project:10", 20L);
 
         ArgumentCaptor<DocumentationThesaurus> saved = ArgumentCaptor.forClass(DocumentationThesaurus.class);
         verify(documentationThesaurusRepository).save(saved.capture());
@@ -164,7 +163,7 @@ class ProjectCopyTemplateApplierTest {
         original.setVocabulary(new Vocabulary());
         when(projectCodeSourceRepository.findAllByActionUnitId(10L)).thenReturn(List.of(original));
 
-        applier.apply(null, "project:10", 20L, ProjectCreationProgress.unwatched());
+        applier.apply(null, "project:10", 20L);
 
         ArgumentCaptor<ProjectCodeSource> saved = ArgumentCaptor.forClass(ProjectCodeSource.class);
         verify(projectCodeSourceRepository).save(saved.capture());
@@ -180,7 +179,7 @@ class ProjectCopyTemplateApplierTest {
         other.setId(2L);
         source.setCreatedByInstitution(other);
 
-        assertThatThrownBy(() -> applier.apply(null, "project:10", 20L, ProjectCreationProgress.unwatched()))
+        assertThatThrownBy(() -> applier.apply(null, "project:10", 20L))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(formConfigRepository, never()).save(any());
     }

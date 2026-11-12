@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.form.config.FieldDefault;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -69,18 +68,11 @@ public class ThesaurusProjectConfigSeeder {
     private final FormLayoutService formLayoutService;
     private final PlatformTransactionManager transactionManager;
 
-    /**
-     * Configures the project from the default definition, reporting how far it is on the progress.
-     *
-     * @param info      the user creating the project, bound to the thread for the seeding
-     * @param projectId the project to configure
-     * @param progress  where the seeding plans its steps and ticks them off
-     */
-    public void seed(UserInfo info, Long projectId, ProjectCreationProgress progress) {
+    public void seed(UserInfo info, Long projectId) {
         UserInfo previous = ExecutionContextHolder.get();
         ExecutionContextHolder.set(info);
         try {
-            seedAll(projectId, progress);
+            seedAll(projectId);
         } catch (RuntimeException e) {
             log.warn("The default project {} could not be configured from {}", projectId, definition.thesaurusUrl(), e);
         } finally {
@@ -92,7 +84,7 @@ public class ThesaurusProjectConfigSeeder {
         }
     }
 
-    private void seedAll(Long projectId, ProjectCreationProgress progress) {
+    private void seedAll(Long projectId) {
         Optional<Vocabulary> vocabulary = vocabularyRepository.findVocabularyByBaseUriAndVocabExternalId(
                 definition.baseUri(), definition.externalVocabularyId());
         if (vocabulary.isEmpty()) {
@@ -100,30 +92,19 @@ public class ThesaurusProjectConfigSeeder {
                     definition.thesaurusUrl(), projectId);
             return;
         }
-        progress.start(definition.tables().stream().mapToInt(ThesaurusProjectConfigSeeder::stepsOf).sum());
         for (DefaultProjectDefinition.Table table : definition.tables()) {
-            seedTable(projectId, vocabulary.get(), table, progress);
+            seedTable(projectId, vocabulary.get(), table);
         }
     }
 
-    /**
-     * The steps a table is seeded in: its code source, then each of its types.
-     */
-    private static int stepsOf(DefaultProjectDefinition.Table table) {
-        return 1 + table.types().size();
-    }
-
-    private void seedTable(Long projectId, Vocabulary vocabulary, DefaultProjectDefinition.Table definitionTable,
-                           ProjectCreationProgress progress) {
+    private void seedTable(Long projectId, Vocabulary vocabulary, DefaultProjectDefinition.Table definitionTable) {
         ConfigurableTable table = definitionTable.table();
         if (fieldCodeResolver.findIn(vocabulary, definitionTable.typeCode()).isEmpty()) {
             log.warn("Thesaurus {} does not define {}: the {} table of project {} starts without types",
                     definition.thesaurusUrl(), definitionTable.typeCode(), table, projectId);
-            progress.advance(stepsOf(definitionTable));
             return;
         }
         inNewTransaction(() -> codeSourceService.useFieldCode(projectId, definitionTable.typeCode(), vocabulary, definitionTable.typeCode()));
-        progress.advance();
         List<SeededField> vocabularyFields = seededFieldsOf(vocabulary, table);
         for (DefaultProjectDefinition.Type type : definitionTable.types()) {
             try {
@@ -131,7 +112,6 @@ public class ThesaurusProjectConfigSeeder {
             } catch (RuntimeException e) {
                 log.warn("Could not seed the default {} type '{}' for project {}", table, type.label(), projectId, e);
             }
-            progress.advance();
         }
     }
 

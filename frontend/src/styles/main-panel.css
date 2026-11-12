@@ -1135,13 +1135,6 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
   font-style: italic;
 }
 
-/* The progress of a long creation (a new project), under the fields while it runs. */
-.sia-create-form-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
 .sia-create-form-footer {
   display: flex;
   justify-content: flex-end;

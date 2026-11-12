@@ -1227,17 +1227,6 @@ body .sia-create-dialog.ui-dialog .ui-dialog-content {
     font-style: italic;
 }
 
-// The progress of a long creation (a new project), under the fields while it runs.
-.sia-create-dialog .sia-create-form-progress {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-
-    &[hidden] {
-        display: none;
-    }
-}
-
 // A field and a small button side by side (the thesaurus address and its reload button).
 .sia-create-dialog .sia-create-form-inline {
     display: flex;

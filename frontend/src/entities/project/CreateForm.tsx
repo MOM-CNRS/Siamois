@@ -4,12 +4,11 @@ import {Dropdown} from "primereact/dropdown";
 import {InputText} from "primereact/inputtext";
 import {CreateFormField, CreateFormShell} from "../../components/create/CreateFormShell";
 import {CreateLinkField} from "../../components/create/CreateLinkField";
-import {CreateProgress} from "../../components/create/CreateProgress";
 import {SelectManyRefRenderer, SelectOneConceptRenderer, SelectOneSpatialUnitRenderer} from "../../fields/renderers";
 import type {FieldResource} from "../../fields/types";
 import {placeContextOf as placeContextFrom} from "../../rules";
 import type {CreateFormContext} from "../shared/types";
-import {createProject, getNextProjectIdentifier, getProjectCreationProgress, listProjectTemplates, newProgressToken} from "./api";
+import {createProject, getNextProjectIdentifier, listProjectTemplates} from "./api";
 import {getProjectTypes} from "./projectTypes";
 import {queryKeys} from "../../api/queryKeys";
 import {messageForError} from "../../api/errors";
@@ -44,8 +43,6 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   const [mainLocation, setMainLocation] = useState<ConceptPick | null>(null);
   const [spatialContext, setSpatialContext] = useState<ConceptPick[]>([]);
   const [error, setError] = useState<string | null>(null);
-  // Names the creation in progress, so its progress can be asked for while the request runs.
-  const [progressToken, setProgressToken] = useState<string | null>(null);
 
   const templatesQuery = useQuery({
     queryKey: queryKeys.projectTemplates(organizationId),
@@ -102,7 +99,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
   const placeContextForField = (field: FieldResource) => placeContextFrom(field.rules?.placeSources, (id) => pickedByField[id]);
 
   const mutation = useMutation({
-    mutationFn: (token: string) =>
+    mutationFn: () =>
       createProject({
         organizationId: String(organizationId),
         name: name.trim(),
@@ -111,30 +108,12 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
         typeId: type!.resourceId,
         mainLocationId: mainLocation?.resourceId,
         spatialContextSpatialUnitIds: spatialContextIds(prefill?.spatialContext?.id, spatialContext),
-        progressToken: token,
       }),
     onSuccess: (created) => onCreated(created.id),
     onError: (err: unknown) => {
       setError(messageForError(err, t("create.failed")));
     },
   });
-
-  // Configuring a project from its template takes a while: the server is asked how far it is meanwhile.
-  const progressQuery = useQuery({
-    queryKey: queryKeys.projectCreationProgress(progressToken),
-    queryFn: () => getProjectCreationProgress(progressToken as string),
-    enabled: mutation.isPending && progressToken != null,
-    refetchInterval: PROGRESS_POLL_MS,
-    retry: false,
-    staleTime: 0,
-    gcTime: 0,
-  });
-
-  function submit() {
-    const token = newProgressToken();
-    setProgressToken(token);
-    mutation.mutate(token);
-  }
 
   const canSubmit =
     organizationId != null &&
@@ -151,7 +130,7 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
       canSubmit={canSubmit}
       pending={mutation.isPending}
       error={error}
-      onSubmit={submit}
+      onSubmit={() => mutation.mutate()}
       onCancel={onCancel}
     >
       {prefill?.spatialContext && <CreateLinkField label={t("common.place")} entityType="place" value={prefill.spatialContext} />}
@@ -228,16 +207,11 @@ export function ProjectCreateForm({ organizationId, prefill, onCreated, onCancel
           />
         </CreateFormField>
       )}
-
-      {mutation.isPending && <CreateProgress label={t("create.projectInProgress")} percentage={progressQuery.data ?? 0} />}
     </CreateFormShell>
   );
 }
 
 // The default and empty templates carry no name of their own: the client words them.
-// How often the progress of the creation is asked for while it runs.
-const PROGRESS_POLL_MS = 500;
-
 function templateLabel(template: { label: string; kind: "default" | "empty" | "project" }): string {
   if (template.kind === "default") return t("create.projectTemplate.default");
   if (template.kind === "empty") return t("create.projectTemplate.empty");

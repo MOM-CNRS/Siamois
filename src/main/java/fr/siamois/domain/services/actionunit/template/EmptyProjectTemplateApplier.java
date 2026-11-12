@@ -1,7 +1,6 @@
 package fr.siamois.domain.services.actionunit.template;
 
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.services.actionunit.DefaultProjectIdentifierConfigSeeder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,8 +24,8 @@ public class EmptyProjectTemplateApplier implements ProjectTemplateApplier {
     }
 
     @Override
-    public void apply(UserInfo info, String templateId, Long newProjectId, ProjectCreationProgress progress) {
-        seeder.seed(info, newProjectId, progress);
+    public void apply(UserInfo info, String templateId, Long newProjectId) {
+        seeder.seed(info, newProjectId);
         thesaurusAssigner.assignInstitutionOrCommonCore(newProjectId);
     }
 }

@@ -44,9 +44,4 @@ public class ProjectCreateRequest {
     @Schema(description = "Localisations précises (identifiants d'unités spatiales)")
     private List<String> spatialContextSpatialUnitIds;
 
-    @Schema(description = "Jeton choisi par le client (64 caractères au plus, un UUID par exemple) pour suivre "
-            + "l'avancement de la création via GET /projects/creation-progress/{token}. Optionnel.",
-            example = "0b8f6c1e-6f0f-4e0c-9d0a-6a1a3f1f2c11")
-    private String progressToken;
-
 }

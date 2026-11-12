@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.actionunit.template;
 
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConceptFromFieldCode;
@@ -93,7 +92,7 @@ class KitionProjectTemplateApplierTest {
 
     @Test
     void readsTheTypesOfEachTableFromABranchOfTheKitionThesaurus() throws Exception {
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         ArgumentCaptor<ConceptDTO> branch = ArgumentCaptor.forClass(ConceptDTO.class);
         verify(codeSourceService).useBranch(eq(PROJECT), eq(ConfigurableTable.UE.getFieldCode()), branch.capture(), any());
@@ -104,7 +103,7 @@ class KitionProjectTemplateApplierTest {
 
     @Test
     void configuresEveryTypeOfTheDefinition() {
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         // 4 stratigraphic types + 4 kinds of documentation
         verify(tableFieldConfigService, times(4)).saveFormConfig(eq(PROJECT), eq(ConfigurableTable.UE), anyLong(), any());
@@ -114,7 +113,7 @@ class KitionProjectTemplateApplierTest {
 
     @Test
     void addsTheTextFieldsToTheNamedTypesOnly() {
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         // "Interprétation (texte libre)" on US and Locus, "Homogénéité" and "Fiabilité" on US only
         verify(tableFieldConfigService, times(2)).createField(eq(PROJECT), eq(ConfigurableTable.UE), any(),
@@ -133,7 +132,7 @@ class KitionProjectTemplateApplierTest {
         when(unitDefinitionRepository.findFirstBySymbolAndDimensionOrderByIdAsc("m", UnitDefinition.Dimension.LENGTH))
                 .thenReturn(Optional.of(metre));
 
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         // 4 cotes on the stratigraphic unit and on the locus
         verify(tableFieldConfigService, times(2)).createField(eq(PROJECT), eq(ConfigurableTable.UE), any(),
@@ -149,7 +148,7 @@ class KitionProjectTemplateApplierTest {
 
     @Test
     void readsTheChronologyOfEveryUeTypeFromItsBranchAndLoadsItOnce() {
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         ArgumentCaptor<CustomFieldConceptFromFieldCode> field = ArgumentCaptor.forClass(CustomFieldConceptFromFieldCode.class);
         ArgumentCaptor<ConceptDTO> branch = ArgumentCaptor.forClass(ConceptDTO.class);
@@ -170,7 +169,7 @@ class KitionProjectTemplateApplierTest {
         when(tableFieldConfigService.createField(eq(PROJECT), eq(ConfigurableTable.UE), any(), eq("Fiabilité"), any(), any(), any()))
                 .thenThrow(new IllegalStateException("boom"));
 
-        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT, ProjectCreationProgress.unwatched());
+        applier.apply(mock(UserInfo.class), ProjectTemplate.KITION_ID, PROJECT);
 
         verify(tableFieldConfigService, times(1)).createField(eq(PROJECT), eq(ConfigurableTable.UE), any(),
                 eq("Homogénéité"), any(), any(), any());

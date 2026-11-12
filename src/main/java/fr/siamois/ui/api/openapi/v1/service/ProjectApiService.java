@@ -2,7 +2,6 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.domain.models.UserInfo;
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.document.Document;
@@ -530,29 +529,12 @@ public class ProjectApiService {
      */
     @Transactional
     public AccessibleProjectForApi createProject(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
-        return create(caller, request, lang, ProjectCreationProgress.unwatched());
-    }
-
-    /**
-     * Crée un projet dans une organisation (gestionnaire d'institution ou d'action requis) et rend compte de
-     * l'avancement de sa configuration : la création est longue quand le modèle de départ lit un thésaurus.
-     *
-     * @param caller   l'appelant et les organisations auxquelles il a accès
-     * @param request  le projet à créer
-     * @param lang     la langue de l'appelant
-     * @param progress où la création rend compte de son avancement
-     * @return le projet créé
-     */
-    @Transactional
-    public AccessibleProjectForApi createProject(ProjectApiCaller caller, ProjectCreateRequest request, String lang,
-                                                 ProjectCreationProgress progress) {
-        return create(caller, request, lang, progress);
+        return create(caller, request, lang);
     }
 
     // Shared by createProject and duplicateProject: both are transactional entry points, and a call through
     // `this` to the other would skip the proxy.
-    private AccessibleProjectForApi create(ProjectApiCaller caller, ProjectCreateRequest request, String lang,
-                                           ProjectCreationProgress progress) {
+    private AccessibleProjectForApi create(ProjectApiCaller caller, ProjectCreateRequest request, String lang) {
         if (request.getOrganizationId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -601,7 +583,7 @@ public class ProjectApiService {
         String templateId = resolveTemplate(caller, request.getOrganizationId(), request.getTemplateId());
 
         try {
-            ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto, templateId, progress);
+            ActionUnitDTO saved = actionUnitService.save(userInfo, shell, typeDto, templateId);
             return actionUnitService.findAccessibleProjectByKey(
                     String.valueOf(saved.getId()), caller.accessibleInstitutionIds());
         } catch (ActionUnitAlreadyExistsException e) {
@@ -631,7 +613,7 @@ public class ProjectApiService {
         request.setTypeId(String.valueOf(source.getType().getId()));
         request.setTemplateId(ProjectTemplate.projectId(source.getId()));
         request.setName(freeCopyName(institution.getId(), source.getName()));
-        return create(caller, request, lang, ProjectCreationProgress.unwatched());
+        return create(caller, request, lang);
     }
 
     private String freeCopyName(Long institutionId, String sourceName) {

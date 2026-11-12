@@ -311,7 +311,6 @@ export const fr = {
   "home.place.description": "Les lieux et leurs découpages spatiaux",
   "home.noProject": "Aucun projet",
   "create.newProject": "Nouveau projet",
-  "create.projectInProgress": "Création du projet en cours…",
   "create.projectTemplate": "Modèle",
   "create.projectTemplate.default": "Projet par défaut",
   "create.projectTemplate.empty": "Projet vide",

@@ -1,6 +1,5 @@
 package fr.siamois.domain.services.actionunit;
 
-import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.config.FormConfig;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -99,7 +98,7 @@ class ThesaurusProjectConfigSeederTest {
     void seed_redirectsTheTypesOfTheTableToTheThesaurus_andConfiguresEachTypeOfTheDefinition() {
         thesaurusDefinesUeTypes();
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(codeSourceService).useFieldCode(PROJECT_ID, UE_TYPE_CODE, vocabulary, UE_TYPE_CODE);
         verify(tableFieldConfigService, times(ueTypeCount())).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
@@ -113,7 +112,7 @@ class ThesaurusProjectConfigSeederTest {
         thesaurusDefinesUeTypes();
         when(fieldCodeResolver.findIn(vocabulary, RecordingUnit.INTERPRETATION_FIELD_CODE)).thenReturn(Optional.of(new ConceptFieldConfig()));
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         // which of the field's values a type offers is the thesaurus's relation, read by the layout's RELATED_TO_TYPE rule
         verify(formConfigService, times(ueTypeCount())).addFieldCodeConfigFor(eq(usFormConfig), any(CustomFieldConcept.class), eq(vocabulary),
@@ -124,7 +123,7 @@ class ThesaurusProjectConfigSeederTest {
     void seed_resolvesTheFieldsOfATableOnce_whateverTheNumberOfItsTypes() {
         thesaurusDefinesUeTypes();
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(fieldCodeResolver, times(1)).findIn(vocabulary, RecordingUnit.INTERPRETATION_FIELD_CODE);
         verify(tableFieldConfigService, never()).findField(anyLong(), any(ConfigurableTable.class), anyLong(), anyString());
@@ -134,7 +133,7 @@ class ThesaurusProjectConfigSeederTest {
     void seed_skipsAFieldTheThesaurusDoesNotDefine() {
         thesaurusDefinesUeTypes();
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(formConfigService, never()).addFieldCodeConfigFor(any(FormConfig.class), any(CustomFieldConcept.class), eq(vocabulary),
                 eq(RecordingUnit.INTERPRETATION_FIELD_CODE));
@@ -153,7 +152,7 @@ class ThesaurusProjectConfigSeederTest {
         when(tableFieldConfigService.findSystemField(eq(ConfigurableTable.UE), anyString()))
                 .thenAnswer(invocation -> Optional.of(CustomFieldSelectOneFromFieldCode.builder().id(99L).build()));
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(formLayoutService).saveDefault(PROJECT_ID, ConfigurableTable.UE, "Fait", 99L,
                 fr.siamois.domain.models.form.config.FieldDefault.ofConceptIds(java.util.List.of("5555")));
@@ -167,7 +166,7 @@ class ThesaurusProjectConfigSeederTest {
         when(conceptRepository.findConceptByExternalIdIgnoreCase(definition.externalVocabularyId(), ensemble.concept()))
                 .thenReturn(Optional.empty());
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verify(tableFieldConfigService, times(ueTypeCount() - 1)).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), any(TypeFormConfig.class));
     }
@@ -176,7 +175,7 @@ class ThesaurusProjectConfigSeederTest {
     void seed_doesNothingWhenTheThesaurusWasNeverImported() {
         when(vocabularyRepository.findVocabularyByBaseUriAndVocabExternalId(any(), any())).thenReturn(Optional.empty());
 
-        seeder.seed(mock(UserInfo.class), PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
 
         verifyNoInteractions(codeSourceService, tableFieldConfigService, formConfigService, transactionManager);
     }
@@ -187,7 +186,7 @@ class ThesaurusProjectConfigSeederTest {
         ExecutionContextHolder.set(previous);
         UserInfo user = mock(UserInfo.class);
 
-        seeder.seed(user, PROJECT_ID, ProjectCreationProgress.unwatched());
+        seeder.seed(user, PROJECT_ID);
 
         assertThat(ExecutionContextHolder.get()).isSameAs(previous);
     }
