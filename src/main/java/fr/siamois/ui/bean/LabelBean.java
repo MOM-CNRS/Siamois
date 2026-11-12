@@ -14,6 +14,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.io.Serializable;
 import java.util.*;
@@ -119,13 +121,25 @@ public class LabelBean implements Serializable {
         return resolveLangCode();
     }
 
+    /**
+     * The current user: the session's when a web request is bound to this thread, else the execution
+     * context's (a background task — a bulk action, an import — has no session, only the user bound by
+     * OpenApiExecutionContext).
+     */
     @Nullable
     private UserInfo resolveUserInfo() {
-        UserInfo fromSession = sessionSettingsBean.getUserInfo();
+        UserInfo fromSession = hasBoundRequest() ? sessionSettingsBean.getUserInfo() : null;
         if (fromSession != null) {
             return fromSession;
         }
         return ExecutionContextHolder.get();
+    }
+
+    /**
+     * Whether a web request is bound to this thread: only then does the session-scoped settings bean exist.
+     */
+    private static boolean hasBoundRequest() {
+        return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes;
     }
 
     private String resolveLangCode() {
