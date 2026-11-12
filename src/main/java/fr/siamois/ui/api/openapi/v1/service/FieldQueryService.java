@@ -499,12 +499,16 @@ public class FieldQueryService {
             Kind.REFERENCES, FILTRE_PLAGE_IMPOSSIBLE
     );
 
-    /** A text filter is a value, a number or date one a range, a reference one ids of a filterable target. */
+    /**
+     * A number or date filter is a range, any other a value; a reference one needs a target filterable by id.
+     */
     private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion) {
-        if (criterion.isRange() && MESSAGE_ERREUR.containsKey(target.kind)) {
+        boolean rangeKind = target.kind == Kind.NUMBER || target.kind == Kind.DATE;
+        if (criterion.isRange() != rangeKind) {
             throw badRequest(MESSAGE_ERREUR.get(target.kind) + fieldId);
         }
-        if (!target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
+        boolean reference = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES;
+        if (reference && !target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
     }
 
     private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
