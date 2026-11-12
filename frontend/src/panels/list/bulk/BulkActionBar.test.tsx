@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import {registerDefaultFieldRenderers} from "../../../fields/registerDefaultRenderers";
-import {notifySpy} from "../../../test/notifySpy";
+import {notifySpy, taskToastSpy} from "../../../test/notifySpy";
 import type {RowRecord} from "../useEntityListData";
 import {BulkActionBar} from "./BulkActionBar";
 import type {ListSelection} from "./useListSelection";
@@ -149,7 +149,9 @@ describe("BulkActionBar", () => {
     await click(button("Supprimer"));
     await click(button("Supprimer définitivement"));
 
-    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"], expect.any(Function));
+    expect(notifySpy.task).toHaveBeenCalledWith("Suppression en cours");
+    expect(taskToastSpy.close).toHaveBeenCalled();
     expect(selection.setRows).toHaveBeenCalledWith([rows[1], rows[2]]);
     expect(notifySpy.warn).toHaveBeenCalledWith("1 réussi(s), 1 en échec. Relations");
   });
@@ -163,7 +165,7 @@ describe("BulkActionBar", () => {
     await click(button("Supprimer définitivement"));
 
     expect(selection.resolve).toHaveBeenCalled();
-    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"], expect.any(Function));
     expect(selection.setRows).not.toHaveBeenCalled();
   });
 

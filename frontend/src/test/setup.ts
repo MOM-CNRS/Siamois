@@ -1,6 +1,6 @@
 import {afterEach, vi} from "vitest";
 import {queryClient} from "../api/queryClient";
-import {notifySpy} from "./notifySpy";
+import {notifySpy, taskToastSpy} from "./notifySpy";
 
 // Vitest setup shared by every test file.
 
@@ -54,6 +54,7 @@ window.getComputedStyle = (element: Element, pseudo?: string | null) => {
 afterEach(() => {
   queryClient.clear();
   Object.values(notifySpy).forEach((spy) => spy.mockClear());
+  Object.values(taskToastSpy).forEach((spy) => spy.mockClear());
 });
 
 // Toasts are recorded in `notifySpy` rather than drawn: a test asserts on what the user was told.

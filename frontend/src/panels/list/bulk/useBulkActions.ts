@@ -2,7 +2,7 @@ import {useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
-import type {BulkApi, BulkLinkMode, BulkResult} from "../../../entities/shared/bulkApi";
+import type {BulkApi, BulkLinkMode, BulkResult, OnBulkProgress} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig} from "../../../entities/shared/types";
 import type {AnswerInputBody} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
@@ -36,9 +36,10 @@ const NOTHING_DONE: BulkResult = { succeeded: [], failed: [] };
 
 /**
  * The bulk actions on a list's selection — the Notion-style bar's behaviour, apart from how it is
- * drawn and how the selection is gathered. Each action goes to the entity type's bulk endpoints
- * (`config.api.bulk`), which treat every element as its unit endpoint would and answer which ones
- * they changed; this tells the user, failures included, and refreshes the lists and the open fiches.
+ * drawn and how the selection is gathered. Each action starts a job on the entity type's bulk
+ * endpoints (`config.api.bulk`), processed in the background by the server, which treats every
+ * element as its unit endpoint would. While it runs a toast shows its progress; once done, another
+ * tells what it did, failures included, and the lists and the open fiches are refreshed.
  */
 export function useBulkActions({ entityType, config, bulk, organizationId, onDeleted }: UseBulkActionsOptions): BulkActions {
   const queryClient = useQueryClient();
@@ -68,17 +69,25 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   }
 
   /**
-   * Sends the bulk request while the bar shows it is busy, then reports and refreshes. A request the
-   * server refuses as a whole (a patch it can't read…) is reported as an error.
+   * Starts the bulk job and follows it — a toast showing its progress while the server works, the
+   * bar busy — then reports and refreshes. A request the server refuses as a whole (a patch it can't
+   * read…) or a job stopped on an error is reported as an error.
    */
-  async function run(request: () => Promise<BulkResult>, successKey: "bulk.done" | "bulk.deleted"): Promise<BulkResult> {
+  async function run(
+    label: string,
+    request: (onProgress: OnBulkProgress) => Promise<BulkResult>,
+    successKey: "bulk.done" | "bulk.deleted",
+  ): Promise<BulkResult> {
     setRunning(true);
+    const toast = notify.task(label);
     try {
-      const result = await request();
+      const result = await request(({ processed, total }) => toast.progress(processed, total));
+      toast.close();
       report(result, successKey);
       refresh();
       return result;
     } catch (error) {
+      toast.close();
       notify.error(messageForError(error, t("bulk.failed")));
       return NOTHING_DONE;
     } finally {
@@ -92,7 +101,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyAnswer(rows: RowRecord[], fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run(() => bulk.patch(idsOf(editableRows(rows)), patch), "bulk.done");
+    await run(t("bulk.taskEdit"), (onProgress) => bulk.patch(idsOf(editableRows(rows)), patch, onProgress), "bulk.done");
   }
 
   /**
@@ -101,14 +110,22 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyDocument(rows: RowRecord[], documentId: string | number, mode: BulkLinkMode): Promise<void> {
     const linkDocument = bulk.linkDocument;
     if (!linkDocument) return;
-    await run(() => linkDocument(idsOf(editableRows(rows)), documentId, mode), "bulk.done");
+    await run(
+      t("bulk.taskLinks"),
+      (onProgress) => linkDocument(idsOf(editableRows(rows)), documentId, mode, onProgress),
+      "bulk.done",
+    );
   }
 
   /**
    * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
   async function deleteRows(rows: RowRecord[]): Promise<void> {
-    const result = await run(() => bulk.delete(idsOf(deletableRows(rows))), "bulk.deleted");
+    const result = await run(
+      t("bulk.taskDelete"),
+      (onProgress) => bulk.delete(idsOf(deletableRows(rows)), onProgress),
+      "bulk.deleted",
+    );
     if (result.succeeded.length === 0) return;
     const deleted = new Set(result.succeeded.map(String));
     const deletedRows = rows.filter((row) => deleted.has(String(row.id)));

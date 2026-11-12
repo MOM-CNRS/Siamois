@@ -4253,3 +4253,23 @@ div#search-bar .sia-topbar-search-field .sia-search {
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+/* A task running in the background (NotifyProvider.task): its toast, kept up with its progress. */
+.task-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.task-toast-label {
+  font-weight: 600;
+}
+
+.task-toast-bar.p-progressbar {
+  height: 0.4rem;
+}
+
+.task-toast-count {
+  color: var(--text-color-secondary, #6c757d);
+}
