@@ -152,6 +152,27 @@ public class SessionSettingsBean implements Serializable {
         return userInfo;
     }
 
+    /**
+     * Reloads the selected organisation from the database when an organisation changed, so that an edit
+     * made to it during the session (a new name, typically) shows up at once in the page frame, the home
+     * title and the history, instead of the copy taken when it was selected.
+     * <p>
+     * Runs first, with {@link #markUserInfoAsChanged()}, so the listeners that read the organisation back
+     * see the reloaded one.
+     */
+    @EventListener(InstitutionChangeEvent.class)
+    @Order(Integer.MIN_VALUE)
+    public void reloadSelectedInstitution() {
+        if (selectedInstitution == null || selectedInstitution.getId() == null) {
+            return;
+        }
+        InstitutionDTO reloaded = institutionService.findById(selectedInstitution.getId());
+        if (reloaded != null) {
+            selectedInstitution = reloaded;
+            userInfo = null;
+        }
+    }
+
     @EventListener({InstitutionChangeEvent.class, LangageChangeEvent.class})
     @Order(Integer.MIN_VALUE)
     public void markUserInfoAsChanged() {
