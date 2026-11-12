@@ -21,7 +21,7 @@
     <ui:define name="content">
         <main class="container-lg">
             <div class="settings-header">
-            <form:csrfform formId="breadCrumbForm" styleClass="breadCrumpForm">
+            <form:csrfform id="breadCrumbCsrfForm" formId="breadCrumbForm" styleClass="breadCrumpForm">
                 <p:breadCrumb homeDisplay="false">
                     <p:menuitem value="Organisations" action="#{institutionDetailsBean.goToInstitutionList()}"/>
                     <p:menuitem value="#{institutionInfoSettingsBean.institution.name}" action="#{institutionDetailsBean.backToInstitutionSettings()}"/>
@@ -34,6 +34,7 @@
                     cancelMethod="#{institutionDetailsBean.backToInstitutionSettings()}"
                     title="#{langBean.msg('organisationSettings.titles.settings')}"
                     saveMethod="#{institutionInfoSettingsBean.updateName()}"
+                    update=":breadCrumbCsrfForm:breadCrumbForm"
             >
                 <settings:fieldValueRow label="#{langBean.msg('organisationManagement.orgName')}" inputId="institution-name">
                     <p:inputText id="institution-name" value="#{institutionInfoSettingsBean.FName}"/>
