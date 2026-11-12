@@ -122,7 +122,7 @@ public class ConceptService {
     @Transactional
     public Concept saveOrGetConcept(@NonNull ConceptDTO conceptDTO) {
         Concept concept = conversionService.convert(conceptDTO, Concept.class);
-        assert concept != null;
+        Objects.requireNonNull(concept, "concept must not be null");
         Vocabulary vocabulary = concept.getVocabulary();
         Optional<Concept> optConcept = conceptRepository.findConceptByExternalIdIgnoreCase(
                 vocabulary.getExternalVocabularyId(), concept.getExternalId());
@@ -530,7 +530,7 @@ public class ConceptService {
             FullInfoDTO dto = branchDTO.getData().get(url);
             if (dto.getIdentifier() != null) {
                 for (PurlInfoDTO identifier : dto.getIdentifier()) {
-                    assert concept.getExternalId() != null;
+                    Objects.requireNonNull(concept.getExternalId(), "concept external id must not be null");
                     if (concept.getExternalId().equalsIgnoreCase(identifier.getValue())) {
                         branchDTO.setParentUrl(url);
                         return dto;

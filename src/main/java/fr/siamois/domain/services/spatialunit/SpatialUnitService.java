@@ -430,7 +430,7 @@ public class SpatialUnitService implements ArkEntityService {
 
     public List<SpatialUnitSummaryDTO> getSpatialUnitOptionsFor(RecordingUnitDTO unitDTO) {
         RecordingUnit unit = recordingUnitMapper.invertConvert(unitDTO);
-        assert unit != null;
+        Objects.requireNonNull(unit, "unit must not be null");
         if (unit.getActionUnit() == null) return List.of();
 
         Optional<ActionUnit> au = actionUnitRepository.findById(unit.getActionUnit().getId());

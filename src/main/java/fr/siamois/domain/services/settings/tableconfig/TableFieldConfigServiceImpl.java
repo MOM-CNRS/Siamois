@@ -865,7 +865,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
         FormConfig owner = requireFormConfig(projectId, table, typeName);
         FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
         change.accept(config);
-        assert config != null;
+        Objects.requireNonNull(config, "config must not be null");
         fieldFormConfigRepository.save(config);
     }
 
@@ -891,7 +891,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                         NO_VOCABULARY_CONFIGURED_FOR_FIELD + table.getFieldCode() + OF_PROJECT + projectId));
         FieldFormConfig config = ownedBy(field, owner) ? field.stored() : materialize(field, owner);
         change.accept(config);
-        assert config != null;
+        Objects.requireNonNull(config, "config must not be null");
         fieldFormConfigRepository.save(config);
     }
 

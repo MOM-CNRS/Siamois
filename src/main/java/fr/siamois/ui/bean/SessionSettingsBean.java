@@ -33,6 +33,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.Objects;
 
 @Setter
 @Getter
@@ -124,7 +125,7 @@ public class SessionSettingsBean implements Serializable {
             Set<InstitutionDTO> allInstitutions = findReferencedInstitutions();
             selectedInstitution = allInstitutions.stream().findFirst().orElse(null);
         }
-        assert selectedInstitution != null;
+        Objects.requireNonNull(selectedInstitution, "selectedInstitution must not be null");
         institutionSettings = institutionService.createOrGetSettingsOf(selectedInstitution);
     }
 
