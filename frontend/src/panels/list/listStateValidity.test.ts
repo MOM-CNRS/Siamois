@@ -72,3 +72,11 @@ describe("isSortAvailable", () => {
     expect(isSortAvailable("plain:asc", config, catalog)).toBe(false);
   });
 });
+
+describe("the validation status column", () => {
+  it("can always be filtered and sorted on, whatever the entity declares", () => {
+    expect(isFilterAvailable("-901", config, catalog)).toBe(true);
+    expect(isFilterAvailable("-901", config, undefined)).toBe(true);
+    expect(isSortAvailable("-901:desc", config, undefined)).toBe(true);
+  });
+});

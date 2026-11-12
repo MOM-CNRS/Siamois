@@ -518,11 +518,12 @@ body .entity-detail-panel .p-tabview .p-tabview-panels .p-tabview-panel:has(> .s
 /* The identifier column is what the frozen area exists to keep on screen, so it gets a width floor
    wide enough for a full identifier chip. No max-width: in the auto table layout PrimeReact uses
    here a cell's max-width is advisory and would silently do nothing — long values are already
-   ellipsised by .entity-list-panel-cell-value instead. */
-.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell),
-.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell) {
+   ellipsised by .entity-list-panel-cell-value instead. The status column, frozen before it, only
+   holds a badge and keeps its natural width. */
+.entity-list-panel .p-datatable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell):not(.entity-list-panel-status-cell),
+.entity-list-panel .p-datatable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell):not(.entity-list-panel-status-cell),
+.entity-list-panel .p-treetable-thead > tr > th.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell):not(.entity-list-panel-status-cell),
+.entity-list-panel .p-treetable-tbody > tr > td.entity-list-panel-frozen:not(.p-selection-column):not(.entity-list-panel-row-actions-cell):not(.entity-list-panel-status-cell) {
   min-width: 11rem;
 }
 .entity-list-panel .p-datatable-thead > tr > th,

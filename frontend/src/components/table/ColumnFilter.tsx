@@ -3,6 +3,7 @@ import {useEffect, useRef, useState} from "react";
 import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
 import {Calendar} from "primereact/calendar";
 import {InputText} from "primereact/inputtext";
+import {MultiSelect} from "primereact/multiselect";
 import {SelectButton} from "primereact/selectbutton";
 import type {FilterValue} from "../../panels/list/tableState";
 import type {FilterKind, FilterOption} from "../../fields/optionSources";
@@ -34,10 +35,15 @@ export interface ColumnFilterProps {
   loadOptions?: (q?: string) => Promise<FilterOption[]>;
   // The labels matching `value`'s ids, for the same three kinds. Ignored by the others.
   selectedOptions?: FilterOption[];
+  // A fixed list of values for an "in" filter: picked in a multi-select dropdown, not searched.
+  options?: FilterOption[];
   autoFocus?: boolean;
 }
 
-export function ColumnFilter({ label, kind, value, onChange, loadOptions, selectedOptions, autoFocus }: ColumnFilterProps) {
+export function ColumnFilter({ label, kind, value, onChange, loadOptions, selectedOptions, options, autoFocus }: ColumnFilterProps) {
+  if (kind === "in" && options) {
+    return <ChoiceFilter label={label} value={value} onChange={onChange} options={options} />;
+  }
   switch (kind) {
     case "contains":
       return <ContainsFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} />;
@@ -163,6 +169,37 @@ function DateRangeFilter({ label, value, onChange, autoFocus }: Pick<ColumnFilte
         onChange={(e) => commit(from, toIsoDate(e.value as Date | null))}
       />
     </span>
+  );
+}
+
+/**
+ * Several values picked among a fixed few, ticked in a dropdown: f.<key>=<id>, repeatable.
+ */
+function ChoiceFilter({
+  label,
+  value,
+  onChange,
+  options,
+}: Pick<ColumnFilterProps, "label" | "value" | "onChange"> & { options: FilterOption[] }) {
+  const picked = value?.op === "in" ? value.v : [];
+  return (
+    <MultiSelect
+      className="entity-list-panel-choice-filter"
+      value={picked}
+      options={options}
+      optionLabel="label"
+      optionValue="id"
+      placeholder={label}
+      display="chip"
+      showSelectAll={false}
+      onChange={(e) => {
+        const ids = (e.value as string[] | null) ?? [];
+        onChange(
+          ids.length > 0 ? { op: "in", v: ids } : undefined,
+          options.filter((o) => ids.includes(o.id)),
+        );
+      }}
+    />
   );
 }
 

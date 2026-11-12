@@ -1,4 +1,5 @@
 import {
+    type CSSProperties,
     type DragEvent,
     type ReactNode,
     type SyntheticEvent,
@@ -14,7 +15,6 @@ import {TreeTable} from "primereact/treetable";
 import type {TreeNode} from "primereact/treenode";
 import {Skeleton} from "primereact/skeleton";
 import {CellEditOverlay, type CellEditTarget,} from "../../components/table/CellEditOverlay";
-import {ValidationStatusCell, type ValidationStatusCellProps,} from "../../components/table/ValidationStatusCell";
 import {getEntityType} from "../../entities/registry";
 import type {ColumnDef, EntityPreview, EntityTypeConfig, ListParams,} from "../../entities/shared/types";
 import {entityChipStyle, renderAnswerValue} from "../../fields/display";
@@ -450,6 +450,19 @@ export function EntityTable({
     style: frozenColumnStyle(position),
   });
 
+  // A column's own class (ColumnDef.className) on top of the frozen one, header and cells alike.
+  const withColumnClass = (
+    col: ColumnDef<RowRecord>,
+    props: { className?: string; headerClassName?: string; style?: CSSProperties },
+  ) =>
+    col.className
+      ? {
+          ...props,
+          className: [props.className, col.className].filter(Boolean).join(" "),
+          headerClassName: [props.headerClassName, col.className].filter(Boolean).join(" "),
+        }
+      : props;
+
   const rowOf = (arg: unknown): RowRecord =>
     tree ? ((arg as TreeNode).data as RowRecord) : (arg as RowRecord);
   const rowStateClasses = (row: RowRecord): string[] => {
@@ -491,7 +504,7 @@ export function EntityTable({
         key={col.key}
         columnKey={col.key}
         field={col.key}
-        {...(index <= lastFrozenIndex ? frozenProps(index + 1) : {})}
+        {...withColumnClass(col, index <= lastFrozenIndex ? frozenProps(index + 1) : {})}
         // Only scrolling dynamic columns move: dragging one into or out of the frozen block
         // would desync `frozen` from the column's position, and the order that's kept (and
         // shown in the chooser) is the dynamic columns' — a pinned one dragged elsewhere would
@@ -515,31 +528,19 @@ export function EntityTable({
         sortField={col.fieldId ?? col.key}
         // The tree view's expander lives in the identifier cell.
         {...(tree && col.identifier ? { expander: true } : {})}
-        // The row's validation state renders in the identifier's cell but outside the
-        // clickable chip, exactly like JSF's merged statusIdActionsCol — `validationStatus` is a
-        // root property of every entity (TraceableEntity), so every list shows it; a picker
-        // when the user may change it. Every cell goes through the same wrapper, so no cell
-        // is ever more than one line: .entity-list-panel-cell is the flex row (validation
-        // state + value) and the value slot is the part that truncates with an ellipsis.
-        // Exactly one element fills that slot — the identifier chip, the editable box, or a
-        // plain value — never two nested, because the editable box has to reach out to the
-        // cell's padding edge and a clipping wrapper around it would cut that off.
+        // Every cell goes through the same wrapper, so no cell is ever more than one line:
+        // .entity-list-panel-cell is the flex row and the value slot is the part that truncates
+        // with an ellipsis. Exactly one element fills that slot — the identifier chip, the
+        // editable box, or a plain value — never two nested, because the editable box has to
+        // reach out to the cell's padding edge and a clipping wrapper around it would cut that
+        // off. The validation status is a column of its own (validationStatusColumn.tsx).
         body={(arg: unknown) => {
           const row = rowOf(arg);
           // A column just shown, still being fetched for this row: a skeleton, not an empty cell.
           return isSkeletonRow(row) || isFieldPending(row, col.key) ? (
             <Skeleton height="1rem" width={col.identifier ? "6rem" : "70%"} />
           ) : (
-            <span className="entity-list-panel-cell">
-              {col.identifier && (
-                <ValidationStatusCell
-                  entityType={entityType}
-                  collectionPath={config.collectionPath}
-                  row={row as ValidationStatusCellProps["row"]}
-                />
-              )}
-              {renderCellValue(col, row)}
-            </span>
+            <span className="entity-list-panel-cell">{renderCellValue(col, row)}</span>
           );
         }}
       />,

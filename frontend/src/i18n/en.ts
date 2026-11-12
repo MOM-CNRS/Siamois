@@ -99,6 +99,7 @@ export const en: Record<MessageKey, string> = {
   "list.create": "Create",
   "list.cannotCreate": "You are not allowed to create this type ({type}) in any project.",
   "list.actionsHeader": "Actions",
+  "list.statusHeader": "Record status",
   "list.openInOverview": "Open in the preview",
   "views.saveAs": "Save as a new view",
   "views.update": "Update",

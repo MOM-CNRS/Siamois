@@ -1,6 +1,7 @@
 import type {EntityTypeConfig, FieldCatalog} from "../../entities/shared/types";
 import {filterKindForField} from "../../fields/optionSources";
 import type {FilterValue} from "./tableState";
+import {pinnedColumnsOf} from "./validationStatusColumn";
 
 // What a user kept on a list may name a field or a column the list no longer has: a custom field removed
 // since, a column the entity stopped declaring. The server answers 400 « Champ inconnu » to a filter or a
@@ -15,7 +16,7 @@ function sortKeyOf(sort: string | undefined): string | undefined {
 
 /** Whether `key` can still be filtered on: a pinned column declared filterable, or a catalog field with a filter. */
 export function isFilterAvailable(key: string, config: ListConfig, catalog: FieldCatalog | undefined): boolean {
-  if ((config?.list.columns ?? []).some((c) => c.key === key && c.filterable === true)) return true;
+  if (pinnedColumnsOf(config).some((c) => c.key === key && (c.filterable === true || c.filterOptions != null))) return true;
   const field = catalog?.fields[key];
   return field != null && filterKindForField(field) != null;
 }
@@ -34,7 +35,7 @@ export function isSortAvailable(sort: string | undefined, config: ListConfig, ca
   const key = sortKeyOf(sort);
   if (key === undefined) return true;
   if (key === sortKeyOf(config?.list.defaultSort)) return true;
-  const pinned = (config?.list.columns ?? []).some(
+  const pinned = pinnedColumnsOf(config).some(
     (c) =>
       (c.fieldId ?? c.key) === key &&
       (c.sortable === true || (c.sortable == null && c.fieldId != null && catalog?.fields[c.fieldId]?.query?.sortable === true)),

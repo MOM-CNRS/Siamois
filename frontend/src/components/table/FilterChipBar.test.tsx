@@ -43,6 +43,18 @@ describe("FilterChipBar", () => {
     expect(document.querySelector(".entity-list-panel-filter-editor input")).not.toBeNull();
   });
 
+  it("picks the values of a filter with fixed options in a multi-select dropdown, not a search box", () => {
+    const options = [{ id: "A", label: "En cours" }, { id: "B", label: "Validé" }];
+    const specs: FilterSpec[] = [{ key: "status", label: "Statut", kind: "in", loadOptions: async () => options, options }];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{}} optionsByKey={{}} onChange={vi.fn()} />));
+
+    act(() => (container.querySelector(".filter-chip-add") as HTMLElement).click());
+    act(() => (document.querySelector(".filter-picker-item") as HTMLElement).click());
+
+    expect(document.querySelector(".entity-list-panel-filter-editor .p-multiselect")).not.toBeNull();
+    expect(document.querySelector(".entity-list-panel-filter-editor .p-autocomplete")).toBeNull();
+  });
+
   it("keeps the first filters in the bar and folds the rest behind « +N »", () => {
     const specs: FilterSpec[] = ["a", "b", "c", "d", "e"].map((key) => ({ key, label: key.toUpperCase(), kind: "contains" }));
     const filters = Object.fromEntries(specs.map((s) => [s.key, { op: "contains" as const, v: "x" }]));

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.actionunit.CustomFieldSelectOneActionUnit;
@@ -463,6 +464,57 @@ class FieldQueryServiceQueryTest {
         attribute(answer, "persons", Attribute.PersistentAttributeType.BASIC, String.class);
         managed.put(CustomFieldAnswerSelectOnePerson.class, answer);
         badRequest(RecordingUnit.class, sort(true));
+    }
+
+    // ---------- list-only columns ----------
+
+    private static final long STATUS = ListOnlyColumn.VALIDATION_STATUS.fieldId();
+
+    private static FieldListQuery statusFilter(FieldListQuery.Criterion criterion) {
+        return new FieldListQuery(Map.of(STATUS, criterion), null, true, "fr");
+    }
+
+    @Test
+    void theValidationStatusIsFilteredByStatusNames_withoutAnyFormField() {
+        attribute(unit, "validationStatus", Attribute.PersistentAttributeType.BASIC, ValidationStatus.class);
+
+        run(build(RecordingUnit.class, statusFilter(values("validated", "CANCELLED"))));
+
+        verify(root.get("validationStatus")).in(List.of(ValidationStatus.VALIDATED, ValidationStatus.CANCELLED));
+        verifyNoInteractions(customFields);
+    }
+
+    @Test
+    void theValidationStatusSortsInWorkflowOrder() {
+        attribute(unit, "validationStatus", Attribute.PersistentAttributeType.BASIC, ValidationStatus.class);
+
+        run(build(RecordingUnit.class, new FieldListQuery(Map.of(), STATUS, true, "fr")));
+
+        for (ValidationStatus status : ValidationStatus.values()) {
+            verify(cb).equal(any(jakarta.persistence.criteria.Expression.class), org.mockito.ArgumentMatchers.eq(status));
+        }
+        verify(query).orderBy(any(jakarta.persistence.criteria.Order.class), any(jakarta.persistence.criteria.Order.class));
+    }
+
+    @Test
+    void theValidationStatusRefusesARangeAndAnUnknownStatus() {
+        attribute(unit, "validationStatus", Attribute.PersistentAttributeType.BASIC, ValidationStatus.class);
+
+        assertThat(badRequest(RecordingUnit.class, statusFilter(range("a", "b"))).getReason()).contains("plage impossible");
+        assertThat(badRequest(RecordingUnit.class, statusFilter(values("DONE"))).getReason()).contains("Valeur inconnue");
+    }
+
+    @Test
+    void aListOnlyColumnTheEntityDoesNotMapCannotBeQueried() {
+        assertThat(badRequest(RecordingUnit.class, statusFilter(values("VALIDATED"))).getReason())
+                .contains("ne se trie ni ne se filtre");
+    }
+
+    @Test
+    void listOnlyColumnsAreFoundByTheirReservedId() {
+        assertThat(ListOnlyColumn.ofFieldId(-901L)).contains(ListOnlyColumn.VALIDATION_STATUS);
+        assertThat(ListOnlyColumn.VALIDATION_STATUS.attribute()).isEqualTo("validationStatus");
+        assertThat(ListOnlyColumn.ofFieldId(-301L)).isEmpty();
     }
 
     // ---------- capabilities ----------

@@ -144,7 +144,9 @@ public class FieldQueryService {
     private final EntityManager entityManager;
 
     private enum Kind {
-        TEXT("contains"), NUMBER("range"), DATE("date-range"), BOOLEAN("equals"), REFERENCE("in"), REFERENCES("in");
+        TEXT("contains"), NUMBER("range"), DATE("date-range"), BOOLEAN("equals"), REFERENCE("in"), REFERENCES("in"),
+        /** One of an enum's constants: filtered by constant names, sorted in declaration order. */
+        CHOICE("in");
 
         final String filterOp;
 
@@ -297,12 +299,22 @@ public class FieldQueryService {
     }
 
     private Target requireTarget(Class<?> entityType, long fieldId) {
-        CustomField field = Optional.ofNullable(SYSTEM_FIELDS.get(entityType)).map(fields -> fields.get(fieldId))
-                .or(() -> customFieldRepository.findById(fieldId).map(f -> (CustomField) Hibernate.unproxy(f)))
-                .orElseThrow(() -> badRequest("Champ inconnu : " + fieldId));
-        Target target = resolve(entityType, field);
+        Optional<ListOnlyColumn> listOnly = ListOnlyColumn.ofFieldId(fieldId);
+        Target target = listOnly.isPresent()
+                ? resolveSystem(entityType, listOnly.get().attribute())
+                : resolve(entityType, requireField(entityType, fieldId));
         if (target == null) throw badRequest("Le champ " + fieldId + " ne se trie ni ne se filtre sur cette liste");
         return target;
+    }
+
+    /**
+     * The form field {@code fieldId} names: one of the entity's system fields declared in code, else a
+     * {@code custom_field} row; an unknown id is a 400.
+     */
+    private CustomField requireField(Class<?> entityType, long fieldId) {
+        return Optional.ofNullable(SYSTEM_FIELDS.get(entityType)).map(fields -> fields.get(fieldId))
+                .or(() -> customFieldRepository.findById(fieldId).map(f -> (CustomField) Hibernate.unproxy(f)))
+                .orElseThrow(() -> badRequest("Champ inconnu : " + fieldId));
     }
 
     // ========== Resolution ==========
@@ -423,6 +435,7 @@ public class FieldQueryService {
     @Nullable
     private static Kind scalarKind(Class<?> javaType) {
         Class<?> type = boxed(javaType);
+        if (type.isEnum()) return Kind.CHOICE;
         if (String.class.equals(type)) return Kind.TEXT;
         if (Number.class.isAssignableFrom(type)) return Kind.NUMBER;
         if (Temporal.class.isAssignableFrom(type) || Date.class.isAssignableFrom(type)) return Kind.DATE;
@@ -473,23 +486,29 @@ public class FieldQueryService {
 
     // ========== Filter ==========
 
-    /** A text filter is a value, a number or date one a range, a reference one ids of a filterable target. */
+    public static final String FILTRE_ATTENDU_PLAGE = "Filtre attendu en plage (.from/.to) : f.";
+    public static final String FILTRE_PLAGE_IMPOSSIBLE = "Filtre en plage impossible sur une référence : f.";
+
+    private static final Map<FieldQueryService.Kind, String> MESSAGE_ERREUR = Map.of(
+            Kind.TEXT, "Filtre en plage impossible sur un champ texte : f.",
+            Kind.NUMBER, FILTRE_ATTENDU_PLAGE,
+            Kind.DATE, FILTRE_ATTENDU_PLAGE,
+            Kind.BOOLEAN, "Filtre en plage impossible sur un champ oui/non : f.",
+            Kind.CHOICE, "Filtre en plage impossible sur une liste de valeurs : f.",
+            Kind.REFERENCE, FILTRE_PLAGE_IMPOSSIBLE,
+            Kind.REFERENCES, FILTRE_PLAGE_IMPOSSIBLE
+    );
+
+    /**
+     * A number or date filter is a range, any other a value; a reference one needs a target filterable by id.
+     */
     private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion) {
-        switch (target.kind) {
-            case TEXT -> {
-                if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur un champ texte : f." + fieldId);
-            }
-            case NUMBER, DATE -> {
-                if (!criterion.isRange()) throw badRequest("Filtre attendu en plage (.from/.to) : f." + fieldId);
-            }
-            case BOOLEAN -> {
-                if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur un champ oui/non : f." + fieldId);
-            }
-            case REFERENCE, REFERENCES -> {
-                if (criterion.isRange()) throw badRequest("Filtre en plage impossible sur une référence : f." + fieldId);
-                if (!target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
-            }
+        boolean rangeKind = target.kind == Kind.NUMBER || target.kind == Kind.DATE;
+        if (criterion.isRange() != rangeKind) {
+            throw badRequest(MESSAGE_ERREUR.get(target.kind) + fieldId);
         }
+        boolean reference = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES;
+        if (reference && !target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
     }
 
     private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
@@ -500,6 +519,8 @@ public class FieldQueryService {
         Object to = bound(target, fieldId, criterion.to(), false);
         List<String> texts = criterion.values().stream().map(v -> "%" + v.toLowerCase(Locale.ROOT) + "%").toList();
         List<Boolean> flags = target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
+        List<Object> choices = target.kind == Kind.CHOICE ? parseChoices(target.valueType, fieldId, criterion.values()) : List.of();
+        Filter parsed = new Filter(texts, ids, flags, choices, from, to);
 
         return (root, query, cb) -> {
             String position = stratigraphicPosition(root.getJavaType(), target.attribute);
@@ -519,7 +540,7 @@ public class FieldQueryService {
                 return cb.exists(elements);
             }
             if (target.system) {
-                return valuePredicate(target, systemValue(root, target), new Filter(texts, ids, flags, from, to), cb);
+                return valuePredicate(target, systemValue(root, target), parsed, cb);
             }
             Subquery<Integer> answers = query.subquery(Integer.class);
             Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
@@ -528,7 +549,7 @@ public class FieldQueryService {
                     : answer.get(target.attribute);
             answers.select(cb.literal(1)).where(
                     ownedBy(answer, root, fieldId, cb),
-                    valuePredicate(target, value, new Filter(texts, ids, flags, from, to), cb));
+                    valuePredicate(target, value, parsed, cb));
             return cb.exists(answers);
         };
     }
@@ -556,6 +577,7 @@ public class FieldQueryService {
         Object to = filter.to();
         return switch (target.kind) {
             case BOOLEAN -> value.in(filter.flags());
+            case CHOICE -> value.in(filter.choices());
             case TEXT -> cb.or(texts.stream()
                     .map(t -> cb.like(cb.lower((Expression<String>) value), t))
                     .toArray(Predicate[]::new));
@@ -572,7 +594,7 @@ public class FieldQueryService {
     }
 
     /** What a filter compares a column with, parsed once for the kind of the column. */
-    private record Filter(List<String> texts, List<Long> ids, List<Boolean> flags,
+    private record Filter(List<String> texts, List<Long> ids, List<Boolean> flags, List<Object> choices,
                           @Nullable Object from, @Nullable Object to) {
     }
 
@@ -612,6 +634,7 @@ public class FieldQueryService {
         return switch (target.kind) {
             case TEXT -> cb.lower(root.<String>get(target.attribute));
             case NUMBER, DATE, BOOLEAN -> systemValue(root, target);
+            case CHOICE -> declarationRank(cb, root.get(target.attribute), target.valueType);
             case REFERENCE -> target.concept
                     ? conceptLabel(query, cb, root.get(target.attribute), lang)
                     : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
@@ -663,7 +686,22 @@ public class FieldQueryService {
                 sub.select(cb.count(referenced)).where(ownedBy(answer, root, fieldId, cb));
                 yield sub;
             }
+            // An additional field's answer is never an enum: only system properties resolve to CHOICE.
+            case CHOICE -> throw new IllegalStateException("Le champ additionnel " + fieldId + " n'a pas de liste de valeurs");
         };
+    }
+
+    /**
+     * The rank of an enum column's value in its type's declaration order — the workflow order of a
+     * validation status (en cours, terminé, validé, annulé) rather than the alphabetical order of the
+     * stored names.
+     */
+    private static Expression<Integer> declarationRank(CriteriaBuilder cb, Expression<?> value, Class<?> enumType) {
+        CriteriaBuilder.Case<Integer> rank = cb.selectCase();
+        for (Object constant : enumType.getEnumConstants()) {
+            rank = rank.when(cb.equal(value, constant), ((Enum<?>) constant).ordinal());
+        }
+        return rank.otherwise(cb.nullLiteral(Integer.class));
     }
 
     private static Subquery<String> conceptLabel(CriteriaQuery<?> query, CriteriaBuilder cb, Expression<?> concept, String lang) {
@@ -698,6 +736,22 @@ public class FieldQueryService {
             else throw badRequest("Booléen invalide pour f." + fieldId + " : " + value + " (true ou false attendu)");
         }
         return flags;
+    }
+
+    /**
+     * The constants of {@code enumType} named by {@code values}, case-insensitively; an unknown name is a 400.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static List<Object> parseChoices(Class<?> enumType, long fieldId, List<String> values) {
+        List<Object> choices = new ArrayList<>(values.size());
+        for (String value : values) {
+            try {
+                choices.add(Enum.valueOf((Class<? extends Enum>) enumType, value.trim().toUpperCase(Locale.ROOT)));
+            } catch (IllegalArgumentException e) {
+                throw badRequest("Valeur inconnue pour f." + fieldId + " : " + value);
+            }
+        }
+        return choices;
     }
 
     private static List<Long> parseIds(long fieldId, List<String> values) {

@@ -4,6 +4,7 @@
 // response's own `_permissions` object, never recomputed or guessed client-side.
 import type {ReactNode} from "react";
 import type {AnswerInputBody, FieldResource} from "../../fields/types";
+import type {FilterOption} from "../../fields/optionSources";
 import type {PanelChrome} from "../../mountOptions";
 import type {EntityKey} from "../keys";
 
@@ -141,6 +142,11 @@ export interface ColumnDef<TSummary> {
   // f.<key> query param — the only filter kind a pinned column can have, since anything richer
   // (concept/spatial options, a numeric range) needs field metadata a pinned column doesn't carry.
   filterable?: boolean;
+  // Makes a pinned column filterable by picking among these fixed values instead: an "in" filter
+  // (repeatable f.<key>=<option id>), e.g. the validation statuses.
+  filterOptions?: FilterOption[];
+  // Extra class on the column's header and cells (e.g. to size it).
+  className?: string;
   // Marks the one column whose cell opens the row's entity (plan §8 phase 5) — mirrors JSF's
   // CommandLinkColumn, the only clickable cell in the real table. At most one column per entity
   // type should set this; EntityListPanel wires its click handler onto whichever column does.
