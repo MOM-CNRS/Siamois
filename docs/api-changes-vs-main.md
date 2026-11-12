@@ -209,6 +209,7 @@ The `fields` ids returned here are the ones accepted by `fields=`, `sort=<fieldI
 - `f.<fieldId>.from=` and `f.<fieldId>.to=`: range filter.
 - `sort=<fieldId>:asc|desc`: sort on a form field. A multi-valued field sorts by its number of values.
 - Whether a column supports this is advertised per field in `FieldResource.query { sortable, filterOp: contains|range|date-range|in|null }`.
+- `-901` is reserved for the validation status, which every listed entity carries but which is no form field (so it is in no catalogue): `sort=-901:asc|desc` orders by workflow (`INCOMPLETE`, `COMPLETE`, `VALIDATED`, `CANCELLED`), `f.-901=VALIDATED` (repeatable, any-of) filters on it. An unknown status is a 400.
 
 **`fields` projection** (projects, RUs, phases, containers):
 - `all`: every field.

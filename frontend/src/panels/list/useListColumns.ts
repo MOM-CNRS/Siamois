@@ -4,9 +4,23 @@ import type {ColumnDef, EntityTypeConfig, FieldCatalog, ListScope} from "../../e
 import type {ColumnTogglerOption} from "../../components/table/ColumnToggler";
 import type {FilterSpec} from "../../components/table/FilterChipBar";
 import {renderAnswerCell} from "../../fields/display";
-import {type FilterKind, filterKindForField, optionSourceFor} from "../../fields/optionSources";
+import {filterKindForField, optionSourceFor} from "../../fields/optionSources";
 import {type FieldResource, isOwningProjectField, resolveValueBinding} from "../../fields/types";
 import type {RowRecord} from "./useEntityListData";
+import {pinnedColumnsOf} from "./validationStatusColumn";
+
+/**
+ * A pinned column's filter: picking among its fixed values when it has some, else a plain "contains".
+ */
+function pinnedFilterSpec(column: ColumnDef<RowRecord>): FilterSpec {
+  const options = column.filterOptions;
+  if (!options) return { key: column.key, label: column.header, kind: "contains" };
+  const loadOptions = async (q?: string) => {
+    const needle = (q ?? "").trim().toLocaleLowerCase();
+    return options.filter((o) => o.label.toLocaleLowerCase().includes(needle));
+  };
+  return { key: column.key, label: column.header, kind: "in", loadOptions, options };
+}
 
 
 export interface UseListColumnsOptions {
@@ -89,9 +103,9 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
   // query param — see ColumnDef.filterable) plus every catalog field whose answerType maps to a
   // FilterKind, shown as a column or not: what can be filtered on doesn't depend on what is displayed.
   const filterSpecs = useMemo<FilterSpec[]>(() => {
-    const pinned = (config?.list.columns ?? [])
-      .filter((c) => c.filterable === true)
-      .map((c): FilterSpec => ({ key: c.key, label: c.header, kind: "contains" as FilterKind }));
+    const pinned = pinnedColumnsOf(config)
+      .filter((c) => c.filterable === true || c.filterOptions != null)
+      .map(pinnedFilterSpec);
 
     if (!catalog) return pinned;
     // A pinned column showing a catalog field (the type, say) is filterable through that field, unless
@@ -120,7 +134,7 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
   // organization-wide list) is dropped inside a scoped relation tab, where it would repeat the
   // parent on every row.
   const columns = useMemo<ColumnDef<RowRecord>[]>(() => {
-    const pinned = ((config?.list.columns ?? []) as ColumnDef<RowRecord>[])
+    const pinned = pinnedColumnsOf(config)
       .filter((c) => !(scope && c.unscopedOnly))
       // A pinned column showing a catalog field sorts by that field's id, if the catalog says it can.
       .map((c) =>

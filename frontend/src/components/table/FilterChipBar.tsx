@@ -30,6 +30,9 @@ export interface FilterSpec {
   label: string;
   kind: FilterKind;
   loadOptions?: (q?: string) => Promise<FilterOption[]>;
+  // A fixed, short list of values (the validation statuses): an "in" filter then picks them from a
+  // multi-select dropdown instead of searching them as you type.
+  options?: FilterOption[];
 }
 
 export interface FilterChipBarProps {
@@ -156,6 +159,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       value={filters[editingSpec.key]}
       selectedOptions={optionsByKey[editingSpec.key]}
       loadOptions={editingSpec.loadOptions}
+      options={editingSpec.options}
       autoFocus={!editSheetOpen}
       onChange={(value, options) => onChange(editingSpec.key, value, options)}
     />

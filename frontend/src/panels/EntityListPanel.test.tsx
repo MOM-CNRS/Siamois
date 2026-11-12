@@ -295,7 +295,7 @@ describe("EntityListPanel", () => {
     expect(row.className).toContain("overview-open");
   });
 
-  it("renders the identifier cell as a navigation chip preceded by the row's validation state", async () => {
+  it("renders the identifier cell as a navigation chip and the validation state in a column of its own", async () => {
     const leadingConfig: EntityTypeConfig<FakeRow, FakeRow> = {
       ...fakeConfig,
       key: "fake-leading-entity",
@@ -326,13 +326,17 @@ describe("EntityListPanel", () => {
     });
     await flush();
 
-    const cell = container.querySelector(".entity-list-panel-cell")!;
-    expect(cell.querySelector(".validation-status-badge")).toBeTruthy();
-    const chip = cell.querySelector(".entity-nav-chip")!;
+    const cells = Array.from(container.querySelectorAll("tbody tr:first-child .entity-list-panel-cell"));
+    const identifierCell = cells.find((cell) => cell.querySelector(".entity-nav-chip"))!;
+    const otherCells = cells.filter((cell) => cell !== identifierCell);
+    const chip = identifierCell.querySelector(".entity-nav-chip")!;
     expect(chip.querySelector(".bi-question")).toBeTruthy();
     expect(chip.textContent).toContain("Row A");
-    // The badge is outside the clickable chip — only the chip opens the entity.
-    expect(chip.querySelector(".validation-status-badge")).toBeFalsy();
+    // The status is a column of its own, the first one, not part of the identifier's cell.
+    expect(identifierCell.querySelector(".validation-status-badge")).toBeFalsy();
+    expect(otherCells[0].querySelector(".validation-status-badge")).toBeTruthy();
+    const headers = Array.from(container.querySelectorAll(".entity-list-panel-column-header")).map((h) => h.textContent);
+    expect(headers[0]).toBe("Statut de la fiche");
   });
 
   it("renders the table in PrimeReact's small size, like the JSF p:dataTable", async () => {
@@ -346,9 +350,9 @@ describe("EntityListPanel", () => {
     renderPanel();
     await flush();
 
-    const header = container.querySelector(".entity-list-panel-column-header") as HTMLElement;
-    expect(header).toBeTruthy();
-    expect(header.getAttribute("title")).toBe("Name");
+    const titles = Array.from(container.querySelectorAll(".entity-list-panel-column-header")).map((h) => h.getAttribute("title"));
+    expect(titles).toContain("Statut de la fiche");
+    expect(titles).toContain("Name");
   });
 
   it("renders the header icon, plural label and a count chip (actionUnitListPanelHeader.xhtml)", async () => {
@@ -934,7 +938,9 @@ describe("EntityListPanel filter chips (toolbar)", () => {
       addChip.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await flush();
-    const pickerItem = document.body.querySelector(".filter-picker-item") as HTMLElement;
+    const pickerItem = Array.from(document.body.querySelectorAll(".filter-picker-item")).find(
+      (b) => b.textContent === "Name",
+    ) as HTMLElement;
     await act(async () => {
       pickerItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -1177,13 +1183,14 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     renderPanel();
     await flush();
 
-    // fakeConfig: one column, `name`, marked identifier — so selection + name + the row actions
-    // right after it, and that is all.
+    // fakeConfig: one column, `name`, marked identifier — so selection + the validation status
+    // (always first) + name + the row actions right after it, and that is all.
     const frozen = headerCells().filter((th) => th.classList.contains("entity-list-panel-frozen"));
-    expect(frozen).toHaveLength(3);
+    expect(frozen).toHaveLength(4);
     expect(frozen[0].classList.contains("p-selection-column")).toBe(true);
-    expect(frozen[1].textContent).toContain("Name");
-    expect(frozen[2].classList.contains("entity-list-panel-row-actions-cell")).toBe(true);
+    expect(frozen[1].textContent).toContain("Statut de la fiche");
+    expect(frozen[2].textContent).toContain("Name");
+    expect(frozen[3].classList.contains("entity-list-panel-row-actions-cell")).toBe(true);
   });
 
   it("freezes every column up to AND including the identifier, not just the identifier", async () => {
@@ -1212,10 +1219,10 @@ describe("EntityListPanel scrolling: sticky header and frozen columns", () => {
     const frozenLabels = headerCells()
       .filter((th) => th.classList.contains("entity-list-panel-frozen"))
       .map((th) => th.textContent);
-    // Selection + Statut + Name + row actions; "Après" scrolls away.
-    expect(frozenLabels).toHaveLength(4);
-    expect(frozenLabels[1]).toContain("Statut");
-    expect(frozenLabels[2]).toContain("Name");
+    // Selection + validation status + Statut + Name + row actions; "Après" scrolls away.
+    expect(frozenLabels).toHaveLength(5);
+    expect(frozenLabels[2]).toContain("Statut");
+    expect(frozenLabels[3]).toContain("Name");
     expect(frozenLabels.some((l) => l?.includes("Après"))).toBe(false);
   });
 

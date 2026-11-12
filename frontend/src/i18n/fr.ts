@@ -99,6 +99,7 @@ export const fr = {
   "list.create": "Créer",
   "list.cannotCreate": "Vous n'avez le droit de créer ce type ({type}) dans aucun projet.",
   "list.actionsHeader": "Actions",
+  "list.statusHeader": "Statut de la fiche",
   "list.openInOverview": "Ouvrir dans l'aperçu",
   "views.saveAs": "Enregistrer comme nouvelle vue",
   "views.update": "Mettre à jour",
