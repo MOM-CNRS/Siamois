@@ -422,3 +422,12 @@ A field that names a person can now name someone without an account: they are cr
 | Study field **-813** `treatmentManager` | **Breaking.** `TEXT` → **`SELECT_ONE_PERSON`**, same shape. |
 
 Existing texts were turned into persons by Liquibase `2026-11-10-2`: linked to the person of the organization who has this name, or created as persons awaiting their account. The former text columns are kept, unmapped.
+
+## 12. Progress of a project creation (2026-11-12)
+
+Additive, no break. Creating a project is one long request when its template reads a thesaurus; a client can now follow it.
+
+| Endpoint / schema | Change |
+|---|---|
+| `ProjectCreateRequest` (`POST /api/v1/projects`) | **+ `progressToken`** (string, optional, 64 characters at most): a token of the client's own (a UUID for instance) naming this creation. |
+| `GET /api/v1/projects/creation-progress/{token}` | **New.** `200` → `{ percentage }` (0 to 100): how far the creation the caller sent with this `progressToken` is. `0` while it has not started or when the token is unknown; a token only reads its sender's creation. To be polled while the `POST` runs; the progress is forgotten 30 minutes after the creation started. |

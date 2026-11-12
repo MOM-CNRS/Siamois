@@ -143,7 +143,8 @@ class ProjectSiblingsControllerApiTest {
                 projectResponseMapper,
                 recordingUnitResourceMapper,
                 documentWriteOpenApiService,
-                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none());
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none(),
+                new fr.siamois.ui.api.openapi.v1.service.ProjectCreationProgressRegistry());
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,

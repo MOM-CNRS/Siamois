@@ -92,6 +92,8 @@ export const queryKeys = {
   projectTemplates: (organizationId: string | number | null | undefined) => ["project-templates", organizationId] as const,
   nextProjectIdentifier: (organizationId: string | number | null | undefined) => ["next-project-identifier", organizationId] as const,
   projectTypes: (organizationId: string | number | null | undefined) => ["project-types", organizationId] as const,
+  // How far the project creation followed with this token is (polled while the creation runs).
+  projectCreationProgress: (token: string | null) => ["project-creation-progress", token] as const,
 
   projectHistory: (projectId: string | number | undefined) => ["project-history", projectId] as const,
   projectHomeRecent: (organizationId: number | undefined) => ["project-home-recent", organizationId] as const,

@@ -1,5 +1,6 @@
 package fr.siamois.domain.services.actionunit;
 
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
@@ -51,7 +52,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         ArgumentCaptor<TypeFormConfig> usConfig = ArgumentCaptor.forClass(TypeFormConfig.class);
         verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), usConfig.capture());
@@ -66,7 +67,7 @@ class DefaultProjectIdentifierConfigSeederTest {
 
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenThrow(new InvalidEndpointException("unreachable"));
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.UE), anyLong(), any());
     }
@@ -84,7 +85,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         doThrow(new IllegalStateException("No vocabulary configured"))
                 .when(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), any());
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), eq(1L), any());
     }
@@ -107,7 +108,7 @@ class DefaultProjectIdentifierConfigSeederTest {
             return other;
         });
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         ArgumentCaptor<TypeFormConfig> config = ArgumentCaptor.forClass(TypeFormConfig.class);
         verify(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.MOBILIER), eq(77L), config.capture());
@@ -123,7 +124,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenReturn(concept);
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.MOBILIER), anyLong(), any());
         verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.PHASE), anyLong(), any());
@@ -148,7 +149,7 @@ class DefaultProjectIdentifierConfigSeederTest {
             return concept;
         });
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         for (long id : new long[]{101L, 102L, 103L}) {
             ArgumentCaptor<TypeFormConfig> config = ArgumentCaptor.forClass(TypeFormConfig.class);
@@ -185,7 +186,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         doThrow(new IllegalStateException("No vocabulary configured"))
                 .when(tableFieldConfigService).saveFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.STUDY), eq(1L), any());
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         verify(tableFieldConfigService, never()).setFieldActive(eq(PROJECT_ID), eq(ConfigurableTable.STUDY), eq(1L), anyString(), anyBoolean());
         verify(tableFieldConfigService).setFieldActive(PROJECT_ID, ConfigurableTable.STUDY, 202L, "study.field.recordingUnits", true);
@@ -200,7 +201,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(anyString())).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(eq(vocabulary), anyString(), isNull())).thenReturn(concept);
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         verify(tableFieldConfigService, never()).saveFormConfig(anyLong(), eq(ConfigurableTable.STUDY), anyLong(), any());
     }
@@ -218,7 +219,7 @@ class DefaultProjectIdentifierConfigSeederTest {
                 .when(tableFieldConfigService).saveFormConfig(anyLong(), any(), anyLong(), any());
 
         ExecutionContextHolder.clear();
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         assertThat(boundDuringSave).isNotEmpty().allMatch(bound -> bound == INFO);
         assertThat(ExecutionContextHolder.get()).isNull();
@@ -230,7 +231,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         UserInfo caller = mock(UserInfo.class);
         ExecutionContextHolder.set(caller);
         try {
-            seeder.seed(INFO, PROJECT_ID);
+            seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
             assertThat(ExecutionContextHolder.get()).isSameAs(caller);
         } finally {
@@ -247,7 +248,7 @@ class DefaultProjectIdentifierConfigSeederTest {
         when(vocabularyService.findOrCreateVocabularyOfUri(US_URI)).thenReturn(vocabulary);
         when(conceptService.saveOrGetConceptFromUri(vocabulary, US_URI, null)).thenReturn(usConcept);
 
-        seeder.seed(INFO, PROJECT_ID);
+        seeder.seed(INFO, PROJECT_ID, ProjectCreationProgress.unwatched());
 
         // the form config services open transactions of their own: they only see a concept that is committed
         InOrder order = inOrder(transactionManager, tableFieldConfigService);

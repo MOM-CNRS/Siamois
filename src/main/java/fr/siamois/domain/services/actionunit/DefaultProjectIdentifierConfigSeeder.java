@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.exceptions.api.InvalidEndpointException;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.settings.tableconfig.TypeFormConfig;
@@ -78,11 +79,18 @@ public class DefaultProjectIdentifierConfigSeeder {
     @Value("${siamois.default-types.study.traitement:}")
     private String studyTreatmentTypeUri;
 
-    public void seed(UserInfo info, Long projectId) {
+    /**
+     * Gives the project its first types, reporting how far it is on the progress.
+     *
+     * @param info      the user creating the project, bound to the thread for the seeding
+     * @param projectId the project to configure
+     * @param progress  where the seeding plans its steps and ticks them off
+     */
+    public void seed(UserInfo info, Long projectId, ProjectCreationProgress progress) {
         UserInfo previous = ExecutionContextHolder.get();
         ExecutionContextHolder.set(info);
         try {
-            seedAll(projectId);
+            seedAll(projectId, progress);
         } finally {
             if (previous != null) {
                 ExecutionContextHolder.set(previous);
@@ -109,15 +117,22 @@ public class DefaultProjectIdentifierConfigSeeder {
         });
     }
 
-    private void seedAll(Long projectId) {
-        seedTypes(projectId, ConfigurableTable.UE, DEFAULT_RECORDING_UNIT_TYPES);
-        seedStandardType(projectId, ConfigurableTable.MOBILIER, mobilierTypeUri);
-        seedStandardType(projectId, ConfigurableTable.PHASE, phaseTypeUri);
-        seedStandardType(projectId, ConfigurableTable.CONTENANT, contenantTypeUri);
-        seedStandardType(projectId, ConfigurableTable.DOCUMENT, documentTypeUri);
-        seedStudyType(projectId, StudyDefaults.FIND_STUDY, studyFindTypeUri);
-        seedStudyType(projectId, StudyDefaults.RECORDING_UNIT_STUDY, studyRecordingUnitTypeUri);
-        seedStudyType(projectId, StudyDefaults.TREATMENT, studyTreatmentTypeUri);
+    private void seedAll(Long projectId, ProjectCreationProgress progress) {
+        List<Runnable> steps = List.of(
+                () -> seedTypes(projectId, ConfigurableTable.UE, DEFAULT_RECORDING_UNIT_TYPES),
+                () -> seedStandardType(projectId, ConfigurableTable.MOBILIER, mobilierTypeUri),
+                () -> seedStandardType(projectId, ConfigurableTable.PHASE, phaseTypeUri),
+                () -> seedStandardType(projectId, ConfigurableTable.CONTENANT, contenantTypeUri),
+                () -> seedStandardType(projectId, ConfigurableTable.DOCUMENT, documentTypeUri),
+                () -> seedStudyType(projectId, StudyDefaults.FIND_STUDY, studyFindTypeUri),
+                () -> seedStudyType(projectId, StudyDefaults.RECORDING_UNIT_STUDY, studyRecordingUnitTypeUri),
+                () -> seedStudyType(projectId, StudyDefaults.TREATMENT, studyTreatmentTypeUri)
+        );
+        progress.start(steps.size());
+        for (Runnable step : steps) {
+            step.run();
+            progress.advance();
+        }
     }
 
     /**

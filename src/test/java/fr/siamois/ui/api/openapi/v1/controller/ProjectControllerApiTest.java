@@ -154,7 +154,8 @@ class ProjectControllerApiTest {
                 projectResponseMapper,
                 recordingUnitResourceMapper,
                 documentWriteOpenApiService,
-                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none());
+                new ProjectListProjectionService(new ProjectAnswersProjector(), conceptLabelBatchResolver, ListQueryStubs.multiValueAnswers()), ListQueryStubs.none(),
+                new fr.siamois.ui.api.openapi.v1.service.ProjectCreationProgressRegistry());
 
         ProjectRecordingUnitsControllerApi recordingUnitsController = new ProjectRecordingUnitsControllerApi(
                 projectApiService,
@@ -1068,7 +1069,7 @@ class ProjectControllerApiTest {
         saved.setName("Nouveau");
         saved.setIdentifier("NOU");
         saved.setCreatedByInstitution(institutionDto);
-        when(actionUnitService.save(any(), any(), any(), any())).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), any(), any(), any())).thenReturn(saved);
         when(actionUnitService.findAccessibleProjectByKey("77", Set.of(100L)))
                 .thenReturn(new AccessibleProjectForApi(saved, 0L, 0L));
 
@@ -1085,8 +1086,19 @@ class ProjectControllerApiTest {
                 .andExpect(jsonPath("$.data.name").value("Nouveau"));
 
         verify(actionUnitService).save(any(), argThat((ActionUnitDTO d) ->
-                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto), any());
+                "Nouveau".equals(d.getName()) && "NOU".equals(d.getIdentifier())), eq(typeDto), any(), any());
         verify(recordingUnitOpenApiService).applySystemProjectFormFieldAnswers(any(), any(), same(personDto), anyString());
+    }
+
+    @Test
+    void creationProgress_ofAnUnknownToken_isZero() throws Exception {
+        login();
+        when(personMapper.convert(person)).thenReturn(personDto);
+        when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
+
+        mockMvc.perform(get("/api/v1/projects/creation-progress/unknown-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percentage").value(0));
     }
 
     @Test

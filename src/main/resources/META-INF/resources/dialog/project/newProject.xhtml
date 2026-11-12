@@ -24,6 +24,25 @@
                 this.pickedAt[widgetVar] = Date.now();
             }
         };
+
+        // The progress of the creation, shown while it runs: the default project reads its types and
+        // vocabularies, which takes a while. The bar polls the bean on its own (ajax="true").
+        window.siaNewProjectProgress = window.siaNewProjectProgress || {
+            show: function (visible) {
+                let panel = document.getElementById('newProjectProgress');
+                if (panel) {
+                    panel.hidden = !visible;
+                }
+            },
+            start: function () {
+                this.show(true);
+                PF('newProjectProgressBar').start();
+            },
+            stop: function () {
+                PF('newProjectProgressBar').cancel();
+                this.show(false);
+            }
+        };
     </script>
 
     <!-- Same look as the create overlay of the React lists: a coloured top edge, the title with the
@@ -167,6 +186,14 @@
                             </p:autoComplete>
                         </h:panelGroup>
                     </h:panelGroup>
+
+                    <div id="newProjectProgress" class="sia-create-form-progress" hidden="hidden">
+                        <small class="sia-create-form-hint">#{langBean.msg('projectList.create.inProgress')}</small>
+                        <p:progressBar id="creationProgress" widgetVar="newProjectProgressBar"
+                                       ajax="true" interval="500" global="false"
+                                       value="#{newProjectDialogBean.progress.percentage}"
+                                       labelTemplate="{value}%"/>
+                    </div>
                 </div>
 
                 <div class="sia-create-form-footer">
@@ -175,7 +202,8 @@
                     <p:commandButton value="#{langBean.msg('common.action.create')}"
                                      actionListener="#{newProjectDialogBean.create()}"
                                      process="@form" update="@form :projectListDatatable:formCC:projectListForm"
-                                     oncomplete="if (args &amp;&amp; args.created) PF('newProjectDialog').hide()"/>
+                                     onstart="siaNewProjectProgress.start()"
+                                     oncomplete="siaNewProjectProgress.stop(); if (args &amp;&amp; args.created) PF('newProjectDialog').hide()"/>
                 </div>
             </div>
         </h:form>

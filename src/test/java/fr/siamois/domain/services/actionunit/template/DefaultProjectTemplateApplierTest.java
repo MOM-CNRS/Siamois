@@ -1,10 +1,13 @@
 package fr.siamois.domain.services.actionunit.template;
 
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.services.actionunit.ThesaurusProjectConfigSeeder;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -26,10 +29,10 @@ class DefaultProjectTemplateApplierTest {
     void apply_seedsTheProjectAfterTheCreationCommitted() {
         UserInfo info = mock(UserInfo.class);
 
-        applier.apply(info, ProjectTemplate.DEFAULT_ID, 42L);
+        applier.apply(info, ProjectTemplate.DEFAULT_ID, 42L, ProjectCreationProgress.unwatched());
 
         assertThat(applier.transactional()).isFalse();
-        verify(seeder).seed(info, 42L);
+        verify(seeder).seed(eq(info), eq(42L), any(ProjectCreationProgress.class));
         verify(assigner).assignInstitutionOrCommonCore(42L);
     }
 }

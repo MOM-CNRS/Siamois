@@ -177,7 +177,7 @@ class ProjectApiServiceMutationTest {
 
         ActionUnitDTO saved = new ActionUnitDTO();
         saved.setId(77L);
-        when(actionUnitService.save(any(), any(), eq(typeDto), any())).thenReturn(saved);
+        when(actionUnitService.save(any(), any(), eq(typeDto), any(), any())).thenReturn(saved);
         AccessibleProjectForApi row = new AccessibleProjectForApi(saved, 0L, 0L);
         when(actionUnitService.findAccessibleProjectByKey("77", SCOPE)).thenReturn(row);
 
@@ -193,7 +193,7 @@ class ProjectApiServiceMutationTest {
         when(profilePermissionService.hasActionUnitCreatePermission(any())).thenReturn(true);
         when(conceptService.findById(42L)).thenReturn(Optional.of(new Concept()));
         when(conceptMapper.convert(any())).thenReturn(new ConceptDTO());
-        when(actionUnitService.save(any(), any(), any(), any()))
+        when(actionUnitService.save(any(), any(), any(), any(), any()))
                 .thenThrow(new ActionUnitAlreadyExistsException("identifier", "exists"));
 
         assertThatThrownBy(() -> service.createProject(caller, request, "fr"))

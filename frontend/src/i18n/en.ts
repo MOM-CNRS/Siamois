@@ -311,6 +311,7 @@ export const en: Record<MessageKey, string> = {
   "home.place.description": "Places and their spatial divisions",
   "home.noProject": "No projects",
   "create.newProject": "New project",
+  "create.projectInProgress": "Creating the project…",
   "create.projectTemplate": "Template",
   "create.projectTemplate.default": "Default project",
   "create.projectTemplate.empty": "Empty project",

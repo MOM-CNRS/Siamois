@@ -27,6 +27,8 @@ export interface ProjectCreateBody {
   // The project's main location / the places it is attached to (ActionUnit.mainLocation / .spatialContext).
   mainLocationId?: string;
   spatialContextSpatialUnitIds?: string[];
+  // A token of the client's own, to follow the creation with getProjectCreationProgress while it runs.
+  progressToken?: string;
 }
 
 export async function createProject(body: ProjectCreateBody): Promise<ProjectDetail> {
@@ -40,9 +42,26 @@ export async function createProject(body: ProjectCreateBody): Promise<ProjectDet
       typeConceptId: body.typeId,
       mainLocationId: body.mainLocationId,
       spatialContextSpatialUnitIds: body.spatialContextSpatialUnitIds,
+      progressToken: body.progressToken,
     },
   });
   return response.data;
+}
+
+/**
+ * How far (0 to 100) the creation sent with this `progressToken` is: the creation is one long request,
+ * followed by polling GET /api/v1/projects/creation-progress/{token} while it runs. 0 until the server
+ * has started it.
+ */
+export async function getProjectCreationProgress(token: string): Promise<number> {
+  const body = await apiFetch<{ percentage: number }>(`/api/v1/projects/creation-progress/${encodeURIComponent(token)}`);
+  return body.percentage;
+}
+
+/** A token naming one creation, unguessable enough to be the caller's own. */
+export function newProgressToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 // POST /api/v1/projects/{id}/duplicate — same type and configuration (not the places), named "name (n)",

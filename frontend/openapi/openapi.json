@@ -10337,6 +10337,49 @@
         }
       }
     },
+    "/api/v1/projects/creation-progress/{token}": {
+      "get": {
+        "tags": [
+          "Projets - Données"
+        ],
+        "summary": "Avancement de la création d'un projet",
+        "description": "L'avancement de la création envoyée par l'appelant avec ce progressToken : la création est une requête longue, que le client suit en interrogeant cette adresse pendant qu'elle court. 0 tant que la création n'a pas commencé ou si le jeton est inconnu.",
+        "operationId": "creationProgress",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "Jeton envoyé dans progressToken à la création",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectCreationProgressResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectCreationProgressResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/projects/next-identifier": {
       "get": {
         "tags": [
@@ -14555,6 +14598,11 @@
               "description": "Localisations précises (identifiants d'unités spatiales)"
             }
           },
+          "progressToken": {
+            "type": "string",
+            "description": "Jeton choisi par le client (64 caractères au plus, un UUID par exemple) pour suivre l'avancement de la création via GET /projects/creation-progress/{token}. Optionnel.",
+            "example": "0b8f6c1e-6f0f-4e0c-9d0a-6a1a3f1f2c11"
+          },
           "typeConceptId": {
             "type": "string",
             "description": "Identifiant du concept du type de projet"
@@ -17474,6 +17522,21 @@
           }
         },
         "description": "Un modèle de départ"
+      },
+      "ProjectCreationProgressResponse": {
+        "required": [
+          "percentage"
+        ],
+        "type": "object",
+        "properties": {
+          "percentage": {
+            "type": "integer",
+            "description": "Avancement en pourcentage, de 0 (pas commencée ou inconnue) à 100 (terminée)",
+            "format": "int32",
+            "example": 42
+          }
+        },
+        "description": "Avancement de la création d'un projet"
       },
       "ProjectNextIdentifierResponse": {
         "type": "object",

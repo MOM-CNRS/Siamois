@@ -1,5 +1,6 @@
 package fr.siamois.ui.bean.dialog.project;
 
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
@@ -271,7 +272,7 @@ class NewProjectDialogBeanTest {
             bean.create();
         }
         ArgumentCaptor<ProjectCreateRequest> request = ArgumentCaptor.forClass(ProjectCreateRequest.class);
-        verify(projectApiService).createProject(eq(caller), request.capture(), eq(LANG));
+        verify(projectApiService).createProject(eq(caller), request.capture(), eq(LANG), any(ProjectCreationProgress.class));
         return request.getValue();
     }
 }

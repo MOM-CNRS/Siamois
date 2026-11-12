@@ -3,6 +3,7 @@ package fr.siamois.ui.bean.dialog.project;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.actionunit.template.ProjectTemplate;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -80,6 +81,8 @@ public class NewProjectDialogBean implements Serializable {
     private String spatialContextHint;
     /** The places the pickers offered: the converter of the place pickers. */
     private final OfferedPlaces offeredPlaces = new OfferedPlaces();
+    /** How far the creation in progress is: read by the progress bar of the dialog while {@link #create()} runs. */
+    private final ProjectCreationProgress progress = new ProjectCreationProgress();
 
     /** Refreshes what the user may create — run when the project list page is displayed. */
     public void init() {
@@ -302,11 +305,15 @@ public class NewProjectDialogBean implements Serializable {
         }
     }
 
-    /** Creates the project; the dialog closes only when it worked, so a refusal leaves the form as it was. */
+    /**
+     * Creates the project; the dialog closes only when it worked, so a refusal leaves the form as it was.
+     * The creation reports on {@link #getProgress()}, which the progress bar of the dialog polls meanwhile.
+     */
     public void create() {
         boolean created = false;
+        progress.reset();
         try {
-            projectApiService.createProject(projectApiService.requireCaller(), createRequest(), langBean.getLanguageCode());
+            projectApiService.createProject(projectApiService.requireCaller(), createRequest(), langBean.getLanguageCode(), progress);
             created = true;
             MessageUtils.displayInfoMessage(langBean, "projectList.create.success", name);
             projectListBean.init();
@@ -316,6 +323,8 @@ public class NewProjectDialogBean implements Serializable {
         } catch (RuntimeException e) {
             log.error("Project creation failed", e);
             MessageUtils.displayInternalError(langBean);
+        } finally {
+            progress.reset();
         }
         PrimeFaces.current().ajax().addCallbackParam("created", created);
     }

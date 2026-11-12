@@ -1513,6 +1513,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/creation-progress/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Avancement de la création d'un projet
+         * @description L'avancement de la création envoyée par l'appelant avec ce progressToken : la création est une requête longue, que le client suit en interrogeant cette adresse pendant qu'elle court. 0 tant que la création n'a pas commencé ou si le jeton est inconnu.
+         */
+        get: operations["creationProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/next-identifier": {
         parameters: {
             query?: never;
@@ -2949,6 +2969,11 @@ export interface components {
             mainLocationId?: string;
             /** @description Localisations précises (identifiants d'unités spatiales) */
             spatialContextSpatialUnitIds?: string[];
+            /**
+             * @description Jeton choisi par le client (64 caractères au plus, un UUID par exemple) pour suivre l'avancement de la création via GET /projects/creation-progress/{token}. Optionnel.
+             * @example 0b8f6c1e-6f0f-4e0c-9d0a-6a1a3f1f2c11
+             */
+            progressToken?: string;
             /** @description Identifiant du concept du type de projet */
             typeConceptId: string;
         };
@@ -4298,6 +4323,15 @@ export interface components {
              * @enum {string}
              */
             kind?: "default" | "empty" | "project" | "kition";
+        };
+        /** @description Avancement de la création d'un projet */
+        ProjectCreationProgressResponse: {
+            /**
+             * Format: int32
+             * @description Avancement en pourcentage, de 0 (pas commencée ou inconnue) à 100 (terminée)
+             * @example 42
+             */
+            percentage: number;
         };
         /** @description Aperçu de l'identifiant du prochain projet de l'organisation */
         ProjectNextIdentifierResponse: {
@@ -11406,6 +11440,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectTemplatesResponse"];
+                };
+            };
+        };
+    };
+    creationProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Jeton envoyé dans progressToken à la création */
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectCreationProgressResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectCreationProgressResponse"];
                 };
             };
         };

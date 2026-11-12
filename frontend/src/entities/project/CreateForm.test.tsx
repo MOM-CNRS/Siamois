@@ -6,12 +6,18 @@ import type {FieldResource} from "../../fields/types";
 import type {FieldRendererProps} from "../../fields/registry";
 import {ProjectCreateForm} from "./CreateForm";
 import {getProjectTypes} from "./projectTypes";
-import {createProject, getNextProjectIdentifier, listProjectTemplates} from "./api";
+import {createProject, getNextProjectIdentifier, getProjectCreationProgress, listProjectTemplates} from "./api";
 import {notifySpy} from "../../test/notifySpy";
 
 
 vi.mock("./projectTypes", () => ({ getProjectTypes: vi.fn() }));
-vi.mock("./api", () => ({ createProject: vi.fn(), getNextProjectIdentifier: vi.fn(), listProjectTemplates: vi.fn() }));
+vi.mock("./api", () => ({
+  createProject: vi.fn(),
+  getNextProjectIdentifier: vi.fn(),
+  getProjectCreationProgress: vi.fn(),
+  listProjectTemplates: vi.fn(),
+  newProgressToken: () => "token-1",
+}));
 
 // The concept autocomplete (AutoComplete + its async option source) is exercised by
 // fields/renderers.test.tsx already — mocked here to a plain, directly-clickable stand-in so this
@@ -48,6 +54,7 @@ const mockedGetProjectTypes = vi.mocked(getProjectTypes);
 const mockedCreateProject = vi.mocked(createProject);
 const mockedNextIdentifier = vi.mocked(getNextProjectIdentifier);
 const mockedTemplates = vi.mocked(listProjectTemplates);
+const mockedProgress = vi.mocked(getProjectCreationProgress);
 
 const typeField: FieldResource = {
   id: "-101",
@@ -106,6 +113,8 @@ beforeEach(() => {
   mockedNextIdentifier.mockResolvedValue(null);
   mockedTemplates.mockReset();
   mockedTemplates.mockResolvedValue([{ id: "default", label: "", kind: "default" }]);
+  mockedProgress.mockReset();
+  mockedProgress.mockResolvedValue(0);
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -160,6 +169,7 @@ describe("ProjectCreateForm", () => {
       identifier: "F2026",
       templateId: "default",
       typeId: "9",
+      progressToken: "token-1",
     });
     expect(onCreated).toHaveBeenCalledWith("55");
   });
@@ -207,6 +217,7 @@ describe("ProjectCreateForm", () => {
       identifier: "F1",
       templateId: "default",
       typeId: "9",
+      progressToken: "token-1",
       mainLocationId: "31",
       spatialContextSpatialUnitIds: ["32", "33"],
     });
@@ -235,6 +246,7 @@ describe("ProjectCreateForm", () => {
       identifier: undefined,
       templateId: "default",
       typeId: "9",
+      progressToken: "token-1",
     });
   });
 
@@ -276,6 +288,37 @@ describe("ProjectCreateForm", () => {
 
     expect(notifySpy.error).toHaveBeenCalledWith(expect.stringContaining("Identifiant déjà utilisé"));
     expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it("shows how far the creation is while it runs, asking the server with the token it was sent with", async () => {
+    let finish: (project: never) => void = () => {};
+    mockedCreateProject.mockReturnValue(new Promise((resolve) => { finish = resolve; }) as never);
+    mockedProgress.mockResolvedValue(40);
+    const { onCreated } = render();
+    await flush();
+
+    const inputs = Array.from(container.querySelectorAll("input")) as HTMLInputElement[];
+    await act(async () => setInputValue(inputs[0], "Fouille 2026"));
+    await act(async () => setInputValue(inputs[1], "F2026"));
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[data-testid="pick-type"]')!.click();
+    });
+    expect(container.querySelector('[role="progressbar"]')).toBeNull();
+
+    await act(async () => {
+      submitButton().dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    });
+    await flush();
+
+    expect(mockedProgress).toHaveBeenCalledWith("token-1");
+    expect(container.textContent).toContain("Création du projet en cours");
+    expect(container.querySelector('[role="progressbar"]')?.getAttribute("aria-valuenow")).toBe("40");
+
+    await act(async () => finish({ resourceType: "projects", id: "55", name: "Fouille 2026" } as never));
+    await flush();
+
+    expect(onCreated).toHaveBeenCalledWith("55");
+    expect(container.querySelector('[role="progressbar"]')).toBeNull();
   });
 
   it("calls onCancel when the cancel button is clicked", async () => {

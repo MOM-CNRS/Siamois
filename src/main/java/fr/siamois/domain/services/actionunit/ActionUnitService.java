@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.actionunit;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.misc.ProjectCreationProgress;
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitAlreadyExistsException;
@@ -253,7 +254,7 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept)
             throws ActionUnitAlreadyExistsException {
-        return saveWithTemplate(info, actionUnit, typeConcept, null);
+        return saveWithTemplate(info, actionUnit, typeConcept, null, ProjectCreationProgress.unwatched());
     }
 
     /**
@@ -266,12 +267,32 @@ public class ActionUnitService implements ArkEntityService {
     @CacheEvict(value = "MyActionUnits", allEntries = true)
     public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId)
             throws ActionUnitAlreadyExistsException {
-        return saveWithTemplate(info, actionUnit, typeConcept, templateId);
+        return saveWithTemplate(info, actionUnit, typeConcept, templateId, ProjectCreationProgress.unwatched());
     }
 
-    // Shared by both transactional save entry points: a call through `this` from one to the other would skip the proxy.
+    /**
+     * Save an ActionUnit with a transaction, like {@link #save(UserInfo, ActionUnitDTO, ConceptDTO, String)}, and
+     * reports on the given progress how far the configuration of a new project from its template is.
+     *
+     * @param info        User information containing the user and institution
+     * @param actionUnit  The ActionUnit to save
+     * @param typeConcept The concept type of the ActionUnit
+     * @param templateId  the project template to configure a new project from, null or {@code empty} for none
+     * @param progress    where the template reports its steps
+     * @return The saved ActionUnit
+     * @throws ActionUnitAlreadyExistsException when the name or the identifier is already taken in the institution
+     */
+    @Transactional(rollbackFor = ActionUnitAlreadyExistsException.class)
+    @CacheEvict(value = "MyActionUnits", allEntries = true)
+    public ActionUnitDTO save(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept, String templateId,
+                              ProjectCreationProgress progress) throws ActionUnitAlreadyExistsException {
+        return saveWithTemplate(info, actionUnit, typeConcept, templateId, progress);
+    }
+
+    // Shared by the transactional save entry points: a call through `this` from one to the other would skip the proxy.
     private ActionUnitDTO saveWithTemplate(UserInfo info, ActionUnitDTO actionUnit, ConceptDTO typeConcept,
-                                           String templateId) throws ActionUnitAlreadyExistsException {
+                                           String templateId, ProjectCreationProgress progress)
+            throws ActionUnitAlreadyExistsException {
         boolean isCreation = actionUnit.getId() == null;
         assertWritePermission(info, actionUnit);
         if (isCreation && (actionUnit.getIdentifier() == null || actionUnit.getIdentifier().isBlank())) {
@@ -281,7 +302,7 @@ public class ActionUnitService implements ArkEntityService {
         ActionUnitDTO savedDTO = actionUnitMapper.convert(saveNotTransactional(info, actionUnit, typeConcept));
         if (isCreation) {
             assignRoles(info, savedDTO);
-            applyTemplate(info, templateId, savedDTO.getId());
+            applyTemplate(info, templateId, savedDTO.getId(), progress);
         }
         return savedDTO;
     }
@@ -298,24 +319,24 @@ public class ActionUnitService implements ArkEntityService {
         return projectIdentifierService.preview(info);
     }
 
-    private void applyTemplate(UserInfo info, String templateId, Long projectId) {
+    private void applyTemplate(UserInfo info, String templateId, Long projectId, ProjectCreationProgress progress) {
         ProjectTemplateApplier applier = templateAppliers.stream()
                 .filter(candidate -> candidate.supports(templateId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown project template: " + templateId));
         if (applier.transactional()) {
-            applier.apply(info, templateId, projectId);
+            applier.apply(info, templateId, projectId, progress);
             return;
         }
         // the default configuration is seeded after commit and never cancels the creation
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            applier.apply(info, templateId, projectId);
+            applier.apply(info, templateId, projectId, progress);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                applier.apply(info, templateId, projectId);
+                applier.apply(info, templateId, projectId, progress);
             }
         });
     }
