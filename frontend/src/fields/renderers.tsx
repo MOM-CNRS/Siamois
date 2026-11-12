@@ -229,6 +229,13 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
 const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
 
+// A declared option matches a search on its label or, for a concept, on one of its alt labels — as
+// the thesaurus search of any other concept picker does.
+function declaredOptionMatches(option: FilterOption, needle: string): boolean {
+  const labels = [option.label, ...(option.concept?.altLabels ?? [])];
+  return labels.some((label) => label.toLowerCase().includes(needle));
+}
+
 function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Sources of the last search that could not be narrowed because the field they depend on is empty.
@@ -246,7 +253,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   const loadOptions = declaredOptions
     ? async (q?: string) => {
         const needle = (q ?? "").trim().toLowerCase();
-        return declaredOptions.filter((option) => needle === "" || option.label.toLowerCase().includes(needle));
+        return declaredOptions.filter((option) => needle === "" || declaredOptionMatches(option, needle));
       }
     : sourceOptions;
   const autoCompleteRef = useRef<AutoComplete>(null);

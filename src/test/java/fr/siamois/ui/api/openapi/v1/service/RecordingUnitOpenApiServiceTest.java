@@ -40,6 +40,7 @@ import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptDescriptionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -144,6 +145,8 @@ class RecordingUnitOpenApiServiceTest {
     private FindOpenApiMapper findOpenApiMapper;
     @Mock
     private LabelService labelService;
+    @Mock
+    private ConceptDescriptionService conceptDescriptionService;
     @Mock
     private UnitDefinitionMapper unitDefinitionMapper;
     @Mock
@@ -2609,6 +2612,49 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(response.getData().get(0).getIdentifierConfig().getIdentifierFormat())
                 .isEqualTo("T-{NUM_UE:000}");
         assertThat(response.getData().get(0).getFields()).containsKey("43");
+    }
+
+    @Test
+    void buildProjectRecordingUnitTypeSettings_typeConceptCarriesWhatAConceptSuggestionShows() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ActionUnitDTO au = new ActionUnitDTO();
+        au.setId(5L);
+        au.setCreatedByInstitution(inst);
+        when(actionUnitService.findAccessibleProjectByKey("5", SCOPE))
+                .thenReturn(new AccessibleProjectForApi(au, 0, 0));
+        when(effectiveFormResolver.resolveEffectiveForm(eq(5L), eq(ConfigurableTable.UE), any()))
+                .thenReturn(new FormUiDto());
+        when(tableFieldConfigService.resolveIdentifierConfig(5L, ConfigurableTable.UE, 42L)).thenReturn(new FormConfig());
+
+        Concept concept = new Concept();
+        concept.setId(42L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, ConfigurableTable.UE)).thenReturn(List.of(concept));
+        fr.siamois.dto.entity.vocabulary.VocabularyDTO vocabulary = new fr.siamois.dto.entity.vocabulary.VocabularyDTO();
+        vocabulary.setBaseUri("https://thesaurus.mom.fr");
+        vocabulary.setExternalVocabularyId("th1");
+        ConceptDTO typeDto = new ConceptDTO();
+        typeDto.setId(42L);
+        typeDto.setExternalId("1234");
+        typeDto.setVocabulary(vocabulary);
+        when(conceptMapper.convert(concept)).thenReturn(typeDto);
+        fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO label = new fr.siamois.dto.entity.vocabulary.ConceptPrefLabelDTO();
+        label.setConcept(typeDto);
+        label.setLabel("Couche");
+        label.setLangCode("fr");
+        when(conceptDescriptionService.describeAll(List.of(concept), "fr")).thenReturn(Map.of(42L,
+                new ConceptAutocompleteDTO(label, "Couche", List.of("US", "Strate"), "Une couche", "Unité > Dépôt")));
+
+        ProjectRecordingUnitTypeListResponse response =
+                service.buildProjectRecordingUnitTypeSettings("5", personDto, SCOPE, "fr");
+
+        fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource typeConcept = response.getData().get(0).getConcept();
+        assertThat(typeConcept.getId()).isEqualTo("42");
+        assertThat(typeConcept.getResolvedLabel()).isEqualTo("Couche");
+        assertThat(typeConcept.getAltLabels()).containsExactly("US", "Strate");
+        assertThat(typeConcept.getDefinition()).isEqualTo("Une couche");
+        assertThat(typeConcept.getParents()).isEqualTo("Unité > Dépôt");
+        assertThat(typeConcept.getThesaurusUrl()).isEqualTo("https://thesaurus.mom.fr/?idc=1234&idt=th1");
     }
 
     @Test

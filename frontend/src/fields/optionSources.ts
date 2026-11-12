@@ -53,10 +53,8 @@ interface ConceptsResponseBody {
   data: ConceptResponseItem[];
 }
 
-interface ConceptResponseItem {
-  id: string;
-  resolvedLabel?: string | null;
-  externalUrl?: string | null;
+/** What the API says of a concept beyond its id and label: what a concept suggestion shows. */
+export interface ConceptDescriptionBody {
   definition?: string | null;
   thesaurusUrl?: string | null;
   prefLabel?: string | null;
@@ -64,8 +62,14 @@ interface ConceptResponseItem {
   parents?: string | null;
 }
 
-function toConceptOption(c: ConceptResponseItem): FilterOption {
-  const option: FilterOption = { id: c.id, label: c.resolvedLabel ?? c.externalUrl ?? c.id };
+interface ConceptResponseItem extends ConceptDescriptionBody {
+  id: string;
+  resolvedLabel?: string | null;
+  externalUrl?: string | null;
+}
+
+/** The extra info a concept suggestion shows, from what the API says of the concept; undefined when it says nothing more. */
+export function toConceptItemInfo(c: ConceptDescriptionBody): ConceptItemInfo | undefined {
   const concept: ConceptItemInfo = {
     thesaurusUrl: c.thesaurusUrl ?? undefined,
     prefLabel: c.prefLabel ?? undefined,
@@ -73,7 +77,13 @@ function toConceptOption(c: ConceptResponseItem): FilterOption {
     definition: c.definition ?? undefined,
     parents: c.parents ?? undefined,
   };
-  if (Object.values(concept).some(Boolean)) option.concept = concept;
+  return Object.values(concept).some(Boolean) ? concept : undefined;
+}
+
+function toConceptOption(c: ConceptResponseItem): FilterOption {
+  const option: FilterOption = { id: c.id, label: c.resolvedLabel ?? c.externalUrl ?? c.id };
+  const concept = toConceptItemInfo(c);
+  if (concept) option.concept = concept;
   return option;
 }
 

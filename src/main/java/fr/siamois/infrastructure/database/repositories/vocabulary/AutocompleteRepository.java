@@ -229,6 +229,36 @@ public class AutocompleteRepository {
         }
     }
 
+    /**
+     * Finds the autocomplete entries of the given concepts in the specified language: the same label, alt
+     * labels, definition and hierarchy a suggestion shows, for a fixed list of concepts rather than a
+     * search. This method calls the database function concept_autocomplete_search without a text filter
+     * nor a limit. A concept with no label in the language is left out.
+     *
+     * @param conceptIds The ids of the concepts to describe
+     * @param lang       The language code of the labels
+     * @return A list of ConceptAutocompleteDTO, one per concept found
+     */
+    @NonNull
+    @ExecutionTimeLogger
+    public List<ConceptAutocompleteDTO> findConceptsByIds(@NonNull Collection<Long> conceptIds, @NonNull String lang) {
+        if (conceptIds.isEmpty()) {
+            return List.of();
+        }
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT ca.* FROM concept_autocomplete_search(NULL::BIGINT, ?, NULL::BIGINT, ?, '', NULL::INT) ca")) {
+            log.trace("Executing findConceptsByIds with concept ids {}, lang {}", conceptIds, lang);
+            statement.setArray(1, connection.createArrayOf("bigint", conceptIds.toArray()));
+            statement.setString(2, lang);
+
+            return processResultSet("concept ids " + conceptIds, lang, statement);
+        } catch (SQLException e) {
+            log.error("Error while fetching autocomplete entries of concept ids {}: {}", conceptIds, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
     private List<ConceptAutocompleteDTO> processResultSet(@NonNull String searchedScope, @NonNull String lang, PreparedStatement statement) {
         // Dédupliquer par concept_id : un concept n'apparaît qu'une seule fois dans les suggestions,
         // avec son prefLabel comme choix sélectionnable. La recherche par altLabel continue de

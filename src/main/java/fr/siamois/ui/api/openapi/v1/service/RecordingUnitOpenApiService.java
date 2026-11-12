@@ -31,6 +31,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.vocabulary.ConceptDescriptionService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
@@ -44,6 +45,7 @@ import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.mapper.FindOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.TypeConceptDescriptions;
 import fr.siamois.ui.api.openapi.v1.mapper.VocabularyResourceMapper;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitCreateRequest;
@@ -122,6 +124,7 @@ public class RecordingUnitOpenApiService {
     private final MultiValueAnswers multiValueAnswers;
     private final DocumentService documentService;
     private final PhaseService phaseService;
+    private final ConceptDescriptionService conceptDescriptionService;
 
     @Transactional(readOnly = true)
     public RecordingUnitResource buildMobileDetail(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
@@ -203,8 +206,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.UE));
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<RecordingUnitType> types = configuredTypes.stream()
-                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildRecordingUnitType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, concept.getId())))
                 .toList();
 
@@ -235,8 +239,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.MOBILIER));
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<FindType> types = configuredTypes.stream()
-                .map(concept -> buildFindType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildFindType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, concept.getId())))
                 .toList();
 
@@ -284,11 +289,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private RecordingUnitType buildRecordingUnitType(Long projectId, Concept concept,
-                                                     UserInfo userInfo, Locale locale,
+                                                     UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                                      RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         RecordingUnitType type = new RecordingUnitType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -303,11 +308,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private FindType buildFindType(Long projectId, Concept concept,
-                                   UserInfo userInfo, Locale locale,
+                                   UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                    RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         FindType type = new FindType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -343,8 +348,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.PHASE));
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<PhaseType> types = configuredTypes.stream()
-                .map(concept -> buildPhaseType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildPhaseType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.PHASE, concept.getId())))
                 .toList();
 
@@ -354,11 +360,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private PhaseType buildPhaseType(Long projectId, Concept concept,
-                                     UserInfo userInfo, Locale locale,
+                                     UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         PhaseType type = new PhaseType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -398,8 +404,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = configurable ? OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT)) : List.<Concept>of();
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<DocumentType> types = configuredTypes.stream()
-                .map(concept -> buildDocumentType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildDocumentType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.DOCUMENT, concept.getId())))
                 .toList();
 
@@ -409,11 +416,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private DocumentType buildDocumentType(Long projectId, Concept concept,
-                                     UserInfo userInfo, Locale locale,
+                                     UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         DocumentType type = new DocumentType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -448,8 +455,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.CONTENANT));
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<ContainerType> types = configuredTypes.stream()
-                .map(concept -> buildContainerType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildContainerType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.CONTENANT, concept.getId())))
                 .toList();
 
@@ -459,11 +467,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private ContainerType buildContainerType(Long projectId, Concept concept,
-                                             UserInfo userInfo, Locale locale,
+                                             UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         ContainerType type = new ContainerType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -498,8 +506,9 @@ public class RecordingUnitOpenApiService {
         List<Concept> configuredTypes = OpenApiExecutionContext.callWithUserInfo(userInfo,
                 () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.STUDY));
         Locale locale = langService.localeForApiLang(lang);
+        TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<StudyType> types = configuredTypes.stream()
-                .map(concept -> buildStudyType(au.getId(), concept, userInfo, locale,
+                .map(concept -> buildStudyType(au.getId(), concept, userInfo, locale, typeConcepts,
                         buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.STUDY, concept.getId())))
                 .toList();
 
@@ -509,11 +518,11 @@ public class RecordingUnitOpenApiService {
     }
 
     private StudyType buildStudyType(Long projectId, Concept concept,
-                                             UserInfo userInfo, Locale locale,
+                                             UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
         ConceptDTO typeDto = conceptMapper.convert(concept);
         StudyType type = new StudyType();
-        type.setConcept(toConceptResource(typeDto, locale.getLanguage()));
+        type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
         type.setIdentifierConfig(identifierConfig);
 
@@ -622,7 +631,8 @@ public class RecordingUnitOpenApiService {
         Locale locale = langService.localeForApiLang(lang);
         RecordingUnitIdentifierConfig identifierConfig =
                 buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.UE, typeConcept.getId());
-        RecordingUnitType type = buildRecordingUnitType(au.getId(), typeConcept, userInfo, locale, identifierConfig);
+        RecordingUnitType type = buildRecordingUnitType(au.getId(), typeConcept, userInfo, locale,
+                describeTypes(List.of(typeConcept), locale), identifierConfig);
 
         return new RecordingUnitCreateFormData(type.getConcept(), type.getFormBundle(), type.getFields());
     }
@@ -654,7 +664,8 @@ public class RecordingUnitOpenApiService {
         Locale locale = langService.localeForApiLang(lang);
         RecordingUnitIdentifierConfig identifierConfig =
                 buildIdentifierConfig(userInfo, au.getId(), ConfigurableTable.MOBILIER, typeConcept.getId());
-        FindType type = buildFindType(au.getId(), typeConcept, userInfo, locale, identifierConfig);
+        FindType type = buildFindType(au.getId(), typeConcept, userInfo, locale,
+                describeTypes(List.of(typeConcept), locale), identifierConfig);
 
         return new FindCreateFormData(type.getConcept(), type.getFormBundle(), type.getFields());
     }
@@ -831,6 +842,10 @@ public class RecordingUnitOpenApiService {
                 langService.resolveMessage(field.getLabel(), locale),
                 langService.resolveMessage(field.getHint(), locale));
         return FieldAnswerWireService.fieldResourceOf(field, texts.label(), texts.definition());
+    }
+
+    private TypeConceptDescriptions describeTypes(List<Concept> configuredTypes, Locale locale) {
+        return TypeConceptDescriptions.of(conceptDescriptionService.describeAll(configuredTypes, locale.getLanguage()));
     }
 
     private ResolvedConceptResource toConceptResource(ConceptDTO concept, String lang) {

@@ -1,6 +1,7 @@
 import {apiFetch} from "../../api/client";
 import {queryClient} from "../../api/queryClient";
 import {queryKeys} from "../../api/queryKeys";
+import type {ConceptDescriptionBody} from "../../fields/optionSources";
 import type {FieldResource} from "../../fields/types";
 import type {ProjectTableColumnDefault} from "./common";
 import {scopeProjectId} from "./scope";
@@ -8,8 +9,9 @@ import type {FieldCatalog, ListScope} from "./types";
 
 // One type's form in a types catalog (GET …/<x>-types): its layout and the fields it places.
 export interface TypeFormBody {
-  // The type's concept (a type's id is its concept's id): what a type picker shows.
-  concept?: { id?: string; resolvedLabel?: string | null } | null;
+  // The type's concept (a type's id is its concept's id): what a type picker shows — its label, and
+  // what any concept suggestion shows (link to the thesaurus, alt labels, definition, parents).
+  concept?: ({ id?: string; resolvedLabel?: string | null } & ConceptDescriptionBody) | null;
   formBundle?: { resourceType?: string; layoutJson: string } | null;
   fields?: Record<string, FieldResource>;
 }

@@ -634,4 +634,29 @@ class AutocompleteRepositoryTest {
         when(resultSet.getString("parent_concept_external_id")).thenReturn(externalId);
     }
 
+
+    @Test
+    void findConceptsByIds_searchesTheGivenConceptsWithoutTextFilterNorLimit() throws Exception {
+        when(dataSource.getConnection()).thenReturn(connection);
+        when(connection.prepareStatement(anyString())).thenReturn(statement);
+        java.sql.Array ids = mock(java.sql.Array.class);
+        when(connection.createArrayOf(eq("bigint"), any())).thenReturn(ids);
+        when(statement.executeQuery()).thenReturn(resultSet);
+        when(resultSet.next()).thenReturn(false);
+
+        List<ConceptAutocompleteDTO> results = autocompleteRepository.findConceptsByIds(List.of(1L, 2L), "fr");
+
+        assertTrue(results.isEmpty());
+        ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
+        verify(connection).prepareStatement(sql.capture());
+        assertTrue(sql.getValue().contains("concept_autocomplete_search"));
+        verify(statement).setArray(1, ids);
+        verify(statement).setString(2, "fr");
+    }
+
+    @Test
+    void findConceptsByIds_noConcept_doesNotQuery() throws Exception {
+        assertTrue(autocompleteRepository.findConceptsByIds(List.of(), "fr").isEmpty());
+        verifyNoInteractions(dataSource);
+    }
 }
