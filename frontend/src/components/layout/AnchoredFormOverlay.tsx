@@ -1,7 +1,9 @@
-import {type ReactNode, useEffect, useRef} from "react";
+import {type ReactNode, useCallback, useEffect, useRef, useState} from "react";
 import {OverlayPanel} from "primereact/overlaypanel";
 import {useIsMobile} from "../../viewport";
 import {BottomSheet} from "./BottomSheet";
+import {useKeepInViewport} from "./useKeepInViewport";
+import {KeptInViewportContext} from "./viewportPlacement";
 
 export interface AnchoredFormOverlayProps {
   // The element the overlay opens next to (the button or field the creation was started from);
@@ -15,11 +17,15 @@ export interface AnchoredFormOverlayProps {
 
 /**
  * The overlay every creation-like form lives in (an entity's create form, the structure
- * duplication): anchored on what started it, closed by `anchor` going back to null.
+ * duplication): anchored on what started it, closed by `anchor` going back to null. It stays entirely inside
+ * the window: under its anchor, over it when there is no room below, or pulled back into the window.
  */
 export function AnchoredFormOverlay({ anchor, ariaLabel, onHide, children }: AnchoredFormOverlayProps) {
   const overlayRef = useRef<OverlayPanel>(null);
   const mobile = useIsMobile();
+  const [shown, setShown] = useState(false);
+  const getOverlay = useCallback(() => overlayRef.current?.getElement(), []);
+  useKeepInViewport(getOverlay, anchor, shown && !mobile);
 
   useEffect(() => {
     if (mobile) return;
@@ -48,10 +54,14 @@ export function AnchoredFormOverlay({ anchor, ariaLabel, onHide, children }: Anc
       <OverlayPanel
         ref={overlayRef}
         className="entity-list-panel-create-overlay create-entity-overlay"
-        onHide={onHide}
+        onShow={() => setShown(true)}
+        onHide={() => {
+          setShown(false);
+          onHide();
+        }}
         aria-label={ariaLabel}
       >
-        {anchor && children(close)}
+        <KeptInViewportContext.Provider value={true}>{anchor && children(close)}</KeptInViewportContext.Provider>
       </OverlayPanel>
     </div>
   );
