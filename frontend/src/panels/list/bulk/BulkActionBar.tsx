@@ -3,8 +3,7 @@ import {Button} from "primereact/button";
 import {Dialog} from "primereact/dialog";
 import {OverlayPanel} from "primereact/overlaypanel";
 import {DeleteEntityDialog} from "../../../components/detail/DeleteEntityDialog";
-import {isDocumentLinkSegment} from "../../../entities/document/api";
-import {supportsBulk} from "../../../entities/shared/bulkApi";
+import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import type {FieldResource} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
@@ -16,9 +15,9 @@ import {
   bulkEditableFields,
   bulkEditContext,
   canBulkEdit,
-  commonProjectId,
   deletableRows,
   editableRows,
+  spansSeveralProjects,
 } from "./bulkSelection";
 import {useBulkActions} from "./useBulkActions";
 
@@ -39,31 +38,40 @@ type OpenDialog = { kind: "field"; field: FieldResource } | { kind: "documents" 
  * The Notion-style bar laid over the top of a list while rows are ticked: how many are, a way to
  * untick them, and what can be done to all of them at once — edit one property or relation
  * (« Modifier », then a click on the property), link or unlink a document, delete them. Each action
- * only touches the rows the caller may change, and says how many it skips.
+ * only touches the rows the caller may change, and says how many it skips. Only for an entity type
+ * that declares bulk endpoints (`config.api.bulk`).
  */
-export function BulkActionBar({
+export function BulkActionBar(props: BulkActionBarProps) {
+  const bulk = props.config.api.bulk;
+  if (props.selectedRows.length === 0 || !bulk) return null;
+  return <BulkActionBarContent {...props} bulk={bulk} />;
+}
+
+/**
+ * The bar itself, once there is a selection and endpoints to act on it.
+ */
+function BulkActionBarContent({
   entityType,
   config,
+  bulk,
   organizationId,
   catalog,
   selectedRows,
   onSelectionChange,
-}: BulkActionBarProps) {
+}: BulkActionBarProps & { bulk: BulkApi }) {
   const pickerRef = useRef<OverlayPanel>(null);
   const [dialog, setDialog] = useState<OpenDialog>(null);
-  const actions = useBulkActions({ entityType, config, organizationId, selectedRows, onSelectionChange });
-
-  // A collection the server has no bulk endpoints for gets no bar.
-  if (selectedRows.length === 0 || !supportsBulk(config.collectionPath)) return null;
+  const actions = useBulkActions({ entityType, config, bulk, organizationId, selectedRows, onSelectionChange });
 
   const editable = editableRows(selectedRows);
   const deletable = deletableRows(selectedRows);
   const skippedCount = selectedRows.length - editable.length;
   const fields = config.api.patchAnswers ? bulkEditableFields(catalog) : [];
   const context = bulkEditContext(editable, entityType, organizationId);
-  const canLinkDocuments = isDocumentLinkSegment(config.collectionPath);
-  // A place has no project: any document of the organization can be linked to it.
-  const documentsBlocked = canLinkDocuments && entityType !== "place" && commonProjectId(editable, entityType) == null;
+  const canLinkDocuments = bulk.linkDocument != null;
+  // A document is linked only inside its project: the selection must not span several (rows with no
+  // project, places, take any document of the organization).
+  const documentsBlocked = canLinkDocuments && spansSeveralProjects(editable, entityType);
   const close = () => setDialog(null);
 
   /**

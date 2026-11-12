@@ -98,6 +98,13 @@ export function idsOf(rows: readonly RowRecord[]): (string | number)[] {
 }
 
 /**
+ * Whether the rows belong to more than one project (rows with no project at all, places, count as one).
+ */
+export function spansSeveralProjects(rows: readonly RowRecord[], entityType: string): boolean {
+  return new Set(rows.map((row) => editContextOf(row, entityType, undefined).projectId)).size > 1;
+}
+
+/**
  * The one project every row belongs to, or undefined when they belong to several (or to none, a
  * place). For a list of projects, each row is its own project.
  */

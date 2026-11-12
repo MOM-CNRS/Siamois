@@ -2,26 +2,21 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
-import {bulkDelete} from "../../../entities/shared/bulkApi";
+import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig} from "../../../entities/shared/types";
 import {notifySpy} from "../../../test/notifySpy";
 import type {RowRecord} from "../useEntityListData";
 import {BulkActionBar} from "./BulkActionBar";
 
-vi.mock("../../../entities/shared/bulkApi", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../../entities/shared/bulkApi")>()),
-  bulkDelete: vi.fn(),
-  bulkPatch: vi.fn(),
-  bulkLinkDocument: vi.fn(),
-}));
-const mockedBulkDelete = vi.mocked(bulkDelete);
+const bulkDelete = vi.fn<BulkApi["delete"]>();
+const bulk: BulkApi = { delete: bulkDelete, patch: vi.fn() };
 
 const config = {
   key: "bulk-entity",
   labels: { singular: "UE", plural: "UE" },
   collectionPath: "recording-units",
   icon: "bi bi-square",
-  api: { list: vi.fn(), get: vi.fn(), delete: vi.fn() },
+  api: { list: vi.fn(), get: vi.fn(), delete: vi.fn(), bulk },
   list: { columns: [], searchable: false },
   detail: { tabs: [] },
   routes: { list: "/ue", detail: (id: string | number) => `/ue/${id}` },
@@ -90,6 +85,26 @@ describe("BulkActionBar", () => {
     expect(container.querySelector(".bulk-action-bar")).toBeNull();
   });
 
+  it("stays hidden for an entity type with no bulk endpoints", () => {
+    const withoutBulk = { ...config, api: { ...config.api, bulk: undefined } };
+    act(() => {
+      root.render(
+        <QueryClientProvider client={new QueryClient()}>
+          <BulkActionBar entityType="recordingUnit" config={withoutBulk} selectedRows={rows}
+            onSelectionChange={onSelectionChange} />
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(container.querySelector(".bulk-action-bar")).toBeNull();
+  });
+
+  it("offers documents only for a type documents link to", () => {
+    render(rows);
+
+    expect([...container.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Documents")).toBe(false);
+  });
+
   it("counts the selection", () => {
     render(rows);
 
@@ -97,13 +112,13 @@ describe("BulkActionBar", () => {
   });
 
   it("deletes the deletable rows in one bulk request and drops them from the selection", async () => {
-    mockedBulkDelete.mockResolvedValue({ succeeded: [1], failed: [{ id: 2, status: 409, message: "Relations" }] });
+    bulkDelete.mockResolvedValue({ succeeded: [1], failed: [{ id: 2, status: 409, message: "Relations" }] });
     render(rows);
 
     await click(button("Supprimer"));
     await click(button("Supprimer définitivement"));
 
-    expect(mockedBulkDelete).toHaveBeenCalledWith("recording-units", ["1", "2"]);
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
     expect(onSelectionChange).toHaveBeenCalledWith([rows[1], rows[2]]);
     expect(notifySpy.warn).toHaveBeenCalledWith("1 réussi(s), 1 en échec. Relations");
   });

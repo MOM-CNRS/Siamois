@@ -11,6 +11,7 @@ import {
   deletableRows,
   editableRows,
   isRelationField,
+  spansSeveralProjects,
 } from "./bulkSelection";
 
 /**
@@ -94,6 +95,12 @@ describe("the selection's rights and project", () => {
     expect(commonProjectId([rowA, rowB], "recordingUnit")).toBe("10");
     expect(commonProjectId([rowA, rowC], "recordingUnit")).toBeUndefined();
     expect(commonProjectId([{ id: 5 }, { id: 6 }], "project")).toBeUndefined();
+  });
+
+  it("tells a selection spanning several projects from one in a single project, or in none", () => {
+    expect(spansSeveralProjects([rowA, rowB], "recordingUnit")).toBe(false);
+    expect(spansSeveralProjects([rowA, rowC], "recordingUnit")).toBe(true);
+    expect(spansSeveralProjects([{ id: 7 }, { id: 8 }], "place")).toBe(false);
   });
 
   it("edits a project-scoped relation only inside one project", () => {

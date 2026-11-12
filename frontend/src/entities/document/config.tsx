@@ -1,5 +1,6 @@
 import type {EntityTypeConfig} from "../shared/types";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import {loadTypeCatalog} from "../shared/typeCatalog";
 import {bookmarkChrome} from "../shared/chrome";
 import {fetchSiblings} from "../shared/siblingsApi";
@@ -29,6 +30,7 @@ export const documentEntityConfig: EntityTypeConfig<DocumentSummary, DocumentDet
   countChipClassName: "document-count-chip",
   api: {
     delete: (id) => deleteEntity("documents", id),
+    bulk: createBulkApi("documents"),
     siblings: (id) => fetchSiblings("documents", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("documents", id, via),
     get: getDocument,

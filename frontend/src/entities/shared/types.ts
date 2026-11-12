@@ -7,6 +7,7 @@ import type {AnswerInputBody, FieldResource} from "../../fields/types";
 import type {FilterOption} from "../../fields/optionSources";
 import type {PanelChrome} from "../../mountOptions";
 import type {EntityKey} from "../keys";
+import type {BulkApi} from "./bulkApi";
 
 // The kinds created inside a project — GET /api/v1/projects?canCreate=<kind>.
 export type CreatableKind = Extract<
@@ -391,6 +392,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       id: string | number,
       answers: Record<string, AnswerInputBody>,
     ): Promise<TDetail>;
+    // The bulk actions on a list's selection (entities/shared/bulkApi.ts createBulkApi): the selection
+    // bar is offered only for an entity type that declares them.
+    bulk?: BulkApi;
     // The body of this entity's PATCH for these answers, when it isn't `{ answers }` (a place's flat
     // PlacePatchRequest): what a bulk edit of the list's selection sends for every row.
     patchBody?(answers: Record<string, AnswerInputBody>): unknown;

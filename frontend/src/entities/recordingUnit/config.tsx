@@ -1,5 +1,6 @@
 import type {EntityRef, EntityTypeConfig, ListScope} from "../shared/types";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import {relationTab} from "../../panels/detail/relationTab";
 import {documentsTab} from "../document/documentsTab";
 import {bookmarkChrome} from "../shared/chrome";
@@ -62,6 +63,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
   countChipClassName: "recording-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("recording-units", id),
+    bulk: createBulkApi("recording-units", { linksDocuments: true }),
     siblings: (id) => fetchSiblings("recording-units", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("recording-units", id, via),
     get: getRecordingUnit,

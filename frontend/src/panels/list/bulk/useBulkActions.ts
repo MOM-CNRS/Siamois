@@ -2,7 +2,7 @@ import {useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
-import {bulkDelete, bulkLinkDocument, type BulkLinkMode, bulkPatch, type BulkResult} from "../../../entities/shared/bulkApi";
+import type {BulkApi, BulkLinkMode, BulkResult} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig} from "../../../entities/shared/types";
 import type {AnswerInputBody} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
@@ -14,6 +14,8 @@ import {deletableRows, editableRows, idsOf} from "./bulkSelection";
 export interface UseBulkActionsOptions {
   entityType: string;
   config: EntityTypeConfig<unknown, unknown>;
+  // The entity type's bulk endpoints (config.api.bulk).
+  bulk: BulkApi;
   organizationId?: number;
   selectedRows: RowRecord[];
   onSelectionChange: (rows: RowRecord[]) => void;
@@ -34,14 +36,15 @@ const NOTHING_DONE: BulkResult = { succeeded: [], failed: [] };
 
 /**
  * The bulk actions of a list's selection — the Notion-style bar's behaviour, apart from how it is
- * drawn. Each action is ONE request to the server's bulk endpoint of the collection
- * (BulkActionsControllerApi), which treats every element as its unit endpoint would and answers
+ * drawn. Each action is ONE request to the entity type's bulk endpoints (`config.api.bulk`), which
+ * treat every element as its unit endpoint would and answer
  * which ones it changed; this tells the user, failures included, and refreshes the lists and the
  * open fiches.
  */
 export function useBulkActions({
   entityType,
   config,
+  bulk,
   organizationId,
   selectedRows,
   onSelectionChange,
@@ -97,17 +100,16 @@ export function useBulkActions({
   async function applyAnswer(fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run(() => bulkPatch(config.collectionPath, idsOf(editableRows(selectedRows)), patch), "bulk.done");
+    await run(() => bulk.patch(idsOf(editableRows(selectedRows)), patch), "bulk.done");
   }
 
   /**
    * Links or unlinks the document on every editable selected row.
    */
   async function applyDocument(documentId: string | number, mode: BulkLinkMode): Promise<void> {
-    await run(
-      () => bulkLinkDocument(config.collectionPath, idsOf(editableRows(selectedRows)), documentId, mode),
-      "bulk.done",
-    );
+    const linkDocument = bulk.linkDocument;
+    if (!linkDocument) return;
+    await run(() => linkDocument(idsOf(editableRows(selectedRows)), documentId, mode), "bulk.done");
   }
 
   /**
@@ -115,7 +117,7 @@ export function useBulkActions({
    * showing them lets go of them.
    */
   async function deleteSelection(): Promise<void> {
-    const result = await run(() => bulkDelete(config.collectionPath, idsOf(deletableRows(selectedRows))), "bulk.deleted");
+    const result = await run(() => bulk.delete(idsOf(deletableRows(selectedRows))), "bulk.deleted");
     if (result.succeeded.length === 0) return;
     const deleted = new Set(result.succeeded.map(String));
     // The rows' own ids (a string or a number, as the list gave them): what the caches are keyed by.

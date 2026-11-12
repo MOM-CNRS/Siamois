@@ -6,7 +6,6 @@ import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
-import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkResultResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -14,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -104,27 +101,27 @@ public class BulkActionOpenApiService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection inconnue : " + segment));
         long documentId = requireDocumentId(request.getDocumentId());
         BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
-        LongConsumer action = mode == BulkLinkMode.LINK
-                ? id -> documentLinksOpenApiService.link(kind, id, documentId, caller)
-                : id -> documentLinksOpenApiService.unlink(kind, id, documentId, caller);
-        return forEach(idsOf(request.getIds()), action);
+        return forEach(idsOf(request.getIds()), documentLinkAction(mode, kind, documentId, caller));
+    }
+
+    /**
+     * What a document link mode does to one element (an exhaustive switch: a new mode must say what it does).
+     */
+    private LongConsumer documentLinkAction(BulkLinkMode mode, DocumentLinkKind kind, long documentId,
+                                            ProjectApiCaller caller) {
+        return switch (mode) {
+            case LINK -> id -> documentLinksOpenApiService.link(kind, id, documentId, caller);
+            case UNLINK -> id -> documentLinksOpenApiService.unlink(kind, id, documentId, caller);
+        };
     }
 
     /**
      * Runs the action on each id, one after the other, collecting each success and each failure.
      */
     private BulkResultResource forEach(List<Long> ids, LongConsumer action) {
-        List<Long> succeeded = new ArrayList<>();
-        List<BulkFailureResource> failed = new ArrayList<>();
-        for (Long id : ids) {
-            try {
-                action.accept(id);
-                succeeded.add(id);
-            } catch (RuntimeException e) {
-                failed.add(failureTranslator.translate(id, e));
-            }
-        }
-        return new BulkResultResource(succeeded, failed);
+        BulkResultBuilder result = new BulkResultBuilder(failureTranslator);
+        ids.forEach(id -> result.attempt(id, action));
+        return result.build();
     }
 
     /**
@@ -142,11 +139,7 @@ public class BulkActionOpenApiService {
      * The ids to act on, each once and in order: at least one, at most {@link #MAX_IDS}.
      */
     private static List<Long> idsOf(List<Long> requested) {
-        List<Long> ids = requested == null ? List.of() : requested.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new))
-                .stream()
-                .toList();
+        List<Long> ids = distinctIds(requested);
         if (ids.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ids est obligatoire et ne peut être vide");
         }
@@ -154,6 +147,16 @@ public class BulkActionOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Au plus " + MAX_IDS + " éléments par action en lot");
         }
         return ids;
+    }
+
+    /**
+     * The requested ids without nulls nor repeats, in the order they came.
+     */
+    private static List<Long> distinctIds(List<Long> requested) {
+        if (requested == null) {
+            return List.of();
+        }
+        return requested.stream().filter(Objects::nonNull).distinct().toList();
     }
 
     /**

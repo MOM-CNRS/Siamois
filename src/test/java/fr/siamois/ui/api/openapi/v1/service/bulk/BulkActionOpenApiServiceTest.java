@@ -101,10 +101,11 @@ class BulkActionOpenApiServiceTest {
      */
     @Test
     void deleteRefusesAnEmptyOrOversizedSelection() {
+        BulkDeleteRequest empty = deleteRequest();
         BulkDeleteRequest tooMany = new BulkDeleteRequest();
         tooMany.setIds(LongStream.rangeClosed(1, BulkActionOpenApiService.MAX_IDS + 1L).boxed().toList());
 
-        assertThatThrownBy(() -> service.delete("recording-units", deleteRequest(), CALLER, LANG))
+        assertThatThrownBy(() -> service.delete("recording-units", empty, CALLER, LANG))
                 .isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.delete("recording-units", tooMany, CALLER, LANG))
                 .isInstanceOf(ResponseStatusException.class);
