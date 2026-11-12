@@ -277,6 +277,15 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
 
     @Override
     @Transactional(readOnly = true)
+    public Optional<CustomField> findSystemField(ConfigurableTable table, String fieldName) {
+        return systemFields(table).stream()
+                .map(FormField::field)
+                .filter(field -> fieldName.equals(field.getLabel()))
+                .findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public TypeFieldsConfig getFieldsConfig(Long projectId, ConfigurableTable table, Long typeConceptId) {
         TypeFieldsConfig config = new TypeFieldsConfig();
         config.setFields(new ArrayList<>(effectiveFields(projectId, table, typeConceptId).values().stream()

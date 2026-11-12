@@ -27,7 +27,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -122,7 +124,7 @@ public class ThesaurusProjectConfigSeeder {
         }
         inNewTransaction(() -> codeSourceService.useFieldCode(projectId, definitionTable.typeCode(), vocabulary, definitionTable.typeCode()));
         progress.advance();
-        List<CustomFieldConceptFromFieldCode> vocabularyFields = vocabularyFieldsOf(table);
+        List<SeededField> vocabularyFields = seededFieldsOf(vocabulary, table);
         for (DefaultProjectDefinition.Type type : definitionTable.types()) {
             try {
                 inNewTransaction(() -> seedType(projectId, vocabulary, table, type, vocabularyFields));
@@ -134,7 +136,7 @@ public class ThesaurusProjectConfigSeeder {
     }
 
     private void seedType(Long projectId, Vocabulary vocabulary, ConfigurableTable table, DefaultProjectDefinition.Type type,
-                          List<CustomFieldConceptFromFieldCode> vocabularyFields) {
+                          List<SeededField> vocabularyFields) {
         Optional<Concept> concept = conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), type.concept());
         if (concept.isEmpty()) {
             log.warn("Type '{}' ({}) of table {} is not in the local copy of {}: not seeded",
@@ -151,15 +153,19 @@ public class ThesaurusProjectConfigSeeder {
         if (formConfig.isEmpty()) {
             return;
         }
-        for (CustomFieldConceptFromFieldCode spec : vocabularyFields) {
-            seedField(projectId, vocabulary, table, typeConceptId, type, formConfig.get(), spec);
+        for (SeededField seeded : vocabularyFields) {
+            if (seeded.definedByThesaurus()) {
+                formConfigService.addFieldCodeConfigFor(formConfig.get(), seeded.field(), vocabulary, seeded.fieldCode());
+            }
         }
         seedDefaults(projectId, vocabulary, table, typeConceptId, type, vocabularyFields);
     }
 
-    /** The values a new record of the type starts with. One that cannot be resolved is left out: it never fails the type. */
+    /**
+     * The values a new record of the type starts with. One that cannot be resolved is left out: it never fails the type.
+     */
     private void seedDefaults(Long projectId, Vocabulary vocabulary, ConfigurableTable table, Long typeConceptId,
-                              DefaultProjectDefinition.Type type, List<CustomFieldConceptFromFieldCode> vocabularyFields) {
+                              DefaultProjectDefinition.Type type, List<SeededField> vocabularyFields) {
         if (type.defaults().isEmpty()) {
             return;
         }
@@ -168,34 +174,53 @@ public class ThesaurusProjectConfigSeeder {
             log.warn("Type '{}' of table {} is not configured in project {}: its defaults are not seeded", type.label(), table, projectId);
             return;
         }
-        for (CustomFieldConceptFromFieldCode spec : vocabularyFields) {
-            String valueId = type.defaults().get(spec.getFieldCode());
-            Optional<Concept> value = valueId == null ? Optional.empty()
-                    : conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), valueId);
-            Optional<CustomField> field = value.isEmpty() ? Optional.empty()
-                    : tableFieldConfigService.findField(projectId, table, typeConceptId, spec.getLabel());
-            if (field.isEmpty()) {
-                if (valueId != null) {
-                    log.warn("Default {} of field '{}' for type '{}' cannot be resolved: not seeded", valueId, spec.getLabel(), type.label());
-                }
-                continue;
-            }
-            formLayoutService.saveDefault(projectId, table, typeName.get(), field.get().getId(),
-                    FieldDefault.ofConceptIds(List.of(String.valueOf(value.get().getId()))));
+        for (Map.Entry<String, String> entry : type.defaults().entrySet()) {
+            seedDefault(projectId, vocabulary, table, typeName.get(), type, vocabularyFields, entry);
         }
     }
 
-    private void seedField(Long projectId, Vocabulary vocabulary, ConfigurableTable table, Long typeConceptId,
-                           DefaultProjectDefinition.Type type, FormConfig formConfig, CustomFieldConceptFromFieldCode spec) {
-        if (fieldCodeResolver.findIn(vocabulary, spec.getFieldCode()).isEmpty()) {
+    /**
+     * Stores one default of the type: the concept a field starts with.
+     */
+    private void seedDefault(Long projectId, Vocabulary vocabulary, ConfigurableTable table, String typeName,
+                             DefaultProjectDefinition.Type type, List<SeededField> vocabularyFields,
+                             Map.Entry<String, String> fieldDefault) {
+        Optional<SeededField> seeded = vocabularyFields.stream()
+                .filter(candidate -> candidate.fieldCode().equals(fieldDefault.getKey()))
+                .findFirst();
+        Optional<Concept> value = seeded.isEmpty() ? Optional.empty()
+                : conceptRepository.findConceptByExternalIdIgnoreCase(vocabulary.getExternalVocabularyId(), fieldDefault.getValue());
+        if (value.isEmpty()) {
+            log.warn("Default {} of field {} for type '{}' cannot be resolved: not seeded",
+                    fieldDefault.getValue(), fieldDefault.getKey(), type.label());
             return;
         }
-        Optional<CustomField> field = tableFieldConfigService.findField(projectId, table, typeConceptId, spec.getLabel());
-        if (field.isEmpty() || !(field.get() instanceof CustomFieldConcept conceptField)) {
-            log.warn("No vocabulary field '{}' on type '{}' of table {}", spec.getLabel(), type.label(), table);
-            return;
+        formLayoutService.saveDefault(projectId, table, typeName, seeded.get().field().getId(),
+                FieldDefault.ofConceptIds(List.of(String.valueOf(value.get().getId()))));
+    }
+
+    /**
+     * A vocabulary field of a table, with its entity and whether the thesaurus defines its list: all are the same for
+     * every type of the table, so they are resolved once for the table rather than once per type.
+     */
+    private record SeededField(String fieldCode, CustomFieldConcept field, boolean definedByThesaurus) {
+    }
+
+    /**
+     * Resolves the vocabulary fields of a table once, for all the types seeded on it.
+     */
+    private List<SeededField> seededFieldsOf(Vocabulary vocabulary, ConfigurableTable table) {
+        List<SeededField> seeded = new ArrayList<>();
+        for (CustomFieldConceptFromFieldCode spec : vocabularyFieldsOf(table)) {
+            boolean defined = fieldCodeResolver.findIn(vocabulary, spec.getFieldCode()).isPresent();
+            Optional<CustomField> field = tableFieldConfigService.findSystemField(table, spec.getLabel());
+            if (field.isPresent() && field.get() instanceof CustomFieldConcept conceptField) {
+                seeded.add(new SeededField(spec.getFieldCode(), conceptField, defined));
+            } else {
+                log.warn("No vocabulary field '{}' on table {}", spec.getLabel(), table);
+            }
         }
-        formConfigService.addFieldCodeConfigFor(formConfig, conceptField, vocabulary, spec.getFieldCode());
+        return seeded;
     }
 
     /** The vocabulary fields of a table other than its type, whose list the thesaurus can define. */
