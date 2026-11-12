@@ -19,7 +19,7 @@ export interface CreatePersonFormProps {
  * first and last name only. They join the project's members and await the creation of their account,
  * which a manager can later link to them (member dialog).
  */
-export function CreatePersonForm({ projectId, initial, onCreated, onCancel }: CreatePersonFormProps) {
+export function CreatePersonForm({ projectId, initial, onCreated, onCancel }: Readonly<CreatePersonFormProps>) {
   const [name, setName] = useState(initial.name);
   const [lastname, setLastname] = useState(initial.lastname);
   const [pending, setPending] = useState(false);

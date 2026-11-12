@@ -291,7 +291,7 @@ public class RecordingUnitOpenApiService {
     private RecordingUnitType buildRecordingUnitType(Long projectId, Concept concept,
                                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         RecordingUnitType type = new RecordingUnitType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -310,7 +310,7 @@ public class RecordingUnitOpenApiService {
     private FindType buildFindType(Long projectId, Concept concept,
                                    UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                    RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         FindType type = new FindType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -362,7 +362,7 @@ public class RecordingUnitOpenApiService {
     private PhaseType buildPhaseType(Long projectId, Concept concept,
                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         PhaseType type = new PhaseType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -418,7 +418,7 @@ public class RecordingUnitOpenApiService {
     private DocumentType buildDocumentType(Long projectId, Concept concept,
                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         DocumentType type = new DocumentType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -469,7 +469,7 @@ public class RecordingUnitOpenApiService {
     private ContainerType buildContainerType(Long projectId, Concept concept,
                                              UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         ContainerType type = new ContainerType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -520,7 +520,7 @@ public class RecordingUnitOpenApiService {
     private StudyType buildStudyType(Long projectId, Concept concept,
                                              UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         StudyType type = new StudyType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
