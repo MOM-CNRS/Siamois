@@ -171,6 +171,17 @@ public interface TableFieldConfigService {
     Optional<CustomField> findField(Long projectId, ConfigurableTable table, Long typeConceptId, String fieldName);
 
     /**
+     * A field every type of the table carries, by its name. Unlike
+     * {@link #findField(Long, ConfigurableTable, Long, String)} it reads no type's configuration, so a caller
+     * configuring many types of one table resolves each field once instead of once per type.
+     *
+     * @param table     the table whose system fields are searched
+     * @param fieldName the name of the system field to resolve
+     * @return the field's entity, empty if the table has no system field of that name
+     */
+    Optional<CustomField> findSystemField(ConfigurableTable table, String fieldName);
+
+    /**
      * Same as {@link #getFieldsConfig(Long, ConfigurableTable, String)}, but keyed directly on the
      * type's {@link fr.siamois.domain.models.vocabulary.Concept} id instead of its label — avoids the
      * label round-trip ({@link #findFormConfig(Long, ConfigurableTable, String)} resolving a label

@@ -66,7 +66,7 @@ class ThesaurusProjectConfigSeederTest {
         when(fieldCodeResolver.findIn(any(), anyString())).thenReturn(Optional.empty());
         when(tableFieldConfigService.createOrGetFormConfig(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong()))
                 .thenReturn(Optional.of(usFormConfig));
-        when(tableFieldConfigService.findField(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), anyString()))
+        when(tableFieldConfigService.findSystemField(eq(ConfigurableTable.UE), anyString()))
                 .thenAnswer(invocation -> Optional.of(CustomFieldSelectOneFromFieldCode.builder().build()));
     }
 
@@ -120,6 +120,16 @@ class ThesaurusProjectConfigSeederTest {
     }
 
     @Test
+    void seed_resolvesTheFieldsOfATableOnce_whateverTheNumberOfItsTypes() {
+        thesaurusDefinesUeTypes();
+
+        seeder.seed(mock(UserInfo.class), PROJECT_ID);
+
+        verify(fieldCodeResolver, times(1)).findIn(vocabulary, RecordingUnit.INTERPRETATION_FIELD_CODE);
+        verify(tableFieldConfigService, never()).findField(anyLong(), any(ConfigurableTable.class), anyLong(), anyString());
+    }
+
+    @Test
     void seed_skipsAFieldTheThesaurusDoesNotDefine() {
         thesaurusDefinesUeTypes();
 
@@ -139,7 +149,7 @@ class ThesaurusProjectConfigSeederTest {
         when(conceptRepository.findConceptByExternalIdIgnoreCase(definition.externalVocabularyId(), fait.defaults().get("SIARU.NATURE")))
                 .thenReturn(Optional.of(conceptOf(5555L)));
         when(tableFieldConfigService.typeNameOf(PROJECT_ID, ConfigurableTable.UE, Long.parseLong(fait.concept()))).thenReturn(Optional.of("Fait"));
-        when(tableFieldConfigService.findField(eq(PROJECT_ID), eq(ConfigurableTable.UE), anyLong(), anyString()))
+        when(tableFieldConfigService.findSystemField(eq(ConfigurableTable.UE), anyString()))
                 .thenAnswer(invocation -> Optional.of(CustomFieldSelectOneFromFieldCode.builder().id(99L).build()));
 
         seeder.seed(mock(UserInfo.class), PROJECT_ID);
