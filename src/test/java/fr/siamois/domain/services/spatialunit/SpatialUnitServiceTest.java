@@ -547,7 +547,7 @@ class SpatialUnitServiceTest {
         verify(spatialUnitRepository).save(captor.capture());
 
         // Vérifie que c’est bien le spatialUnit récupéré du history
-        assert(captor.getValue() == spatialUnit);
+        assertSame(spatialUnit, captor.getValue());
     }
     
 

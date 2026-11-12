@@ -23,7 +23,7 @@ export function ValidationStatusCell({ entityType, collectionPath, row }: Valida
   }
   return (
     // The row itself reacts to clicks (selection, overview); the picker's own click stays here.
-    <span className="sia-inline-flex" onClick={(e) => e.stopPropagation()}>
+    <span role="presentation" className="sia-inline-flex" onClick={(e) => e.stopPropagation()}>
       <ValidationStatusButton
         entityType={entityType}
         collectionPath={collectionPath}

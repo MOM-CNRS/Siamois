@@ -79,8 +79,8 @@
                         var bulk = PF('bulkDocumentImportDiag');
                         var base = 10000;
                         if (bulk && bulk.jq && bulk.jq.length) {
-                            var z = parseInt(bulk.jq.css('z-index'), 10);
-                            if (!isNaN(z)) {
+                            var z = Number.parseInt(bulk.jq.css('z-index'), 10);
+                            if (!Number.isNaN(z)) {
                                 base = z + 10;
                             }
                         }
@@ -542,13 +542,13 @@
                                               layout="block" styleClass="sia-bulk-detail ui-fluid">
                                     <div class="ui-g" style="margin:0;">
                                         <div class="ui-g-12" style="padding-top:0;">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.file')}</label>
+                                            <span class="col-form-label">#{langBean.msg('documents.bulk.file')}</span>
                                             <div style="font-size:0.85rem; color:#444; word-break:break-all;">
                                                 #{documentBulkImportBean.selectedRow.fileName}
                                             </div>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label" for="bulkTitle">#{langBean.msg('documents.bulk.colTitle')} *</label>
+                                            <p:outputLabel for="bulkTitle" value="#{langBean.msg('documents.bulk.colTitle')} *" styleClass="col-form-label"/>
                                             <p:inputText id="bulkTitle"
                                                          value="#{documentBulkImportBean.selectedRow.title}"
                                                          maxlength="#{documentBulkImportBean.maxTitleLength()}">
@@ -563,7 +563,7 @@
                                             </p:inputText>
                                         </div>
                                         <div class="ui-g-12 ui-md-6">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.nature')} *</label>
+                                            <p:outputLabel for="rowNature:conceptAutocomplete" value="#{langBean.msg('documents.bulk.nature')} *" styleClass="col-form-label"/>
                                             <sharedInput:conceptAutocomplete
                                                     id="rowNature"
                                                     editConceptUrl=""
@@ -575,7 +575,7 @@
                                                     ajaxProcessTargets="@this"/>
                                         </div>
                                         <div class="ui-g-12 ui-md-6">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.type')} *</label>
+                                            <p:outputLabel for="rowType:conceptAutocomplete" value="#{langBean.msg('documents.bulk.type')} *" styleClass="col-form-label"/>
                                             <sharedInput:conceptAutocomplete
                                                     id="rowType"
                                                     editConceptUrl=""
@@ -587,7 +587,7 @@
                                                     ajaxProcessTargets="@this"/>
                                         </div>
                                         <div class="ui-g-12 ui-md-6">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.scale')}</label>
+                                            <p:outputLabel for="rowScale:conceptAutocomplete" value="#{langBean.msg('documents.bulk.scale')}" styleClass="col-form-label"/>
                                             <sharedInput:conceptAutocomplete
                                                     id="rowScale"
                                                     editConceptUrl=""
@@ -599,7 +599,7 @@
                                                     ajaxProcessTargets="@this"/>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.description')}</label>
+                                            <p:outputLabel for="bulkDescription" value="#{langBean.msg('documents.bulk.description')}" styleClass="col-form-label"/>
                                             <p:inputTextarea id="bulkDescription"
                                                              value="#{documentBulkImportBean.selectedRow.description}"
                                                              maxlength="#{documentBulkImportBean.maxDescriptionSize()}"
@@ -611,8 +611,9 @@
                                             </p:inputTextarea>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.projects')}</label>
-                                            <p:autoComplete value="#{documentBulkImportBean.selectedRow.projects}"
+                                            <p:outputLabel for="rowProjects" value="#{langBean.msg('documents.bulk.projects')}" styleClass="col-form-label"/>
+                                            <p:autoComplete id="rowProjects"
+                                                            value="#{documentBulkImportBean.selectedRow.projects}"
                                                             completeMethod="#{documentBulkImportBean.completeProject}"
                                                             var="project"
                                                             itemValue="#{project}"
@@ -634,7 +635,7 @@
                                             </p:autoComplete>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.recordingUnits')}</label>
+                                            <p:outputLabel for="rowRecordingUnits" value="#{langBean.msg('documents.bulk.recordingUnits')}" styleClass="col-form-label"/>
                                             <p:selectCheckboxMenu id="rowRecordingUnits"
                                                                   value="#{documentBulkImportBean.selectedRow.recordingUnits}"
                                                                   converter="#{recordingUnitSummaryConverter}"
@@ -658,7 +659,7 @@
                                             </p:selectCheckboxMenu>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.finds')}</label>
+                                            <p:outputLabel for="rowFinds" value="#{langBean.msg('documents.bulk.finds')}" styleClass="col-form-label"/>
                                             <p:selectCheckboxMenu id="rowFinds"
                                                                   value="#{documentBulkImportBean.selectedRow.finds}"
                                                                   converter="#{specimenSummaryConverter}"
@@ -682,7 +683,7 @@
                                             </p:selectCheckboxMenu>
                                         </div>
                                         <div class="ui-g-12">
-                                            <label class="col-form-label">#{langBean.msg('documents.bulk.places')}</label>
+                                            <p:outputLabel for="rowPlaces" value="#{langBean.msg('documents.bulk.places')}" styleClass="col-form-label"/>
                                             <p:selectCheckboxMenu id="rowPlaces"
                                                                   value="#{documentBulkImportBean.selectedRow.places}"
                                                                   converter="#{spatialUnitDTOConverter}"

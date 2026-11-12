@@ -413,6 +413,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       // of width rules per component would not.
       className={className}
       style={boxStyle}
+      // Not interactive itself: it only catches the keys of the editor inside (Enter, Escape).
+      role="presentation"
       onKeyDown={onKeyDown}
     >
       {target.incoherences && target.incoherences.length > 0 && (

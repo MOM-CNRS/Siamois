@@ -107,12 +107,12 @@ function EntityCard({ entityType, config, row, selected, checked, onToggleChecke
           <i className={`${config.icon} entity-card-placeholder`} aria-hidden="true" />
         )}
         {/* In the picture's corner; its clicks are its own, they must not also open the card. */}
-        <span className="entity-card-select" onClick={stopHere} onKeyDown={stopHere}>
+        <span role="presentation" className="entity-card-select" onClick={stopHere} onKeyDown={stopHere}>
           <Checkbox checked={checked} aria-label={t("list.selectRow")} onChange={() => onToggleChecked(row)} />
         </span>
       </div>
       {(subtitle || image) && (
-        <div className="entity-card-typeline" onClick={stopHere} onKeyDown={stopHere}>
+        <div role="presentation" className="entity-card-typeline" onClick={stopHere} onKeyDown={stopHere}>
           <span className="entity-card-subtitle">{subtitle}</span>
           {image && (
             <Button

@@ -91,7 +91,20 @@ public class DocumentImportDraftService {
         draftRepository.save(draft);
     }
 
-    @Transactional
+    /**
+     * Adds a file to the active import draft of the person in the organisation, storing its content and
+     * creating the matching draft item. The transaction is rolled back when the content cannot be read or stored.
+     *
+     * @param personId         the id of the person importing the file
+     * @param institutionId    the id of the organisation the draft belongs to
+     * @param originalFileName the name of the uploaded file
+     * @param contentType      the MIME type of the uploaded file
+     * @param content          the content of the uploaded file
+     * @param defaults         the default targets to apply to the new item, may be {@code null}
+     * @return the saved draft item
+     * @throws IOException if the content cannot be read or stored
+     */
+    @Transactional(rollbackFor = IOException.class)
     public DocumentImportItem addFile(long personId,
                                       long institutionId,
                                       String originalFileName,

@@ -108,7 +108,11 @@ public class BookmarkMenuBean implements Serializable {
 
     public void deleteItem(BookmarkDTO item) {
         log.trace("Deleting bookmark ID: {}", item.getId());
-        bookmarkService.delete(sessionSettingsBean.getUserInfo(), item.getResourceUri());
+        UserInfo userInfo = sessionSettingsBean.getUserInfo();
+        if (userInfo == null) {
+            return;
+        }
+        bookmarkService.delete(userInfo, item.getResourceUri());
 
         // No manual list manipulation needed for dynamic models!
         // Simply delete from the database and refresh the PrimeFaces component grid.

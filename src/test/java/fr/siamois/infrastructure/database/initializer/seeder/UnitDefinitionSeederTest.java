@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -108,7 +109,7 @@ class UnitDefinitionSeederTest {
         UnitDefinition result = unitDefinitionSeeder.findUnitOrReturnNull(concept);
 
         // Assert
-        assert result != null;
+        assertSame(unit, result);
         verify(unitDefinitionRepository).findByConcept(concept);
     }
 }

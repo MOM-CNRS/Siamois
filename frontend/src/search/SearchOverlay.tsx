@@ -53,6 +53,8 @@ export function SearchRow({
     <div
       id={`sia-search-row-${index}`}
       role="option"
+      // Focus stays in the search input (aria-activedescendant); -1 keeps the row out of the tab order.
+      tabIndex={-1}
       aria-selected={index === active}
       className={`sia-search-row${className ? ` ${className}` : ""}${index === active ? " is-active" : ""}`}
       onMouseDown={(event) => event.preventDefault()}
@@ -156,7 +158,8 @@ export function SearchOverlay({
   }, [inputRef]);
 
   return createPortal(
-    <div className="sia-search-backdrop" onMouseDown={onClose}>
+    // The backdrop closes on an outside click; the keyboard closes with Escape in the panel.
+    <div role="presentation" className="sia-search-backdrop" onMouseDown={onClose}>
       <div
         className="sia-search-panel"
         role="dialog"

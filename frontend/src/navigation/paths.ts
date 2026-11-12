@@ -19,7 +19,7 @@ export interface ResolvedPath {
 export function viewIdOfPath(path: string): number | undefined {
   const query = path.split("?")[1];
   const raw = query ? new URLSearchParams(query).get("viewId") : null;
-  const viewId = raw == null ? NaN : Number(raw);
+  const viewId = raw == null ? Number.NaN : Number(raw);
   return Number.isInteger(viewId) && viewId > 0 ? viewId : undefined;
 }
 

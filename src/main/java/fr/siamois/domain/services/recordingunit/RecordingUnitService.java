@@ -51,10 +51,9 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -103,6 +102,15 @@ public class RecordingUnitService implements ArkEntityService {
     private final CustomFieldAnswerService customFieldAnswerService;
     private final EntityIdentifierGenerator entityIdentifierGenerator;
 
+    /**
+     * Self-reference resolved through the Spring proxy, so that calls made from within this same
+     * class (e.g. {@link #duplicateStructure}'s per-node work calling {@link #save(RecordingUnitDTO)})
+     * still go through AOP-backed behavior such as {@code @CacheEvict} — a direct {@code this.save(...)}
+     * call bypasses the proxy entirely and silently skips it. Resolved lazily through an
+     * {@link ObjectProvider} to avoid a circular dependency at construction time.
+     */
+    private final ObjectProvider<RecordingUnitService> selfProvider;
+
 
     /**
      * Controls flushing before the native generic counter allocation,
@@ -111,16 +119,6 @@ public class RecordingUnitService implements ArkEntityService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * Self-reference resolved through the Spring proxy, so that calls made from within this same
-     * class (e.g. {@link #duplicateStructure}'s per-node work calling {@link #save(RecordingUnitDTO)})
-     * still go through AOP-backed behavior such as {@code @CacheEvict} — a direct {@code this.save(...)}
-     * call bypasses the proxy entirely and silently skips it. {@code @Lazy} avoids a circular
-     * dependency at construction time.
-     */
-    @Lazy
-    @Autowired
-    private RecordingUnitService self;
 
     /**
      * Bulk update the type of multiple recording units.
@@ -1153,6 +1151,7 @@ public class RecordingUnitService implements ArkEntityService {
         // it as its parent.
         FlushModeType previousFlushMode = entityManager.getFlushMode();
         entityManager.setFlushMode(FlushModeType.COMMIT);
+        RecordingUnitService self = selfProvider.getObject();
         try {
             copy = self.save(copy);
             copy.setFullIdentifier(self.generateFullIdentifier(copy.getActionUnit(), copy));

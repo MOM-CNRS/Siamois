@@ -52,7 +52,7 @@ function projectRulesOf(body: TypesCatalogBody): ProjectRules {
 
 /** The projects the given rows belong to, sorted, as a stable list (same content, same array). */
 export function useProjectIdsOf(rows: readonly RowTypeRef[]): string[] {
-  const key = [...new Set(rows.map((r) => r.projectId).filter((id): id is string => id != null))].sort().join(",");
+  const key = [...new Set(rows.map((r) => r.projectId).filter((id): id is string => id != null))].sort((a, b) => a.localeCompare(b)).join(",");
   return useMemo(() => (key ? key.split(",") : []), [key]);
 }
 

@@ -99,7 +99,7 @@ const NO_PAGES: Record<number, string[]> = {};
 export function usePagedList<T>({ entityType, params, pages, limit, virtual = false, fields = [], fetch, enabled }: UsePagedListOptions<T>) {
   // Keyed on the field ids, not the array: callers pass a fresh array on every render.
   const fieldsKey = fields.join(",");
-  const sortedFields = useMemo(() => (fieldsKey ? fieldsKey.split(",").sort() : []), [fieldsKey]);
+  const sortedFields = useMemo(() => (fieldsKey ? fieldsKey.split(",").sort((a, b) => a.localeCompare(b)) : []), [fieldsKey]);
 
   // The fields each page's base request carries — fixed for as long as the same result set is shown,
   // so showing or hiding a column never refetches a page; a page reached later is fetched with the

@@ -29,6 +29,7 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.ExportTemplateDTO;
+import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.RedirectBean;
@@ -220,7 +221,12 @@ public class ExportTemplateEditorBean implements Serializable {
     }
 
     private void loadProjects() {
-        projectItems = actionUnitService.findAllByInstitution(sessionSettingsBean.getSelectedInstitution()).stream()
+        InstitutionDTO institution = sessionSettingsBean.getSelectedInstitution();
+        if (institution == null) {
+            projectItems = List.of();
+            return;
+        }
+        projectItems = actionUnitService.findAllByInstitution(institution).stream()
                 .sorted(Comparator.comparing(a -> a.getFullIdentifier() == null ? "" : a.getFullIdentifier()))
                 .map(a -> new Item(projectLabel(a), String.valueOf(a.getId())))
                 .toList();

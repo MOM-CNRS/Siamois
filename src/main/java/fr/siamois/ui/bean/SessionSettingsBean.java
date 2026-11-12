@@ -92,6 +92,16 @@ public class SessionSettingsBean implements Serializable {
         return currentUserInfo.getInstitution();
     }
 
+    /**
+     * Returns the id of the organisation currently selected in the session.
+     *
+     * @return the id of the selected organisation, or {@code null} when no organisation is selected
+     */
+    public Long getSelectedInstitutionId() {
+        InstitutionDTO institution = getSelectedInstitution();
+        return institution == null ? null : institution.getId();
+    }
+
     public void setupSession() {
         personSettings = personService.createOrGetSettingsOf(getAuthenticatedUser());
         loadLanguageSettings();

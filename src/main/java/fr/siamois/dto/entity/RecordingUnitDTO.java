@@ -65,7 +65,13 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
     private Set<PhaseDTO> phases;
 
 
-    @SuppressWarnings("CopyConstructorMissesField")
+    /**
+     * Creates a new, unsaved recording unit from {@code original}: what a duplication starts from. Only the
+     * type, project, organisation, description, spatial unit, matrix colour, relationship count and geometry
+     * are copied; every other field is deliberately reset.
+     *
+     * @param original the recording unit to copy
+     */
     public RecordingUnitDTO(RecordingUnitDTO original) {
         type = original.getType();
         actionUnit = original.getActionUnit();
@@ -75,6 +81,38 @@ public class RecordingUnitDTO extends AbstractEntityDTO {
         matrixColor = original.getMatrixColor();
         relationshipCount = original.getRelationshipCount();
         geom = original.getGeom();
+
+        // Intentional resets: these fields are not part of a copy.
+        syncRevision = null;
+        identifier = null;
+        fullIdentifier = null;
+        parentsCount = null;
+        childrenCount = null;
+        treeHasChildren = null;
+        treeMatch = null;
+        openingDate = null;
+        closingDate = null;
+        nature = null;
+        geomorphologicalCycle = null;
+        geomorphologicalAgent = null;
+        normalizedInterpretation = null;
+        specimenCount = null;
+        author = null;
+        contributors = new ArrayList<>();
+        comments = null;
+        relationshipsAsUnit1 = new HashSet<>();
+        relationshipsAsUnit2 = new HashSet<>();
+        taq = null;
+        tpq = null;
+        chronologicalPhase = null;
+        erosionShape = null;
+        erosionOrientation = null;
+        erosionProfile = null;
+        zInf = null;
+        zSup = null;
+        parents = null;
+        children = null;
+        phases = null;
     }
 
     public boolean hierarchyIsInitialized() {

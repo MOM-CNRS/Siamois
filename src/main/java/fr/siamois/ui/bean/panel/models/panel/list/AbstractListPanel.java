@@ -54,7 +54,7 @@ public abstract class AbstractListPanel extends AbstractPanel implements Seriali
 
     @Override
     public Long reactOrganizationId() {
-        return sessionSettingsBean.getSelectedInstitution().getId();
+        return sessionSettingsBean.getSelectedInstitutionId();
     }
 
     // A panel is identified by its resource URI, which AbstractPanel already compares.

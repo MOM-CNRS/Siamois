@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {formatFilter, keywordCompletion, parseQuery, tailKeyword} from "./queryParser";
+import {formatFilter, keywordCompletion, parseQuery, tailKeyword, withoutLastWord} from "./queryParser";
 
 describe("parseQuery", () => {
   it("returns plain text untouched", () => {
@@ -78,5 +78,17 @@ describe("custom keywords", () => {
     expect(keywordCompletion("typo", keywords)?.key).toBe("type");
     expect(tailKeyword("mur type:fo", keywords)?.partial).toBe("fo");
     expect(tailKeyword("mur type:fo")).toBeUndefined();
+  });
+});
+
+describe("withoutLastWord", () => {
+  it("drops the half-typed last word", () => {
+    expect(withoutLastWord("mur proj")).toBe("mur ");
+    expect(withoutLastWord("proj")).toBe("");
+  });
+
+  it("leaves an input ending with a space, or empty, unchanged", () => {
+    expect(withoutLastWord("mur ")).toBe("mur ");
+    expect(withoutLastWord("")).toBe("");
   });
 });

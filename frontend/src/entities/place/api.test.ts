@@ -43,7 +43,7 @@ describe("listPlaces", () => {
 
 describe("createPlace", () => {
   it("posts organizationId, name and a numeric typeConceptId", async () => {
-    mockedApiFetch.mockResolvedValueOnce({ data: { id: 42, name: "Cave A" } });
+    mockedApiFetch.mockResolvedValueOnce({ data: { id: "42", name: "Cave A" } });
 
     const created = await createPlace({ organizationId: 7, name: "Cave A", typeConceptId: "9" });
 
@@ -51,7 +51,7 @@ describe("createPlace", () => {
       method: "POST",
       body: { organizationId: 7, name: "Cave A", typeConceptId: 9 },
     });
-    expect(created.id).toBe(42);
+    expect(created.id).toBe("42");
   });
 });
 

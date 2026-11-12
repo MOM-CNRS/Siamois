@@ -577,6 +577,8 @@ export function EntityTable({
       <div
         ref={rootRef}
         className="sia-contents"
+        // Not interactive itself: it only catches the drops and keys of the grid inside.
+        role="presentation"
         onDragOverCapture={blockDropOnFrozenHeader}
         onDropCapture={blockDropOnFrozenHeader}
         onKeyDown={onGridKeyDown}

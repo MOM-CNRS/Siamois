@@ -44,13 +44,37 @@ import static fr.siamois.ui.form.FormLayoutConstants.SYSTEM_THESO;
 @Audited
 public class SpatialUnit extends TraceableEntity implements ArkEntity {
 
-    @SuppressWarnings("CopyConstructorMissesField")
+    /**
+     * Creates a new, unsaved spatial unit from the descriptive data of {@code spatialUnit}: its name, type,
+     * geometry and place number. Everything else (identity, hierarchy, links, address and cadastral data,
+     * comments) is deliberately reset, and the copy starts as {@link ValidationStatus#INCOMPLETE}.
+     *
+     * @param spatialUnit the spatial unit to copy
+     */
     public SpatialUnit (SpatialUnit spatialUnit) {
         name = spatialUnit.getName();
         type = spatialUnit.getType();
         geom = spatialUnit.getGeom();
         placeNumber = spatialUnit.getPlaceNumber();
         validationStatus = ValidationStatus.INCOMPLETE;
+
+        // Intentional resets: these fields are not part of a copy.
+        id = null;
+        children = new HashSet<>();
+        parents = new HashSet<>();
+        recordingUnitList = null;
+        ark = null;
+        address = null;
+        inseeCode = null;
+        localityName = null;
+        addressStreet = null;
+        addressPostcode = null;
+        addressCity = null;
+        parcelSection = null;
+        parcelNumber = null;
+        comments = null;
+        shomMapNumber = null;
+        relatedActionUnitList = new HashSet<>();
     }
 
     @Id

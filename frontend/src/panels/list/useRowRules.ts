@@ -40,7 +40,7 @@ export function useRuleFields(
       columnsDependencies(shownFieldIds, all).forEach((d) => deps.add(d));
     }
     typeRules?.columnSets.forEach((set) => columnsDependencies(shownFieldIds, set).forEach((d) => deps.add(d)));
-    return deps.size > 0 ? [...deps].sort() : NONE;
+    return deps.size > 0 ? [...deps].sort((a, b) => a.localeCompare(b)) : NONE;
     // shownFieldIds is a fresh array each render; its content is what matters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields, hasRules, shownKey, typeRules]);

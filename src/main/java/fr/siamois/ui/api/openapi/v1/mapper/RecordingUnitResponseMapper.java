@@ -22,8 +22,18 @@ import org.springframework.core.convert.converter.Converter;
         injectionStrategy = InjectionStrategy.CONSTRUCTOR)
 public abstract class RecordingUnitResponseMapper implements Converter<RecordingUnitDTO, RecordingUnitResource> {
 
-    @Autowired
     protected LabelService labelService;
+
+    /**
+     * Injects the label service. MapStruct generates a subclass of this abstract mapper and needs a no-arg
+     * constructor, so the dependency is injected through this setter instead of a field.
+     *
+     * @param labelService the service resolving concept labels
+     */
+    @Autowired
+    public void setLabelService(LabelService labelService) {
+        this.labelService = labelService;
+    }
 
     @Mapping(target = "resourceType", constant = "recording-units")
     @Mapping(target = "id", expression = "java(String.valueOf(dto.getId()))")

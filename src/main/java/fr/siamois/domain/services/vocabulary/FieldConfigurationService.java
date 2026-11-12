@@ -245,6 +245,9 @@ public class FieldConfigurationService {
     public Optional<FeedbackFieldConfig> loadFieldCodes(@NonNull Vocabulary vocabulary,
                                                         @NonNull ProgressWrapper progressWrapper) throws NotSiamoisThesaurusException, ErrorProcessingExpansionException {
         ConceptBranchDTO conceptBranchDTO = conceptApi.fetchFieldsBranch(vocabulary);
+        if (conceptBranchDTO == null) {
+            throw new ErrorProcessingExpansionException("Vocabulary not found: no fields branch could be fetched");
+        }
         FeedbackFieldConfig config = createConfigOfThesaurus(conceptBranchDTO);
         if (config.isWrongConfig()) log.warn("Missing code in thesaurus configuration: {}", config.missingFieldCode());
 
