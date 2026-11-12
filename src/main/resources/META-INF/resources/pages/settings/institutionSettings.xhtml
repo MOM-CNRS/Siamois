@@ -12,6 +12,8 @@
     <f:event type="preRenderView" listener="#{institutionDetailsBean.checkInstitutionOrRedirect}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.title', institutionDetailsBean.institution.name)}</ui:define>
+
     <ui:define name="head">
         <h:outputStylesheet library="css" name="settings.css"/>
     </ui:define>

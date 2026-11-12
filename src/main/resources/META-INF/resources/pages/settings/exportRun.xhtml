@@ -11,6 +11,8 @@
         <f:event type="preRenderView" listener="#{exportRunBean.checkAccessOrRedirect}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.title', langBean.msg('exportTemplates.run.title'))}</ui:define>
+
     <ui:define name="head">
         <link rel="stylesheet" href="#{redirectBean.redirectUrlToResource('settings.css', 'css')}"/>
         <h:outputStylesheet library="css" name="export-templates.css"/>

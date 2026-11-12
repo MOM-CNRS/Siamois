@@ -9,6 +9,8 @@
 
 <h:head>
     <link rel="icon" type="image/png" href="#{request.contextPath}/resources/img/favicon.png"/>
+    <!-- The browser tab's title: each page names itself with ui:define name="title". -->
+    <title><ui:insert name="title">Siamois</ui:insert></title>
 
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
     <link rel="stylesheet"
@@ -266,7 +268,15 @@
         </h:panelGroup>
 
         <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
-            <nav id="sidebarSettings" class="sidebar" aria-label="Settings sidebar">
+            <nav id="sidebarSettings" class="sidebar collapsed" aria-label="Settings sidebar">
+                <!-- Same collapse as the application sidebar: folded on its icons, to leave the room to the configuration (#817).
+                     Only one of the two sidebars is rendered at a time, hence the shared toggle-btn id. -->
+                <button id="toggle-btn-settings" type="button"
+                        class="btn btn-outline-light" onclick="toggleCollapseSidebar();"
+                        title="#{langBean.msg('nav.sidebar.toggle.hint')}"
+                        aria-label="#{langBean.msg('nav.sidebar.toggle.hint')}">
+                    <i class="bi bi-list"/>
+                </button>
                 <form:csrfform formId="settingsNavForm">
                     <ul class="nav flex-column" style="margin-bottom: 1.25rem;">
                         <li class="nav-item">

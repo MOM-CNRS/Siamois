@@ -11,6 +11,8 @@
         <f:event type="preRenderView" listener="#{exportTemplateEditorBean.checkOrRedirect}"/>
     </ui:define>
 
+    <ui:define name="title">#{langBean.msg('settings.tab.titleWithContext', exportTemplateEditorBean.model.name, langBean.msg('nav.exportTemplates'))}</ui:define>
+
     <ui:define name="head">
         <link rel="stylesheet" href="#{redirectBean.redirectUrlToResource('settings.css', 'css')}"/>
         <h:outputStylesheet library="css" name="export-templates.css"/>
