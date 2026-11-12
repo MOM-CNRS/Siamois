@@ -1,0 +1,16 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html">
+    <!-- One place offered by a place picker of the new project dialog (variable "place"), described like a
+         place suggestion of the React pickers (frontend/src/fields/PlaceOptionItem.tsx): the database or
+         globe icon (a place of the organisation, or one still to be created from an external source), the
+         name, its type, its code and the source it comes from. -->
+    <div class="place-item">
+        <i class="place-item-icon bi #{place.external ? 'bi-globe2' : 'bi-database'}"
+           title="#{langBean.msg(place.external ? 'projectList.create.place.external' : 'projectList.create.place.internal')}"/>
+        <span class="place-item-name">#{place.name}</span>
+        <h:panelGroup rendered="#{not empty place.category}" styleClass="place-item-chip">#{place.category}</h:panelGroup>
+        <h:panelGroup rendered="#{not empty place.code}"><small class="place-item-code">#{place.code}</small></h:panelGroup>
+        <span class="place-item-chip place-item-source">#{place.source}</span>
+    </div>
+</ui:composition>

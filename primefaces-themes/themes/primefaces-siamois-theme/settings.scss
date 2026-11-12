@@ -895,6 +895,105 @@ body .ptc-summary .ui-tabs .ui-tabs-panels .ui-tabs-panel {
     font-style: italic;
     color: var(--siamois-green-active);
 }
+
+// The pickers of the "new project" dialog (dialog/project/newProject.xhtml) imitate the React reference
+// pickers of the data side: the rules below mirror frontend/src/styles/main-panel.css, which the settings
+// pages do not load. Keep both in step.
+
+// A concept suggestion (fields/ConceptOptionItem.tsx).
+.concept-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.concept-item-link {
+    color: inherit;
+    padding-top: 0.1rem;
+}
+
+.concept-item-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    white-space: normal;
+}
+
+.concept-item-altlabels {
+    font-style: italic;
+    color: var(--text-light, #6b7280);
+}
+
+// A place suggestion (fields/PlaceOptionItem.tsx): icon, name, type and code, and the source it comes from.
+.place-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.place-item-icon {
+    flex: none;
+    opacity: 0.7;
+}
+
+.place-item-name {
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.place-item-code {
+    opacity: 0.7;
+}
+
+.place-item-chip {
+    flex: none;
+    padding: 0 0.4rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.place-item-source {
+    margin-left: auto;
+}
+
+// Footer line of a place picker whose sources wait for the field they depend on: a light red nudge.
+.resource-ref-narrow-hint {
+    display: block;
+    padding: 0.25rem 0.75rem;
+    color: var(--red-500, #c0584d);
+}
+
+// The picker itself: as wide as its field, and a picked place is an outlined chip in the colour of places.
+.sia-ref-picker,
+.sia-ref-picker .ui-autocomplete-multiple-container {
+    width: 100%;
+}
+
+.sia-ref-picker-place {
+    --ref-chip-color: var(--context-main-color, #068da9);
+}
+
+.sia-ref-picker .ui-autocomplete-token {
+    background: transparent;
+    border: 1px solid var(--ref-chip-color, var(--siamois-green, #80b480));
+    color: var(--ref-chip-color, var(--siamois-green, #80b480));
+}
+
+// The suggestion panel: one cell per suggestion, and a concept panel no wider than the React one (640px),
+// past which a long definition ellipsises.
+.sia-ref-picker-panel .ui-autocomplete-items td {
+    border: none;
+}
+
+.sia-ref-picker-panel-concept {
+    max-width: 640px;
+}
 // PrimeReact parity (see theme-base/_primereact.scss). settings.css is compiled on its own, so the
 // .p-* aliases the React main panel needs from THIS file are declared here too.
 .p-tabview-nav { @extend .ui-tabs-nav; }
