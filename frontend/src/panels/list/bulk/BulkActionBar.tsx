@@ -4,6 +4,7 @@ import {Dialog} from "primereact/dialog";
 import {OverlayPanel} from "primereact/overlaypanel";
 import {DeleteEntityDialog} from "../../../components/detail/DeleteEntityDialog";
 import {isDocumentLinkSegment} from "../../../entities/document/api";
+import {supportsBulk} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import type {FieldResource} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
@@ -52,7 +53,8 @@ export function BulkActionBar({
   const [dialog, setDialog] = useState<OpenDialog>(null);
   const actions = useBulkActions({ entityType, config, organizationId, selectedRows, onSelectionChange });
 
-  if (selectedRows.length === 0) return null;
+  // A collection the server has no bulk endpoints for gets no bar.
+  if (selectedRows.length === 0 || !supportsBulk(config.collectionPath)) return null;
 
   const editable = editableRows(selectedRows);
   const deletable = deletableRows(selectedRows);
@@ -179,7 +181,7 @@ export function BulkActionBar({
             running={actions.running}
             onCancel={close}
             onApply={(documentId, mode) =>
-              void actions.applyDocument(config.collectionPath, documentId, mode).then(close)
+              void actions.applyDocument(documentId, mode).then(close)
             }
           />
         )}

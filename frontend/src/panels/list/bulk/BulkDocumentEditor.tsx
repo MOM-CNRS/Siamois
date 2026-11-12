@@ -5,7 +5,7 @@ import {SelectButton} from "primereact/selectbutton";
 import {listDocuments} from "../../../entities/document/api";
 import type {DocumentSummary} from "../../../entities/document/types";
 import {t, tn} from "../../../i18n";
-import type {DocumentLinkMode} from "./useBulkActions";
+import type {BulkLinkMode} from "../../../entities/shared/bulkApi";
 
 export interface BulkDocumentEditorProps {
   organizationId?: number;
@@ -14,7 +14,7 @@ export interface BulkDocumentEditorProps {
   editableCount: number;
   skippedCount: number;
   running: boolean;
-  onApply: (documentId: string | number, mode: DocumentLinkMode) => void;
+  onApply: (documentId: string | number, mode: BulkLinkMode) => void;
   onCancel: () => void;
 }
 
@@ -38,7 +38,7 @@ export function BulkDocumentEditor({
   onApply,
   onCancel,
 }: BulkDocumentEditorProps) {
-  const [mode, setMode] = useState<DocumentLinkMode>("link");
+  const [mode, setMode] = useState<BulkLinkMode>("LINK");
   const [query, setQuery] = useState<string | DocumentSummary>("");
   const [suggestions, setSuggestions] = useState<DocumentSummary[]>([]);
   const picked = typeof query === "object" ? query : null;
@@ -62,12 +62,12 @@ export function BulkDocumentEditor({
       <SelectButton
         value={mode}
         options={[
-          { label: t("bulk.documentLink"), value: "link" },
-          { label: t("bulk.documentUnlink"), value: "unlink" },
+          { label: t("bulk.documentLink"), value: "LINK" },
+          { label: t("bulk.documentUnlink"), value: "UNLINK" },
         ]}
         allowEmpty={false}
         disabled={running}
-        onChange={(e) => setMode(e.value as DocumentLinkMode)}
+        onChange={(e) => setMode(e.value as BulkLinkMode)}
         aria-label={t("bulk.documentsTitle")}
       />
       <div className="p-fluid bulk-field-editor-input">

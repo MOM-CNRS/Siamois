@@ -391,6 +391,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       id: string | number,
       answers: Record<string, AnswerInputBody>,
     ): Promise<TDetail>;
+    // The body of this entity's PATCH for these answers, when it isn't `{ answers }` (a place's flat
+    // PlacePatchRequest): what a bulk edit of the list's selection sends for every row.
+    patchBody?(answers: Record<string, AnswerInputBody>): unknown;
     // The "fiche précédente/suivante" pair for this entity (plan: prev/next navigation). Optional:
     // an entity type that doesn't declare it renders no arrows at all — EntityDetailPanel checks
     // for its presence before even querying, matching how `patchAnswers` gates the edit overlay.
