@@ -1,5 +1,4 @@
 const sidebar = document.getElementsByClassName("sidebar")[0];
-const toggleBtn = document.getElementById("toggle-btn");
 const logoutForm = document.getElementById("logout-form");
 
 
@@ -9,10 +8,10 @@ function isMobile() {
 
 
 function toggleCollapseSidebar() {
+    // La sidebar affichée (application ou paramètres) : une seule est rendue à la fois
     const sidebar = document.getElementsByClassName("sidebar")[0];
-    const toggleBtn = document.getElementById("toggle-btn");
 
-    if (toggleBtn && sidebar) {
+    if (sidebar) {
         if (isMobile()) {
             // En mobile : collapse + cacher
             sidebar.classList.add("collapsed");

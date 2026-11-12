@@ -92,7 +92,7 @@
         display: flex;
         flex-direction: column;">
                     <button id="toggle-btn" type="button"
-                            class="btn btn-outline-light" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/>
+                            class="btn sidebar-toggle-btn" onclick="toggleCollapseSidebar();"><i class="bi bi-list"/>
                     </button>
 
                     <ul class="nav flex-column">
@@ -270,9 +270,9 @@
         <h:panelGroup rendered="#{navBean.settingsMode}" layout="none">
             <nav id="sidebarSettings" class="sidebar collapsed" aria-label="Settings sidebar">
                 <!-- Same collapse as the application sidebar: folded on its icons, to leave the room to the configuration (#817).
-                     Only one of the two sidebars is rendered at a time, hence the shared toggle-btn id. -->
+                     Both buttons share their look and behaviour through the sidebar-toggle-btn class, not their id. -->
                 <button id="toggle-btn-settings" type="button"
-                        class="btn btn-outline-light" onclick="toggleCollapseSidebar();"
+                        class="btn sidebar-toggle-btn" onclick="toggleCollapseSidebar();"
                         title="#{langBean.msg('nav.sidebar.toggle.hint')}"
                         aria-label="#{langBean.msg('nav.sidebar.toggle.hint')}">
                     <i class="bi bi-list"/>

@@ -92,22 +92,23 @@
     align-items: center;
 }
 
-#toggle-btn {
+/* Scoped to the sidebar so it outweighs Bootstrap's .btn colour, which comes later in the page. */
+.sidebar .sidebar-toggle-btn {
     width: 100%;
     margin-top: 10px;
     color: #2A2C30;
     background: transparent;
     border: none;
     font-size: 1.6rem;
-    text-align: left;
+    text-align: center;
     transition: color 0.3s;
 }
 
-.collapsed #toggle-btn {
+.sidebar.collapsed .sidebar-toggle-btn {
     text-align: center;
 }
 
-#toggle-btn:hover {
+.sidebar .sidebar-toggle-btn:hover {
     color: #000000;
 }
 
