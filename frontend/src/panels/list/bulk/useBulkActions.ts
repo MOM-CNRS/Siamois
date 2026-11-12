@@ -2,13 +2,14 @@ import {useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
-import type {BulkApi, BulkLinkMode, BulkResult, OnBulkProgress} from "../../../entities/shared/bulkApi";
+import type {BulkApi, BulkJobRef, BulkLinkMode, BulkResult} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig} from "../../../entities/shared/types";
 import type {AnswerInputBody} from "../../../fields/types";
-import {t, tn} from "../../../i18n";
+import {type MessageKey, t} from "../../../i18n";
 import {useNotify} from "../../../notify/NotifyProvider";
 import {announceEntityDeleted} from "../../detail/entityDeleted";
 import type {RowRecord} from "../useEntityListData";
+import {type BulkSuccessKey, trackBulkJob} from "./bulkJobTracker";
 import {deletableRows, editableRows, idsOf} from "./bulkSelection";
 
 export interface UseBulkActionsOptions {
@@ -35,11 +36,22 @@ export interface BulkActions {
 const NOTHING_DONE: BulkResult = { succeeded: [], failed: [] };
 
 /**
+ * Adds up the results of the jobs of one action.
+ */
+function merge(results: BulkResult[]): BulkResult {
+  return {
+    succeeded: results.flatMap((result) => result.succeeded),
+    failed: results.flatMap((result) => result.failed),
+  };
+}
+
+/**
  * The bulk actions on a list's selection — the Notion-style bar's behaviour, apart from how it is
  * drawn and how the selection is gathered. Each action starts a job on the entity type's bulk
- * endpoints (`config.api.bulk`), processed in the background by the server, which treats every
- * element as its unit endpoint would. While it runs a toast shows its progress; once done, another
- * tells what it did, failures included, and the lists and the open fiches are refreshed.
+ * endpoints (`config.api.bulk`), processed in the background by the server. The job is followed by
+ * the app's bulk job tracker — its toast, its final message and the refresh of the lists are the
+ * BulkJobNotifier's, whatever page the user is on by then — and this waits for it only to let go of
+ * the rows a deletion removed.
  */
 export function useBulkActions({ entityType, config, bulk, organizationId, onDeleted }: UseBulkActionsOptions): BulkActions {
   const queryClient = useQueryClient();
@@ -47,51 +59,32 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   const [running, setRunning] = useState(false);
 
   /**
-   * Re-fetches what a bulk action may have changed: the lists (of any type: a relation shows on
-   * both sides) and the open fiches.
+   * Starts the action's jobs, hands them to the tracker and waits for their result (the bar stays busy
+   * meanwhile). A request the server refuses as a whole (a patch it can't read…) is told here; a job's
+   * own outcome is told by the notifier.
    */
-  function refresh() {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.entityLists() });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
-  }
-
-  /**
-   * Tells the user what an action did: a success toast, or a warning naming the first failure.
-   */
-  function report(result: BulkResult, successKey: "bulk.done" | "bulk.deleted") {
-    if (result.failed.length === 0) {
-      notify.success(tn(successKey, result.succeeded.length));
-      return;
-    }
-    const params = { done: result.succeeded.length, failed: result.failed.length, first: result.failed[0].message };
-    if (result.succeeded.length === 0) notify.error(params.first);
-    else notify.warn(t("bulk.partial", params));
-  }
-
-  /**
-   * Starts the bulk job and follows it — a toast showing its progress while the server works, the
-   * bar busy — then reports and refreshes. A request the server refuses as a whole (a patch it can't
-   * read…) or a job stopped on an error is reported as an error.
-   */
-  async function run(
-    label: string,
-    request: (onProgress: OnBulkProgress) => Promise<BulkResult>,
-    successKey: "bulk.done" | "bulk.deleted",
-  ): Promise<BulkResult> {
+  async function run(label: MessageKey, successKey: BulkSuccessKey, start: () => Promise<BulkJobRef[]>): Promise<BulkResult> {
     setRunning(true);
-    const toast = notify.task(label);
     try {
-      const result = await request(({ processed, total }) => toast.progress(processed, total));
-      toast.close();
-      report(result, successKey);
-      refresh();
-      return result;
-    } catch (error) {
-      toast.close();
-      notify.error(messageForError(error, t("bulk.failed")));
+      const refs = await startOrTell(start);
+      return merge(await Promise.all(refs.map((ref) => trackBulkJob({ id: ref.id, label, successKey }, ref.total))));
+    } catch {
+      // A job that stopped on an error: the notifier tells it.
       return NOTHING_DONE;
     } finally {
       setRunning(false);
+    }
+  }
+
+  /**
+   * Starts the action's jobs; a request the server refuses as a whole is told here (no job to follow).
+   */
+  async function startOrTell(start: () => Promise<BulkJobRef[]>): Promise<BulkJobRef[]> {
+    try {
+      return await start();
+    } catch (error) {
+      notify.error(messageForError(error, t("bulk.failed")));
+      return [];
     }
   }
 
@@ -101,7 +94,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyAnswer(rows: RowRecord[], fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run(t("bulk.taskEdit"), (onProgress) => bulk.patch(idsOf(editableRows(rows)), patch, onProgress), "bulk.done");
+    await run("bulk.taskEdit", "bulk.done", () => bulk.patch(idsOf(editableRows(rows)), patch));
   }
 
   /**
@@ -110,22 +103,14 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyDocument(rows: RowRecord[], documentId: string | number, mode: BulkLinkMode): Promise<void> {
     const linkDocument = bulk.linkDocument;
     if (!linkDocument) return;
-    await run(
-      t("bulk.taskLinks"),
-      (onProgress) => linkDocument(idsOf(editableRows(rows)), documentId, mode, onProgress),
-      "bulk.done",
-    );
+    await run("bulk.taskLinks", "bulk.done", () => linkDocument(idsOf(editableRows(rows)), documentId, mode));
   }
 
   /**
    * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
   async function deleteRows(rows: RowRecord[]): Promise<void> {
-    const result = await run(
-      t("bulk.taskDelete"),
-      (onProgress) => bulk.delete(idsOf(deletableRows(rows)), onProgress),
-      "bulk.deleted",
-    );
+    const result = await run("bulk.taskDelete", "bulk.deleted", () => bulk.delete(idsOf(deletableRows(rows))));
     if (result.succeeded.length === 0) return;
     const deleted = new Set(result.succeeded.map(String));
     const deletedRows = rows.filter((row) => deleted.has(String(row.id)));

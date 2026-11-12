@@ -5,10 +5,14 @@ import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import {registerDefaultFieldRenderers} from "../../../fields/registerDefaultRenderers";
-import {notifySpy, taskToastSpy} from "../../../test/notifySpy";
+import {notifySpy} from "../../../test/notifySpy";
+import {trackBulkJob} from "./bulkJobTracker";
 import type {RowRecord} from "../useEntityListData";
 import {BulkActionBar} from "./BulkActionBar";
 import type {ListSelection} from "./useListSelection";
+
+vi.mock("./bulkJobTracker", () => ({ trackBulkJob: vi.fn() }));
+const mockedTrack = vi.mocked(trackBulkJob);
 
 const bulkDelete = vi.fn<BulkApi["delete"]>();
 const bulk: BulkApi = { delete: bulkDelete, patch: vi.fn() };
@@ -142,22 +146,22 @@ describe("BulkActionBar", () => {
   });
 
   it("deletes the deletable rows in one bulk request and drops them from the selection", async () => {
-    bulkDelete.mockResolvedValue({ succeeded: [1], failed: [{ id: 2, status: 409, message: "Relations" }] });
+    bulkDelete.mockResolvedValue([{ id: "job-1", total: 2 }]);
+    mockedTrack.mockResolvedValue({ succeeded: [1], failed: [{ id: 2, status: 409, message: "Relations" }] });
     const selection = selectionOf(rows);
     render(selection);
 
     await click(button("Supprimer"));
     await click(button("Supprimer définitivement"));
 
-    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"], expect.any(Function));
-    expect(notifySpy.task).toHaveBeenCalledWith("Suppression en cours");
-    expect(taskToastSpy.close).toHaveBeenCalled();
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
+    expect(mockedTrack).toHaveBeenCalledWith({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleted" }, 2);
     expect(selection.setRows).toHaveBeenCalledWith([rows[1], rows[2]]);
-    expect(notifySpy.warn).toHaveBeenCalledWith("1 réussi(s), 1 en échec. Relations");
   });
 
   it("acts on the whole result set under « select all », read back before the action", async () => {
-    bulkDelete.mockResolvedValue({ succeeded: [1, 2], failed: [] });
+    bulkDelete.mockResolvedValue([{ id: "job-2", total: 2 }]);
+    mockedTrack.mockResolvedValue({ succeeded: [1, 2], failed: [] });
     const selection = selectionOf(rows, true);
     render(selection);
 
@@ -165,7 +169,7 @@ describe("BulkActionBar", () => {
     await click(button("Supprimer définitivement"));
 
     expect(selection.resolve).toHaveBeenCalled();
-    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"], expect.any(Function));
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
     expect(selection.setRows).not.toHaveBeenCalled();
   });
 
