@@ -454,6 +454,19 @@ public class PlaceOpenApiService {
         }
     }
 
+    /**
+     * Fails with 403 unless the caller may edit the place: the same right its PATCH requires. What a
+     * bulk action checks before changing an element's relations.
+     *
+     * @param caller  the authenticated caller
+     * @param placeId the place's id
+     * @param lang    the request's language
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(ProjectApiCaller caller, long placeId, String lang) {
+        requirePlaceWritePermission(caller, requireAccessiblePlace(caller, placeId), lang, "Modification de lieu non autorisée");
+    }
+
     /** Writes the plain text details the patch carries (an explicit null clears one). */
     private static void applyTextDetails(SpatialUnitDTO dto, PlacePatchRequest patch) {
         if (patch.isInseeCodePresent()) dto.setInseeCode(patch.getInseeCode());

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class PhaseBulkOperations implements BulkEntityOperations {
+public class PhaseBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
 
     private final PhaseOpenApiService phaseOpenApiService;
     private final BulkPatchReader patchReader;
@@ -42,5 +42,14 @@ public class PhaseBulkOperations implements BulkEntityOperations {
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
         phaseOpenApiService.patchPhase(id, patchReader.read(patch, PhasePatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requireEditable(ProjectApiCaller caller, long id, String acceptLanguage) {
+        phaseOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
+                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 }

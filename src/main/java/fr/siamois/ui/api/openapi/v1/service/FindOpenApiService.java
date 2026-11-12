@@ -101,6 +101,56 @@ public class FindOpenApiService {
     }
 
     /**
+     * Fails with 403 unless the caller may edit the find: the same right its PATCH requires for a
+     * content change (the parent recording unit's write right). What a bulk action checks before
+     * changing an element's relations.
+     *
+     * @param specimenId               the find's id
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(long specimenId, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
+        RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
+    }
+
+    /**
+     * The find, 404 when it does not exist or is out of the caller's organizations.
+     */
+    private SpecimenDTO requireAccessibleFind(long specimenId, Set<Long> accessibleInstitutionIds) {
+        return specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
+    }
+
+    /**
+     * The find's organization, 400 when it has none.
+     */
+    private static InstitutionDTO requireOrganization(SpecimenDTO dto) {
+        InstitutionDTO institution = dto.getCreatedByInstitution();
+        if (institution == null || institution.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
+        }
+        return institution;
+    }
+
+    /**
+     * The recording unit the find belongs to, whose write right governs the find's: 400 when it has none.
+     */
+    private RecordingUnitDTO requireParentRecordingUnit(SpecimenDTO dto, Set<Long> accessibleInstitutionIds) {
+        RecordingUnitSummaryDTO ruSum = dto.getRecordingUnit();
+        if (ruSum == null || ruSum.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
+        }
+        return recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(ruSum.getId(), accessibleInstitutionIds);
+    }
+
+    /**
      * The full identifier a new find of this type would be given on this recording unit, without
      * consuming the counter ({@code GET /api/v1/identifier-suggestions?entityType=finds}) — shown, modifiable, in the
      * creation form. No permission is required: nothing is written, and the unit is in the caller's scope.
@@ -147,19 +197,9 @@ public class FindOpenApiService {
                                   PersonDTO personDto,
                                   Set<Long> accessibleInstitutionIds,
                                   String lang) {
-        SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
-
-        InstitutionDTO institution = dto.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
-        }
-        RecordingUnitSummaryDTO ruSum = dto.getRecordingUnit();
-        if (ruSum == null || ruSum.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
-        }
-        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
-                ruSum.getId(), accessibleInstitutionIds);
+        SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
+        InstitutionDTO institution = requireOrganization(dto);
+        RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         boolean canEdit = profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru);
@@ -241,18 +281,9 @@ public class FindOpenApiService {
                                       PersonDTO personDto,
                                       Set<Long> accessibleInstitutionIds,
                                       String lang) {
-        SpecimenDTO source = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
-        InstitutionDTO institution = source.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans organisation");
-        }
-        RecordingUnitSummaryDTO ruSum = source.getRecordingUnit();
-        if (ruSum == null || ruSum.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
-        }
-        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
-                ruSum.getId(), accessibleInstitutionIds);
+        SpecimenDTO source = requireAccessibleFind(specimenId, accessibleInstitutionIds);
+        InstitutionDTO institution = requireOrganization(source);
+        RecordingUnitDTO ru = requireParentRecordingUnit(source, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Duplication non autorisée");

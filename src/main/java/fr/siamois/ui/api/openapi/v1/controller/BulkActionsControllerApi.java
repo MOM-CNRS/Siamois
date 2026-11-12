@@ -110,15 +110,17 @@ public class BulkActionsControllerApi {
     /**
      * Links a document to many elements, or removes that link from each.
      *
-     * @param segment the elements' collection path segment
-     * @param body    the elements, the document and what to do
+     * @param segment        the elements' collection path segment
+     * @param body           the elements, the document and what to do
+     * @param acceptLanguage the request's language
      * @return which elements were changed, and why the others were not
      */
     @PostMapping(value = "/{segment}/documents", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Lier ou délier un document en lot",
             description = "mode LINK : lie le document à chaque élément ; UNLINK : retire ce lien (le document n'est pas "
-                    + "supprimé). Idempotent, mêmes règles que PUT/DELETE /api/v1/{segment}/{id}/documents/{documentId}."
+                    + "supprimé). Idempotent, mêmes règles que PUT/DELETE /api/v1/{segment}/{id}/documents/{documentId}, "
+                    + "et en plus le droit de modifier chaque élément (403 sinon, dans le bilan)."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Bilan : éléments traités et éléments en échec"),
@@ -129,9 +131,10 @@ public class BulkActionsControllerApi {
     })
     public ResponseEntity<BulkResultResponse> linkDocument(
             @Parameter(description = "Collection, ex. recording-units") @PathVariable("segment") String segment,
-            @RequestBody BulkDocumentLinkRequest body) {
+            @RequestBody BulkDocumentLinkRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         return ResponseEntity.ok(new BulkResultResponse(
-                bulkActionOpenApiService.linkDocument(segment, body, caller)));
+                bulkActionOpenApiService.linkDocument(segment, body, caller, acceptLanguage)));
     }
 }

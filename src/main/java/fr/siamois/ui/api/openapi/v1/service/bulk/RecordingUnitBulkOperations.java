@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class RecordingUnitBulkOperations implements BulkEntityOperations {
+public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -43,5 +43,14 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations {
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
         recordingUnitOpenApiService.patchRecordingUnit(String.valueOf(id), patchReader.read(patch, RecordingUnitPatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requireEditable(ProjectApiCaller caller, long id, String acceptLanguage) {
+        recordingUnitOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
+                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 }

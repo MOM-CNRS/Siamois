@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class PlaceBulkOperations implements BulkEntityOperations {
+public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
 
     private final PlaceOpenApiService placeOpenApiService;
     private final BulkPatchReader patchReader;
@@ -41,5 +41,13 @@ public class PlaceBulkOperations implements BulkEntityOperations {
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
         placeOpenApiService.updatePlace(caller, id, patchReader.read(patch, PlacePatchRequest.class), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void requireEditable(ProjectApiCaller caller, long id, String acceptLanguage) {
+        placeOpenApiService.requireEditable(caller, id, ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 }

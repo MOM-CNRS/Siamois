@@ -41,6 +41,7 @@ public class StudyBulkOperations implements BulkEntityOperations {
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
         studyOpenApiService.patchStudy(id, patchReader.read(patch, StudyPatchRequest.class),
-                caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+                caller.person(), caller.accessibleInstitutionIds(),
+                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 }

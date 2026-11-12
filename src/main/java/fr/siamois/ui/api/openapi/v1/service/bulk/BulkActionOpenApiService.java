@@ -38,6 +38,7 @@ public class BulkActionOpenApiService {
     private static final String IDENTIFIER_PROPERTY = "identifier";
 
     private final Map<String, BulkEntityOperations> operationsByCollection;
+    private final Map<String, BulkDocumentLinkTarget> documentTargetsByCollection;
     private final DocumentLinksOpenApiService documentLinksOpenApiService;
     private final BulkFailureTranslator failureTranslator;
 
@@ -45,14 +46,18 @@ public class BulkActionOpenApiService {
      * Indexes every collection's operations by its path segment.
      *
      * @param operations                  one per collection that supports bulk actions
+     * @param documentTargets             one per collection documents can be linked to in bulk
      * @param documentLinksOpenApiService the document links' unit service
      * @param failureTranslator           how an element's failure is reported
      */
     public BulkActionOpenApiService(List<BulkEntityOperations> operations,
+                                    List<BulkDocumentLinkTarget> documentTargets,
                                     DocumentLinksOpenApiService documentLinksOpenApiService,
                                     BulkFailureTranslator failureTranslator) {
         this.operationsByCollection = operations.stream()
                 .collect(Collectors.toMap(BulkEntityOperations::collection, Function.identity()));
+        this.documentTargetsByCollection = documentTargets.stream()
+                .collect(Collectors.toMap(BulkDocumentLinkTarget::collection, Function.identity()));
         this.documentLinksOpenApiService = documentLinksOpenApiService;
         this.failureTranslator = failureTranslator;
     }
@@ -89,19 +94,27 @@ public class BulkActionOpenApiService {
     }
 
     /**
-     * Links a document to each element, or removes that link from each.
+     * Links a document to each element, or removes that link from each — only on the elements the
+     * caller may edit (checked element by element before the link changes).
      *
-     * @param segment the elements' collection path segment
-     * @param request the elements, the document and what to do
-     * @param caller  the authenticated caller
+     * @param segment        the elements' collection path segment
+     * @param request        the elements, the document and what to do
+     * @param caller         the authenticated caller
+     * @param acceptLanguage the request's Accept-Language header
      * @return which elements were changed, and why the others were not
      */
-    public BulkResultResource linkDocument(String segment, BulkDocumentLinkRequest request, ProjectApiCaller caller) {
+    public BulkResultResource linkDocument(String segment, BulkDocumentLinkRequest request, ProjectApiCaller caller,
+                                           String acceptLanguage) {
+        BulkDocumentLinkTarget target = documentTargetOf(segment);
         DocumentLinkKind kind = DocumentLinkKind.ofPathSegment(segment)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection inconnue : " + segment));
+                .orElseThrow(() -> unknownCollection(segment));
         long documentId = requireDocumentId(request.getDocumentId());
         BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
-        return forEach(idsOf(request.getIds()), documentLinkAction(mode, kind, documentId, caller));
+        LongConsumer link = documentLinkAction(mode, kind, documentId, caller);
+        return forEach(idsOf(request.getIds()), id -> {
+            target.requireEditable(caller, id, acceptLanguage);
+            link.accept(id);
+        });
     }
 
     /**
@@ -130,9 +143,27 @@ public class BulkActionOpenApiService {
     private BulkEntityOperations operationsOf(String collection) {
         BulkEntityOperations operations = operationsByCollection.get(collection);
         if (operations == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection inconnue : " + collection);
+            throw unknownCollection(collection);
         }
         return operations;
+    }
+
+    /**
+     * The collection's document link target, or 404 for a collection documents can't be linked to in bulk.
+     */
+    private BulkDocumentLinkTarget documentTargetOf(String collection) {
+        BulkDocumentLinkTarget target = documentTargetsByCollection.get(collection);
+        if (target == null) {
+            throw unknownCollection(collection);
+        }
+        return target;
+    }
+
+    /**
+     * The 404 of a collection with no bulk action of the requested kind.
+     */
+    private static ResponseStatusException unknownCollection(String collection) {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Collection inconnue : " + collection);
     }
 
     /**

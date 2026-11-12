@@ -46,6 +46,7 @@ class BulkActionOpenApiServiceTest {
     private DocumentLinksOpenApiService documentLinksOpenApiService;
 
     private BulkEntityOperations recordingUnits;
+    private BulkDocumentLinkTarget finds;
     private BulkActionOpenApiService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -56,7 +57,9 @@ class BulkActionOpenApiServiceTest {
     void setUp() {
         recordingUnits = mock(BulkEntityOperations.class);
         when(recordingUnits.collection()).thenReturn("recording-units");
-        service = new BulkActionOpenApiService(List.of(recordingUnits), documentLinksOpenApiService,
+        finds = mock(BulkDocumentLinkTarget.class);
+        when(finds.collection()).thenReturn("finds");
+        service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), documentLinksOpenApiService,
                 new BulkFailureTranslator());
     }
 
@@ -172,9 +175,9 @@ class BulkActionOpenApiServiceTest {
         request.setDocumentId(88L);
         request.setMode(BulkLinkMode.LINK);
 
-        service.linkDocument("finds", request, CALLER);
+        service.linkDocument("finds", request, CALLER, LANG);
         request.setMode(BulkLinkMode.UNLINK);
-        service.linkDocument("finds", request, CALLER);
+        service.linkDocument("finds", request, CALLER, LANG);
 
         verify(documentLinksOpenApiService).link(DocumentLinkKind.FIND, 3L, 88L, CALLER);
         verify(documentLinksOpenApiService).link(DocumentLinkKind.FIND, 4L, 88L, CALLER);
@@ -190,7 +193,61 @@ class BulkActionOpenApiServiceTest {
         BulkDocumentLinkRequest request = new BulkDocumentLinkRequest();
         request.setIds(List.of(3L));
 
-        assertThatThrownBy(() -> service.linkDocument("finds", request, CALLER))
+        assertThatThrownBy(() -> service.linkDocument("finds", request, CALLER, LANG))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    /**
+     * An element the caller may not edit keeps its links: reported as forbidden, the others are linked.
+     */
+    @Test
+    void linkDocumentSkipsTheElementsTheCallerMayNotEdit() {
+        lenient().doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée"))
+                .when(finds).requireEditable(CALLER, 4L, LANG);
+        BulkDocumentLinkRequest request = new BulkDocumentLinkRequest();
+        request.setIds(List.of(3L, 4L));
+        request.setDocumentId(88L);
+        request.setMode(BulkLinkMode.LINK);
+
+        BulkResultResource result = service.linkDocument("finds", request, CALLER, LANG);
+
+        assertThat(result.succeeded()).containsExactly(3L);
+        assertThat(result.failed()).containsExactly(new BulkFailureResource(4L, 403, "Modification non autorisée"));
+        verify(documentLinksOpenApiService).link(DocumentLinkKind.FIND, 3L, 88L, CALLER);
+        verify(documentLinksOpenApiService, never()).link(DocumentLinkKind.FIND, 4L, 88L, CALLER);
+    }
+
+    /**
+     * Documents can't be linked in bulk to a collection that isn't a document link target.
+     */
+    @Test
+    void linkDocumentRefusesACollectionDocumentsDoNotLinkTo() {
+        BulkDocumentLinkRequest request = new BulkDocumentLinkRequest();
+        request.setIds(List.of(3L));
+        request.setDocumentId(88L);
+
+        assertThatThrownBy(() -> service.linkDocument("studies", request, CALLER, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * An element the caller may not edit is refused by its unit operation: reported, the others go on.
+     */
+    @Test
+    void patchReportsAForbiddenElement() {
+        ObjectNode patch = objectMapper.createObjectNode();
+        patch.putObject("answers").putObject("comment").put("value", "Remblai");
+        BulkPatchRequest request = new BulkPatchRequest();
+        request.setIds(List.of(3L, 4L));
+        request.setPatch(patch);
+        lenient().doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée"))
+                .when(recordingUnits).patch(CALLER, 4L, patch, LANG);
+
+        BulkResultResource result = service.patch("recording-units", request, CALLER, LANG);
+
+        assertThat(result.succeeded()).containsExactly(3L);
+        assertThat(result.failed()).containsExactly(new BulkFailureResource(4L, 403, "Modification non autorisée"));
     }
 }
