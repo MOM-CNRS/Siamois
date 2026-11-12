@@ -167,7 +167,7 @@ describe("BulkActionBar", () => {
     expect(selection.setRows).not.toHaveBeenCalled();
   });
 
-  it("greys a project-bound relation over several projects, and says why in words", async () => {
+  it("greys a project-bound relation over several projects, and warns why when it is clicked", async () => {
     const catalog: FieldCatalog = {
       fields: {
         parents: { id: "parents", resourceType: "field", label: "UE parentes", answerType: "SELECT_MULTIPLE_RECORDING_UNIT", isSystemField: false },
@@ -178,9 +178,11 @@ describe("BulkActionBar", () => {
     render(selectionOf(twoProjects), config, catalog);
 
     await click(button("Modifier"));
+    await click(button("UE parentes"));
 
-    expect(button("UE parentes").disabled).toBe(true);
-    expect(document.querySelector(".bulk-field-picker-note")?.textContent).toContain("plusieurs projets");
+    expect(button("UE parentes").getAttribute("aria-disabled")).toBe("true");
+    expect(notifySpy.warn).toHaveBeenCalledWith(expect.stringContaining("plusieurs projets"));
+    expect(document.querySelector(".bulk-dialog")).toBeNull();
   });
 
   it("says no row is editable rather than blaming the projects", async () => {
@@ -193,7 +195,8 @@ describe("BulkActionBar", () => {
     render(selectionOf([rows[2]]), config, catalog);
 
     await click(button("Modifier"));
+    await click(button("UE parentes"));
 
-    expect(document.querySelector(".bulk-field-picker-note")?.textContent).toContain("Aucun des éléments sélectionnés");
+    expect(notifySpy.warn).toHaveBeenCalledWith("Aucun des éléments sélectionnés n'est modifiable par vous.");
   });
 });
