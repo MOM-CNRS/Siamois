@@ -1,7 +1,8 @@
 <ui:fragment xmlns="http://www.w3.org/1999/xhtml"
              xmlns:ui="http://java.sun.com/jsf/facelets"
              xmlns:p="http://primefaces.org/ui" xmlns:h="http://java.sun.com/jsf/html"
-             xmlns:f="http://java.sun.com/jsf/core">
+             xmlns:f="http://java.sun.com/jsf/core"
+             xmlns:sharedInput="http://xmlns.jcp.org/jsf/composite/pages/shared/input">
 
     <!-- Same look as the create overlay of the React lists: a coloured top edge, the title with the
          entity's icon, each field with its label ABOVE it, a footer with the actions. -->
@@ -28,7 +29,7 @@
                             <f:selectItems value="#{newProjectDialogBean.creatableInstitutions}" var="org"
                                            itemValue="#{org.id}" itemLabel="#{org.name}"/>
                             <p:ajax event="change" listener="#{newProjectDialogBean.onOrganisationChange()}" process="@this"
-                                    update="type templateGroup identifier"/>
+                                    update="type templateGroup identifier mainLocationGroup spatialContextGroup"/>
                         </p:selectOneMenu>
                     </div>
 
@@ -53,17 +54,60 @@
                         </p:selectOneMenu>
                     </h:panelGroup>
 
-                    <div class="sia-create-form-field">
-                        <p:outputLabel for="type" value="#{langBean.msg('projectList.create.type')}"
+                    <h:panelGroup id="type" layout="block" styleClass="sia-create-form-field">
+                        <p:outputLabel for="typeConcept:conceptAutocomplete" value="#{langBean.msg('projectList.create.type')}"
                                        styleClass="sia-create-form-label"/>
-                        <p:selectOneMenu id="type" value="#{newProjectDialogBean.typeId}" required="true"
-                                         filter="true" filterMatchMode="contains">
-                            <f:selectItem itemLabel="#{langBean.msg('projectList.create.type.choose')}"
-                                          itemValue="#{null}" noSelectionOption="true"/>
-                            <f:selectItems value="#{newProjectDialogBean.types}" var="typeChoice"
-                                           itemValue="#{typeChoice.id}" itemLabel="#{typeChoice.label}"/>
-                        </p:selectOneMenu>
-                    </div>
+                        <sharedInput:conceptAutocomplete id="typeConcept"
+                                                         selectedConcept="#{newProjectDialogBean.typeConcept}"
+                                                         completeMethod="#{newProjectDialogBean.completeType}"
+                                                         editConceptUrl="#{newProjectDialogBean.typeConceptUrl}"
+                                                         required="true"/>
+                    </h:panelGroup>
+
+                    <!-- The place fields of the organisation's project form, as on the React create form: the
+                         organisation's places, then the suggestions of the sources the field is configured with. -->
+                    <h:panelGroup id="mainLocationGroup" layout="block">
+                        <h:panelGroup rendered="#{newProjectDialogBean.placeFields.mainLocation ne null}" layout="block"
+                                      styleClass="sia-create-form-field">
+                            <p:outputLabel for="mainLocation" value="#{newProjectDialogBean.placeFields.mainLocation.label}"
+                                           styleClass="sia-create-form-label"/>
+                            <p:autoComplete id="mainLocation"
+                                            value="#{newProjectDialogBean.mainLocation}"
+                                            completeMethod="#{newProjectDialogBean.completeMainLocation}"
+                                            var="place" itemValue="#{place}" itemLabel="#{place.name}"
+                                            converter="#{newProjectDialogBean.offeredPlaces}"
+                                            forceSelection="true" dropdown="true" scrollHeight="300"
+                                            panelStyleClass="sia-autocomplete-panel">
+                                <p:ajax event="itemSelect" listener="#{newProjectDialogBean.onPlacePicked()}"
+                                        process="@this" update="@this"/>
+                                <p:column>
+                                    <ui:include src="/dialog/project/placeChoiceItem.xhtml"/>
+                                </p:column>
+                            </p:autoComplete>
+                        </h:panelGroup>
+                    </h:panelGroup>
+
+                    <h:panelGroup id="spatialContextGroup" layout="block">
+                        <h:panelGroup rendered="#{newProjectDialogBean.placeFields.spatialContext ne null}" layout="block"
+                                      styleClass="sia-create-form-field">
+                            <p:outputLabel for="spatialContext" value="#{newProjectDialogBean.placeFields.spatialContext.label}"
+                                           styleClass="sia-create-form-label"/>
+                            <p:autoComplete id="spatialContext"
+                                            value="#{newProjectDialogBean.spatialContext}"
+                                            completeMethod="#{newProjectDialogBean.completeSpatialContext}"
+                                            var="place" itemValue="#{place}" itemLabel="#{place.name}"
+                                            converter="#{newProjectDialogBean.offeredPlaces}"
+                                            multiple="true" unique="true" forceSelection="true" dropdown="true"
+                                            scrollHeight="300" panelStyleClass="sia-autocomplete-panel">
+                                <p:ajax event="itemSelect" listener="#{newProjectDialogBean.onPlacePicked()}"
+                                        process="@this" update="@this"/>
+                                <p:ajax event="itemUnselect" process="@this"/>
+                                <p:column>
+                                    <ui:include src="/dialog/project/placeChoiceItem.xhtml"/>
+                                </p:column>
+                            </p:autoComplete>
+                        </h:panelGroup>
+                    </h:panelGroup>
                 </div>
 
                 <div class="sia-create-form-footer">

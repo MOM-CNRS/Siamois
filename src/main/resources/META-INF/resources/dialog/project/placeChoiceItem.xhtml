@@ -1,0 +1,17 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:h="http://java.sun.com/jsf/html">
+    <!-- One place offered by a place picker of the new project dialog (variable "place"): its name, then
+         its category and the source of a suggestion, as the React place pickers show them. -->
+    <h:panelGroup layout="block" style="display:flex; flex-direction: column">
+        <h:outputText value="#{place.name}"/>
+        <h:panelGroup rendered="#{not empty place.category or place.external}">
+            <small>
+                <h:outputText value="#{place.category}" rendered="#{not empty place.category}"/>
+                <h:outputText value=" · " rendered="#{not empty place.category and place.external}"/>
+                <h:outputText value="#{langBean.msg('projectList.create.place.external', place.source)}"
+                              rendered="#{place.external}"/>
+            </small>
+        </h:panelGroup>
+    </h:panelGroup>
+</ui:composition>
