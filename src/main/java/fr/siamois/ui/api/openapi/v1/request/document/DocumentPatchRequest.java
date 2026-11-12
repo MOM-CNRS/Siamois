@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.document;
 
+import fr.siamois.ui.api.openapi.v1.request.FormPatchRequest;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
@@ -17,7 +18,7 @@ import java.util.Map;
  */
 @Data
 @Schema(description = "Mise à jour d'un document")
-public class DocumentPatchRequest {
+public class DocumentPatchRequest implements FormPatchRequest {
 
     @Schema(description = "Titre du document (mobile)")
     private String title;

@@ -13,7 +13,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class StudyDTO extends AbstractEntityDTO {
+public class StudyDTO extends AbstractEntityDTO implements ProjectIdentifiedDTO {
 
     protected String identifier;
     protected Integer generatedNumber;

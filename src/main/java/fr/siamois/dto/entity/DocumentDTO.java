@@ -17,7 +17,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class DocumentDTO extends AbstractEntityDTO {
+public class DocumentDTO extends AbstractEntityDTO implements ProjectIdentifiedDTO {
 
     private String identifier;
     private Integer generatedNumber;

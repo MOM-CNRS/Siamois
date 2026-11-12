@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.study;
 
+import fr.siamois.ui.api.openapi.v1.request.FormPatchRequest;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.ui.api.openapi.v1.resource.form.AnswerInput;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 @Data
 @Schema(description = "Mise à jour partielle d'une étude (réponses formulaire)")
-public class StudyPatchRequest {
+public class StudyPatchRequest implements FormPatchRequest {
 
     @Schema(description = "Nouveau statut de validation, absent = inchangé : INCOMPLETE (en cours), COMPLETE (terminé), "
             + "CANCELLED (annulé) avec le droit de modification ; VALIDATED (validé) — l'atteindre ou le quitter — "

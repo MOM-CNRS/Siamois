@@ -10,7 +10,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class ContainerDTO extends AbstractEntityDTO {
+public class ContainerDTO extends AbstractEntityDTO implements ProjectIdentifiedDTO {
 
     protected ConceptDTO type;
     protected SpatialUnitSummaryDTO spatialUnit;

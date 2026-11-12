@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchChanges;
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchRights;
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.document.Document;
@@ -122,26 +125,14 @@ public class DocumentOpenApiService {
         DocumentDTO document = requireAccessibleDocument(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = document.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, document.getActionUnit().getId(),
+        FormPatchRights rights = new FormPatchRights(profilePermissionService.hasProjectPermission(userInfo, document.getActionUnit().getId(),
                 PermissionConstants.INSTANCE_EDIT_DOCUMENTS,
                 PermissionConstants.ORGANIZATION_EDIT_DOCUMENTS,
-                PermissionConstants.PROJECT_EDIT_DOCUMENTS);
-        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId());
-        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, document.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(document.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
-        validationOpenApiService.requireAllowed(document.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
-
-        if (identifierChange) {
-            document.setIdentifier(newIdentifier);
-            IdentifierPatch.requireFree(documentService.identifierAlreadyExistInProject(document));
-        }
-        if (answersChange || identifierChange || !statusChange) {
+                PermissionConstants.PROJECT_EDIT_DOCUMENTS),
+                profilePermissionService.hasValidatePermission(userInfo, document.getActionUnit().getId()));
+        FormPatchChanges changes = OpenApiServiceUtils.applyFormPatch(document, request, rights, validationOpenApiService,
+                () -> documentService.identifierAlreadyExistInProject(document));
+        if (changes.writesContent()) {
             Long projectId = document.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the document-types catalog lays out (system + additional fields).
