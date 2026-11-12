@@ -106,13 +106,6 @@ public class LabelBean implements Serializable {
         return findLabelOf(conversionService.convert(concept, ConceptDTO.class));
     }
 
-    public String findVocabularyLabelOf(Concept concept) {
-        if (concept == null) {
-            return null;
-        }
-        return labelService.findLabelOf(concept.getVocabulary(), resolveLangCode()).getValue();
-    }
-
     public Optional<ConceptLabelDTO> findById(Long id) {
         if (idToLabelCache.containsKey(id)) {
             return Optional.of(idToLabelCache.get(id));
