@@ -2,13 +2,13 @@ import {relationTab} from "../../panels/detail/relationTab";
 import {t} from "../../i18n";
 import type {DetailTabDef, DocumentLinkField, EntityRef} from "../shared/types";
 import {AssociateDocument} from "./AssociateDocument";
-import {unlinkDocument} from "./api";
+import {type DocumentLinkSegment, unlinkDocument} from "./api";
 
 export interface DocumentsTabSpec<TDetail extends { id: string | number }> {
   // The fiche's own registry key ("phase", "recordingUnit"…): what the list's scope and the create form's link name.
   scopeEntityType: string;
   // The entity's REST segment, under which its documents are listed, linked and unlinked.
-  segment: "recording-units" | "finds" | "places" | "phases" | "containers";
+  segment: DocumentLinkSegment;
   // The DocumentCreateRequest list a new document is linked through.
   linkField: DocumentLinkField;
   badge: (entity: TDetail) => number | string | undefined;

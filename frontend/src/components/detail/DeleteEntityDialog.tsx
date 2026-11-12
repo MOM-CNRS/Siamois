@@ -9,6 +9,10 @@ export interface DeleteEntityDialogProps {
   visible: boolean;
   // The name the user must type to confirm (a project). Absent: a plain "are you sure?".
   confirmName?: string;
+  // What the dialog says instead of the single-entity wording (a bulk deletion counts its entities).
+  message?: string;
+  // What asks for `confirmName` instead of the project's wording.
+  confirmPrompt?: string;
   // The server's refusal (the entity still has relationships...), shown in the dialog, which stays open.
   error?: string | null;
   busy?: boolean;
@@ -20,7 +24,16 @@ export interface DeleteEntityDialogProps {
  * The permanent-deletion confirmation. For a project (`confirmName`) the confirm button stays
  * disabled until the project's name has been typed exactly.
  */
-export function DeleteEntityDialog({ visible, confirmName, error, busy, onConfirm, onHide }: DeleteEntityDialogProps) {
+export function DeleteEntityDialog({
+  visible,
+  confirmName,
+  message,
+  confirmPrompt,
+  error,
+  busy,
+  onConfirm,
+  onHide,
+}: DeleteEntityDialogProps) {
   const [typed, setTyped] = useState("");
   useEffect(() => {
     if (visible) setTyped("");
@@ -53,10 +66,10 @@ export function DeleteEntityDialog({ visible, confirmName, error, busy, onConfir
         </>
       }
     >
-      <p className="delete-entity-dialog-message">{needsName ? t("delete.projectWarning") : t("delete.entityConfirm")}</p>
+      <p className="delete-entity-dialog-message">{message ?? (needsName ? t("delete.projectWarning") : t("delete.entityConfirm"))}</p>
       {needsName && (
         <div className="delete-entity-dialog-confirm">
-          <label htmlFor="delete-entity-name">{t("delete.projectType", { name: confirmName })}</label>
+          <label htmlFor="delete-entity-name">{confirmPrompt ?? t("delete.projectType", { name: confirmName })}</label>
           <InputText
             id="delete-entity-name"
             value={typed}

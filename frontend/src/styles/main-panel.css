@@ -4092,3 +4092,152 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .field-geometry-overlay .field-geometry {
   max-height: 20rem;
 }
+
+/* ---------- Bulk actions on a list's selection (panels/list/bulk/BulkActionBar.tsx) ----------
+   A Notion-style bar laid over the top of the table while rows are ticked. The anchor takes no room
+   (the table keeps its place); the bar floats above the header, after the select-all box so that
+   box stays reachable. */
+.bulk-action-bar-anchor {
+  position: relative;
+  height: 0;
+  z-index: 5;
+}
+
+.bulk-action-bar {
+  position: absolute;
+  top: 0.2rem;
+  left: 3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: calc(100% - 3.5rem);
+  padding: 0.15rem 0.5rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  border: 1px solid var(--surface-300, #e0e0e0);
+  border-radius: 8px;
+  background: var(--surface-0, #fff);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  animation: bulk-action-bar-in 0.12s ease-out;
+}
+
+@keyframes bulk-action-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bulk-action-bar-count {
+  padding: 0 0.25rem 0 0.15rem;
+  font-weight: 600;
+  color: var(--main-color, var(--primary-color));
+}
+
+.bulk-action-bar-separator {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.25rem 0.35rem;
+  background: var(--surface-300, #e0e0e0);
+}
+
+.bulk-action-bar .p-button.p-button-sm {
+  padding: 0.3rem 0.6rem;
+}
+
+.bulk-action-bar-running {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.bulk-field-picker-overlay .p-overlaypanel-content {
+  padding: 0.5rem;
+}
+
+.bulk-field-picker {
+  display: flex;
+  flex-direction: column;
+  width: 18rem;
+  max-height: 22rem;
+}
+
+.bulk-field-picker-search,
+.bulk-field-picker-search .p-inputtext {
+  width: 100%;
+}
+
+.bulk-field-picker-group {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+  overflow-y: auto;
+}
+
+.bulk-field-picker-group-label {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.bulk-field-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bulk-field-picker-item:hover:not(:disabled),
+.bulk-field-picker-item:focus-visible {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.bulk-field-picker-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk-field-picker-item-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bulk-field-picker-empty {
+  padding: 0.75rem 0.5rem;
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.bulk-dialog {
+  width: min(30rem, 94vw);
+}
+
+.bulk-field-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bulk-field-editor-hint,
+.bulk-field-editor-skipped {
+  color: var(--text-color-secondary, #6c757d);
+}
+
+.bulk-field-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
