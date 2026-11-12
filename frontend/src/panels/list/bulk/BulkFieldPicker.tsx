@@ -90,7 +90,12 @@ export function BulkFieldPicker({ fields, disabledReason, onPick, extraRelations
       </span>
       {groups.length === 0 && <div className="bulk-field-picker-empty">{t("bulk.noField")}</div>}
       {groups.map((group) => (
-        <div key={group.key} className="bulk-field-picker-group" role="group" aria-label={group.label}>
+        <div
+          key={group.key}
+          className={`bulk-field-picker-group bulk-field-picker-group-${group.key}`}
+          role="group"
+          aria-label={group.label}
+        >
           <div className="bulk-field-picker-group-label">{group.label}</div>
           {group.items.map((item) => (
             <button
