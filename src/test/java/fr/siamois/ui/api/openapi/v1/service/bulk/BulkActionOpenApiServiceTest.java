@@ -9,7 +9,9 @@ import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
-import fr.siamois.ui.api.openapi.v1.response.bulk.BulkResultResource;
+import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
+import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobStatus;
 import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +42,8 @@ import static org.mockito.Mockito.when;
 class BulkActionOpenApiServiceTest {
 
     private static final String LANG = "fr";
-    private static final ProjectApiCaller CALLER = new ProjectApiCaller(null, Set.of(1L), List.of());
+    private static final ProjectApiCaller CALLER = new ProjectApiCaller(person(7L), Set.of(1L), List.of());
+    private static final ProjectApiCaller SOMEONE_ELSE = new ProjectApiCaller(person(8L), Set.of(1L), List.of());
 
     @Mock
     private DocumentLinksOpenApiService documentLinksOpenApiService;
@@ -59,8 +62,18 @@ class BulkActionOpenApiServiceTest {
         when(recordingUnits.collection()).thenReturn("recording-units");
         finds = mock(BulkDocumentLinkTarget.class);
         when(finds.collection()).thenReturn("finds");
+        // Called directly (no Spring proxy), the runner processes the job synchronously: the job is done on return.
         service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), documentLinksOpenApiService,
-                new BulkFailureTranslator());
+                new BulkJobRegistry(), new BulkAsyncRunner(new BulkFailureTranslator()));
+    }
+
+    /**
+     * A person with this id.
+     */
+    private static PersonDTO person(long id) {
+        PersonDTO person = new PersonDTO();
+        person.setId(id);
+        return person;
     }
 
     /**
@@ -77,7 +90,7 @@ class BulkActionOpenApiServiceTest {
      */
     @Test
     void deleteActsOnEachDistinctId() {
-        BulkResultResource result = service.delete("recording-units", deleteRequest(3L, 4L, 3L), CALLER, LANG);
+        BulkJobResource result = service.delete("recording-units", deleteRequest(3L, 4L, 3L), CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L, 4L);
         assertThat(result.failed()).isEmpty();
@@ -93,7 +106,7 @@ class BulkActionOpenApiServiceTest {
         lenient().doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "L'UE a des relations"))
                 .when(recordingUnits).delete(CALLER, 4L, LANG);
 
-        BulkResultResource result = service.delete("recording-units", deleteRequest(3L, 4L, 5L), CALLER, LANG);
+        BulkJobResource result = service.delete("recording-units", deleteRequest(3L, 4L, 5L), CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L, 5L);
         assertThat(result.failed()).containsExactly(new BulkFailureResource(4L, 409, "L'UE a des relations"));
@@ -139,7 +152,7 @@ class BulkActionOpenApiServiceTest {
         request.setIds(List.of(3L, 4L));
         request.setPatch(patch);
 
-        BulkResultResource result = service.patch("recording-units", request, CALLER, LANG);
+        BulkJobResource result = service.patch("recording-units", request, CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L, 4L);
         verify(recordingUnits).patch(CALLER, 3L, patch, LANG);
@@ -209,7 +222,7 @@ class BulkActionOpenApiServiceTest {
         request.setDocumentId(88L);
         request.setMode(BulkLinkMode.LINK);
 
-        BulkResultResource result = service.linkDocument("finds", request, CALLER, LANG);
+        BulkJobResource result = service.linkDocument("finds", request, CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L);
         assertThat(result.failed()).containsExactly(new BulkFailureResource(4L, 403, "Modification non autorisée"));
@@ -245,9 +258,39 @@ class BulkActionOpenApiServiceTest {
         lenient().doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée"))
                 .when(recordingUnits).patch(CALLER, 4L, patch, LANG);
 
-        BulkResultResource result = service.patch("recording-units", request, CALLER, LANG);
+        BulkJobResource result = service.patch("recording-units", request, CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L);
         assertThat(result.failed()).containsExactly(new BulkFailureResource(4L, 403, "Modification non autorisée"));
+    }
+
+    /**
+     * A job is followed by the one who started it: done, with its result, once every element is processed.
+     */
+    @Test
+    void theCallerFollowsTheJobItStarted() {
+        BulkJobResource started = service.delete("recording-units", deleteRequest(3L, 4L), CALLER, LANG);
+
+        BulkJobResource followed = service.job(started.id(), CALLER);
+
+        assertThat(followed.status()).isEqualTo(BulkJobStatus.DONE);
+        assertThat(followed.total()).isEqualTo(2);
+        assertThat(followed.processed()).isEqualTo(2);
+        assertThat(followed.succeeded()).containsExactly(3L, 4L);
+    }
+
+    /**
+     * Someone else's job, like an unknown one, is not found.
+     */
+    @Test
+    void someoneElsesJobIsNotFound() {
+        String jobId = service.delete("recording-units", deleteRequest(3L), CALLER, LANG).id();
+
+        assertThatThrownBy(() -> service.job(jobId, SOMEONE_ELSE))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThatThrownBy(() -> service.job("unknown", CALLER))
+                .isInstanceOf(ResponseStatusException.class);
     }
 }
