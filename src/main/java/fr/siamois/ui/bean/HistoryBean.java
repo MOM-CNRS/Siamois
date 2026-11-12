@@ -3,9 +3,11 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.models.UserHistoryEntry;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.services.UserHistoryService;
 import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
 import fr.siamois.ui.bean.panel.FlowBean;
+import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -40,6 +43,7 @@ public class HistoryBean {
     // Looked up when needed: SessionSettingsBean depends on FlowBean, which depends on this bean.
     private final ObjectProvider<SessionSettingsBean> sessionSettings;
     private final EntityProjectResolver projectResolver;
+    private final LangBean langBean;
 
     private List<HistoryItem> items = new ArrayList<>();
     private boolean loaded;
@@ -51,9 +55,46 @@ public class HistoryBean {
             List<HistoryItem> stored = loadStored();
             stored.addAll(items);
             resolveProjects(stored);
+            relabelHomeEntries(stored);
             items = stored;
         }
         return items;
+    }
+
+    /**
+     * An organisation changed (renamed, typically): the home pages already listed take the current name
+     * of the active organisation, since their title was recorded with the name it had then.
+     */
+    @EventListener(InstitutionChangeEvent.class)
+    public void refreshHomeTitles() {
+        if (loaded) {
+            relabelHomeEntries(items);
+        }
+    }
+
+    /**
+     * Gives the home pages of the list the title of the active organisation's home page: entries are kept
+     * per organisation, so every home page listed is the active organisation's.
+     */
+    private void relabelHomeEntries(List<HistoryItem> toRelabel) {
+        UserInfo userInfo = currentUserInfo();
+        if (userInfo == null || langBean == null) {
+            return;
+        }
+        String homeTitle = WelcomePanel.titleOf(langBean, userInfo.getInstitution().getName());
+        for (HistoryItem item : toRelabel) {
+            relabelIfHome(item.getMain(), homeTitle);
+            relabelIfHome(item.getSecondary(), homeTitle);
+        }
+    }
+
+    /**
+     * Sets the given title on the component when it is a home page.
+     */
+    private static void relabelIfHome(HistoryItemComponent component, String homeTitle) {
+        if (component != null && WelcomePanel.RESOURCE_URI.equals(component.getUri())) {
+            component.setTitle(homeTitle);
+        }
     }
 
     /** The active organisation changed: its history, not the previous one's, is shown next. */
