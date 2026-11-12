@@ -47,6 +47,6 @@ public class WelcomePanel extends AbstractPanel implements Serializable {
 
     @Override
     public Long reactOrganizationId() {
-        return sessionSettingsBean.getSelectedInstitution().getId();
+        return sessionSettingsBean.getSelectedInstitutionId();
     }
 }

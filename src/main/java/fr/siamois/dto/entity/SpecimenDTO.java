@@ -63,6 +63,8 @@ public class SpecimenDTO extends AbstractEntityDTO {
      * isolation number name one particular find), the hierarchy (parents, children), where it is kept
      * (containers) and its phases. Collections are copied, not shared, and so is the weight, so
      * the copy owns its own measurement.
+     *
+     * @param original the find to copy
      */
     public SpecimenDTO(SpecimenDTO original) {
         createdByInstitution = original.getCreatedByInstitution();
@@ -96,10 +98,30 @@ public class SpecimenDTO extends AbstractEntityDTO {
         objectOrLot = original.getObjectOrLot();
         geom = original.getGeom();
         samplingNature = original.getSamplingNature();
-        if (original.getWeight() != null) {
-            MeasurementAnswerDTO w = original.getWeight();
-            weight = new MeasurementAnswerDTO(null, w.getNumericValue(), w.getUnit(), w.getNormalizedValue(), w.getComment());
+        weight = copyOfWeight(original.getWeight());
+
+        // Intentional resets: these fields are not part of a copy.
+        identifier = null;
+        fullIdentifier = null;
+        otherIdentifier = null;
+        isolationNumber = null;
+        parents = null;
+        children = null;
+        containers = null;
+        phases = null;
+    }
+
+    /**
+     * Copies a weight measurement without its id, so that the copy owns its own measurement.
+     *
+     * @param weight the weight to copy, may be {@code null}
+     * @return the copied weight, or {@code null} when there is none
+     */
+    private static MeasurementAnswerDTO copyOfWeight(MeasurementAnswerDTO weight) {
+        if (weight == null) {
+            return null;
         }
+        return new MeasurementAnswerDTO(null, weight.getNumericValue(), weight.getUnit(), weight.getNormalizedValue(), weight.getComment());
     }
 
     public static List<String> getBindableFieldNames() {

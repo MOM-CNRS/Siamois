@@ -14,6 +14,12 @@ import java.util.Set;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class SpatialUnitDTO extends AbstractEntityDTO {
 
+    /**
+     * Creates a copy of {@code spatialUnitDTO}. The children and the recording unit count are not copied:
+     * they are deliberately reset.
+     *
+     * @param spatialUnitDTO the spatial unit to copy
+     */
     public SpatialUnitDTO (SpatialUnitDTO spatialUnitDTO) {
         super(spatialUnitDTO);
         id = spatialUnitDTO.getId();
@@ -34,6 +40,10 @@ public class SpatialUnitDTO extends AbstractEntityDTO {
         comments = spatialUnitDTO.comments;
         shomMapNumber = spatialUnitDTO.shomMapNumber;
         geom = spatialUnitDTO.geom;
+
+        // Intentional resets: these fields are not part of a copy.
+        children = null;
+        recordingUnitCount = null;
     }
 
     private String name;
