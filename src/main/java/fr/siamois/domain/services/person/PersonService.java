@@ -44,6 +44,7 @@ import java.util.stream.Stream;
 public class PersonService {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    public static final String PERSON_MUST_NOT_BE_NULL = "person must not be null";
     private final PersonRepository personRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final List<PersonDataVerifier> verifiers;
@@ -81,7 +82,7 @@ public class PersonService {
         checkPassword(password);
 
         Person person = conversionService.convert(personDTO,Person.class);
-        Objects.requireNonNull(person, "person must not be null");
+        Objects.requireNonNull(person, PERSON_MUST_NOT_BE_NULL);
         person.setPassword(passwordEncoder.encode(password));
         person.setEnabled(true);
 
@@ -115,7 +116,7 @@ public class PersonService {
         checkPersonData(personDTO, true);
 
         Person person = conversionService.convert(personDTO, Person.class);
-        Objects.requireNonNull(person, "person must not be null");
+        Objects.requireNonNull(person, PERSON_MUST_NOT_BE_NULL);
         person.setPassword(passwordEncoder.encode(generateRandomPassword()));
         person.setEnabled(false);
 
@@ -295,7 +296,7 @@ public class PersonService {
         Person existingPerson = personRepository.findById(personDTO.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
         Person person = conversionService.convert(personDTO,Person.class);
-        Objects.requireNonNull(person, "person must not be null");
+        Objects.requireNonNull(person, PERSON_MUST_NOT_BE_NULL);
         person.setPassword(existingPerson.getPassword()); // Keep existing password
         personRepository.save(person);
     }
