@@ -94,7 +94,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyAnswer(rows: RowRecord[], fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run("bulk.taskEdit", "bulk.done", () => bulk.patch(idsOf(editableRows(rows)), patch));
+    await run("bulk.taskEdit", "bulk.editDone", () => bulk.patch(idsOf(editableRows(rows)), patch));
   }
 
   /**
@@ -103,14 +103,14 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyDocument(rows: RowRecord[], documentId: string | number, mode: BulkLinkMode): Promise<void> {
     const linkDocument = bulk.linkDocument;
     if (!linkDocument) return;
-    await run("bulk.taskLinks", "bulk.done", () => linkDocument(idsOf(editableRows(rows)), documentId, mode));
+    await run("bulk.taskLinks", "bulk.linksDone", () => linkDocument(idsOf(editableRows(rows)), documentId, mode));
   }
 
   /**
    * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
   async function deleteRows(rows: RowRecord[]): Promise<void> {
-    const result = await run("bulk.taskDelete", "bulk.deleted", () => bulk.delete(idsOf(deletableRows(rows))));
+    const result = await run("bulk.taskDelete", "bulk.deleteDone", () => bulk.delete(idsOf(deletableRows(rows))));
     if (result.succeeded.length === 0) return;
     const deleted = new Set(result.succeeded.map(String));
     const deletedRows = rows.filter((row) => deleted.has(String(row.id)));

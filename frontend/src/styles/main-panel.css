@@ -4237,6 +4237,13 @@ div#search-bar .sia-topbar-search-field .sia-search {
   width: min(30rem, 94vw);
 }
 
+/* The editors' popups that stay inside them (the date picker's panel is appended to itself) must not be
+   cut by the dialog's scrolling box: the bulk editor is short, it needs no scroll of its own. */
+.bulk-dialog.p-dialog,
+.bulk-dialog .p-dialog-content {
+  overflow: visible;
+}
+
 .bulk-field-editor {
   display: flex;
   flex-direction: column;

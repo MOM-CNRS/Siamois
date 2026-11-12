@@ -18,7 +18,7 @@ describe("bulkJobTracker", () => {
       onProgress?.({ processed: 1, total: 2 });
       return { succeeded: [1, 2], failed: [] };
     });
-    const entry = { id: "job-1", label: "bulk.taskDelete" as const, successKey: "bulk.deleted" as const };
+    const entry = { id: "job-1", label: "bulk.taskDelete" as const, successKey: "bulk.deleteDone" as const };
 
     const first = trackBulkJob(entry, 2);
     const second = trackBulkJob(entry, 2);
@@ -37,7 +37,7 @@ describe("bulkJobTracker", () => {
 
   it("goes on following the jobs a previous page of the tab started", () => {
     mockedFollow.mockReturnValue(new Promise(() => {}));
-    const entry = { id: "job-9", label: "bulk.taskEdit", successKey: "bulk.done" };
+    const entry = { id: "job-9", label: "bulk.taskEdit", successKey: "bulk.editDone" };
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify([entry]));
 
     resumeBulkJobs();

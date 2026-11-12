@@ -155,7 +155,7 @@ describe("BulkActionBar", () => {
     await click(button("Supprimer définitivement"));
 
     expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
-    expect(mockedTrack).toHaveBeenCalledWith({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleted" }, 2);
+    expect(mockedTrack).toHaveBeenCalledWith({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleteDone" }, 2);
     expect(selection.setRows).toHaveBeenCalledWith([rows[1], rows[2]]);
   });
 

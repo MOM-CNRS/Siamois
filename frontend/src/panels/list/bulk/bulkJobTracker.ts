@@ -5,8 +5,8 @@ import type {MessageKey} from "../../../i18n";
 // page, the React tree is mounted afresh) picks them up again.
 const STORAGE_KEY = "siamois.bulkJobs";
 
-/** What a finished bulk job is reported as: elements updated, or deleted. */
-export type BulkSuccessKey = "bulk.done" | "bulk.deleted";
+/** What a finished bulk job is reported as, with how many entities it changed. */
+export type BulkSuccessKey = "bulk.editDone" | "bulk.linksDone" | "bulk.deleteDone";
 
 /** A bulk job to follow: what it is called while it runs, and how its success is told. */
 export interface BulkJobEntry {

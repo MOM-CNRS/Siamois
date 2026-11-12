@@ -68,7 +68,7 @@ describe("BulkJobNotifier", () => {
   it("shows a job's progress in a toast, then what it did", async () => {
     const job = controllableJob();
     act(() => {
-      void trackBulkJob({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleted" }, 3);
+      void trackBulkJob({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleteDone" }, 3);
     });
 
     expect(notifySpy.task).toHaveBeenCalledWith("Suppression en cours");
@@ -80,14 +80,14 @@ describe("BulkJobNotifier", () => {
     await flush();
 
     expect(taskToastSpy.close).toHaveBeenCalled();
-    expect(notifySpy.warn).toHaveBeenCalledWith("2 réussi(s), 1 en échec. Relations");
+    expect(notifySpy.warn).toHaveBeenCalledWith("Suppression terminée : 2 entités supprimées, 1 en échec. Relations", 8000);
     expect(bulkJobsSnapshot()).toEqual([]);
   });
 
   it("lets go silently of a job that can no longer be read", async () => {
     const job = controllableJob();
     act(() => {
-      trackBulkJob({ id: "job-2", label: "bulk.taskEdit", successKey: "bulk.done" }).catch(() => {});
+      trackBulkJob({ id: "job-2", label: "bulk.taskEdit", successKey: "bulk.editDone" }).catch(() => {});
     });
 
     act(() => job.fail(new ApiError(404, "Tâche introuvable")));
@@ -95,5 +95,17 @@ describe("BulkJobNotifier", () => {
 
     expect(notifySpy.error).not.toHaveBeenCalled();
     expect(bulkJobsSnapshot()).toEqual([]);
+  });
+
+  it("tells how many entities a job changed", async () => {
+    const job = controllableJob();
+    act(() => {
+      void trackBulkJob({ id: "job-3", label: "bulk.taskEdit", successKey: "bulk.editDone" }, 2);
+    });
+
+    act(() => job.finish({ succeeded: [1, 2], failed: [] }));
+    await flush();
+
+    expect(notifySpy.success).toHaveBeenCalledWith("Modification terminée : 2 entités modifiées", 8000);
   });
 });

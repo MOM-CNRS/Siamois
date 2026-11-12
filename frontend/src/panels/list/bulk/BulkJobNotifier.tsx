@@ -15,6 +15,9 @@ import {
   type TrackedBulkJob,
 } from "./bulkJobTracker";
 
+// How long the outcome of a bulk action stays: longer than a plain toast, the user may be elsewhere by then.
+const BULK_RESULT_LIFE_MS = 8000;
+
 // The notifiers mounted on the page (one per React root): the first one tells, the others wait their turn.
 const claims: symbol[] = [];
 const claimListeners = new Set<() => void>();
@@ -27,16 +30,18 @@ function emitClaims() {
 }
 
 /**
- * Tells the user what a finished bulk job did: a success, or a warning naming the first failure.
+ * Tells the user what a finished bulk job did — what it was, and how many entities it changed — with
+ * the failures counted and the first one named.
  */
 export function reportBulkResult(notify: Notify, result: BulkResult, successKey: BulkSuccessKey): void {
+  const summary = tn(successKey, result.succeeded.length);
   if (result.failed.length === 0) {
-    notify.success(tn(successKey, result.succeeded.length));
+    notify.success(summary, BULK_RESULT_LIFE_MS);
     return;
   }
-  const params = { done: result.succeeded.length, failed: result.failed.length, first: result.failed[0].message };
-  if (result.succeeded.length === 0) notify.error(params.first);
-  else notify.warn(t("bulk.partial", params));
+  const params = { summary, failed: result.failed.length, first: result.failed[0].message };
+  if (result.succeeded.length === 0) notify.error(t("bulk.noneDone", params), BULK_RESULT_LIFE_MS);
+  else notify.warn(t("bulk.partial", params), BULK_RESULT_LIFE_MS);
 }
 
 /**

@@ -12,10 +12,11 @@ export interface TaskToast {
 }
 
 export interface Notify {
-  error: (message: string) => void;
-  success: (message: string) => void;
-  warn: (message: string) => void;
-  info: (message: string) => void;
+  // `life`: how long the toast stays, in ms, when not the severity's usual time.
+  error: (message: string, life?: number) => void;
+  success: (message: string, life?: number) => void;
+  warn: (message: string, life?: number) => void;
+  info: (message: string, life?: number) => void;
   // A toast that stays while a task runs, showing its progress.
   task: (label: string) => TaskToast;
 }
@@ -36,10 +37,10 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
   const toast = useRef<Toast>(null);
   const notify = useMemo<Notify>(
     () => ({
-      error: (detail) => toast.current?.show({ severity: "error", summary: t("notify.error"), detail, life: 6000 }),
-      success: (detail) => toast.current?.show({ severity: "success", detail, life: 3000 }),
-      warn: (detail) => toast.current?.show({ severity: "warn", detail, life: 6000 }),
-      info: (detail) => toast.current?.show({ severity: "info", detail, life: 4000 }),
+      error: (detail, life = 6000) => toast.current?.show({ severity: "error", summary: t("notify.error"), detail, life }),
+      success: (detail, life = 3000) => toast.current?.show({ severity: "success", detail, life }),
+      warn: (detail, life = 6000) => toast.current?.show({ severity: "warn", detail, life }),
+      info: (detail, life = 4000) => toast.current?.show({ severity: "info", detail, life }),
       task: (label) => {
         const store = createTaskProgressStore();
         const message: ToastMessage = {
