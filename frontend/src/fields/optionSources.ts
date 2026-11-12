@@ -17,6 +17,8 @@ export interface FilterOption {
   // A place suggestion (GET /places/suggestions): what the picker shows, and — for one from an
   // external source — what creating the place needs.
   place?: PlaceItemInfo;
+  // A person created from their name only, who still awaits the creation of their account.
+  accountPending?: boolean;
 }
 
 /** The options of a search, and the sources searched without a filter (the field their parameter reads is empty). */
@@ -245,8 +247,22 @@ export async function fetchFieldConceptOptions(
   return body.data.map(toConceptOption);
 }
 
+interface PersonBody {
+  id: string;
+  username?: string | null;
+  name?: string | null;
+  lastname?: string | null;
+  accountPending?: boolean;
+}
+
 interface UsersResponseBody {
-  data: { id: string; username?: string | null; name?: string | null; lastname?: string | null }[];
+  data: PersonBody[];
+}
+
+function toPersonOption(p: PersonBody): FilterOption {
+  const fullName = [p.name, p.lastname].filter(Boolean).join(" ");
+  const option: FilterOption = { id: String(p.id), label: fullName || p.username || String(p.id) };
+  return p.accountPending ? { ...option, accountPending: true } : option;
 }
 
 /** GET /api/v1/users — the organization's members (UsersControllerApi), searched by name/e-mail. */
@@ -254,10 +270,37 @@ async function fetchPersonOptions(organizationId: number, q?: string): Promise<F
   const query = new URLSearchParams({ organizationId: String(organizationId), limit: String(PICKER_PAGE) });
   if (q) query.set("search", q);
   const body = await apiFetch<UsersResponseBody>(`/api/v1/users?${query.toString()}`);
-  return body.data.map((p) => {
-    const fullName = [p.name, p.lastname].filter(Boolean).join(" ");
-    return { id: String(p.id), label: fullName || p.username || String(p.id) };
+  return body.data.map(toPersonOption);
+}
+
+/** A person's first and last name, as typed in the « Nouvelle personne » form. */
+export interface PersonNameInput {
+  name: string;
+  lastname: string;
+}
+
+/**
+ * Splits what was typed in a person picker into a first and a last name, to prefill the
+ * « Nouvelle personne » form: the first word is the first name, the rest the last name; a single
+ * word is taken as the last name.
+ */
+export function personNameFromQuery(query: string | undefined): PersonNameInput {
+  const words = (query ?? "").trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return { name: "", lastname: words[0] ?? "" };
+  return { name: words[0], lastname: words.slice(1).join(" ") };
+}
+
+/**
+ * POST /api/v1/projects/{id}/persons — creates someone without an account from their name only
+ * (or gives back the person of that name already awaiting theirs in the organization), member of
+ * the project, ready to be picked.
+ */
+export async function createPersonAwaitingAccount(projectId: string, person: PersonNameInput): Promise<FilterOption> {
+  const body = await apiFetch<{ data: PersonBody }>(`/api/v1/projects/${encodeURIComponent(projectId)}/persons`, {
+    method: "POST",
+    body: { name: person.name.trim(), lastname: person.lastname.trim() },
   });
+  return toPersonOption(body.data);
 }
 
 interface EntityRowsResponseBody {

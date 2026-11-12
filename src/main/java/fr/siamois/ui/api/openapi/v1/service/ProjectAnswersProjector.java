@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
@@ -11,6 +12,7 @@ import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOne
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.DocumentSummaryDTO;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
@@ -245,6 +247,9 @@ public class ProjectAnswersProjector {
     }
 
     private static Object placeOrDocumentWireValue(CustomField field, Object raw) {
+        if (field instanceof CustomFieldSelectOnePerson) {
+            return raw instanceof PersonDTO p ? personRef(p) : null;
+        }
         if (field instanceof CustomFieldSelectOneSpatialUnit) {
             return raw instanceof SpatialUnitSummaryDTO s ? spatialUnitRef(s) : null;
         }
@@ -276,6 +281,10 @@ public class ProjectAnswersProjector {
     private static ResourceRef documentRef(DocumentSummaryDTO d) {
         String label = d.getTitle() != null && !d.getTitle().isBlank() ? d.getTitle() : d.getIdentifier();
         return new ResourceRef(String.valueOf(d.getId()), "documents", label);
+    }
+
+    private static ResourceRef personRef(PersonDTO person) {
+        return new ResourceRef(String.valueOf(person.getId()), "persons", person.displayName());
     }
 
     private static ResourceRef spatialUnitRef(SpatialUnitSummaryDTO su) {

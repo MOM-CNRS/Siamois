@@ -36,4 +36,20 @@ class PersonOpenApiMapperTest {
         assertThat(resource.id()).isNull();
         assertThat(resource.username()).isEqualTo("bob");
     }
+
+    @Test
+    void toResource_withoutFlag_isNotAwaitingAccount() {
+        PersonDTO dto = new PersonDTO();
+        dto.setId(1L);
+
+        assertThat(mapper.toResource(dto).accountPending()).isFalse();
+    }
+
+    @Test
+    void toResource_withFlag_carriesAwaitingAccount() {
+        PersonDTO dto = new PersonDTO();
+        dto.setId(1L);
+
+        assertThat(mapper.toResource(dto, true).accountPending()).isTrue();
+    }
 }

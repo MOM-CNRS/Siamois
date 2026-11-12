@@ -4,6 +4,7 @@ import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.ProjectMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.ActionUnitDTO;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -16,6 +17,7 @@ import fr.siamois.ui.bean.dialog.project.NewProjectMemberDialogBean;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import fr.siamois.ui.email.InvitationMailer;
 import fr.siamois.ui.email.InvitationMessages;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -55,8 +57,9 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
                                   NewProjectMemberDialogBean newProjectMemberDialogBean,
                                   LangBean langBean, ProfilePermissionService profilePermissionService,
                                   SessionSettingsBean sessionSettingsBean, PendingPersonService pendingPersonService,
+                                  PendingAccountPersonService pendingAccountPersonService,
                                   InvitationMailer invitationMailer) {
-        super(pendingPersonService, invitationMailer, langBean);
+        super(pendingPersonService, pendingAccountPersonService, invitationMailer, langBean);
         this.projectMembersService = projectMembersService;
         this.newProjectMemberDialogBean = newProjectMemberDialogBean;
         this.profilePermissionService = profilePermissionService;
@@ -79,6 +82,17 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
         members = new ArrayList<>(refMembers);
         availableProfiles = projectMembersService.findAvailableProfiles(project);
         loadPendingInvitations(refMembers.stream().map(m -> m.getPerson().getId()).toList());
+    }
+
+    /**
+     * Reloads the members each time the page is displayed (not on its own ajax requests): members may have
+     * joined since it was last opened, e.g. a person awaiting their account created from a form field.
+     */
+    public void reloadOnPageLoad() {
+        if (project != null && !FacesContext.getCurrentInstance().isPostback()) {
+            init(project);
+            filter();
+        }
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -133,6 +147,18 @@ public class ProjectMembersListBean extends AbstractMembersListBean {
     public void resendInvitation(ProjectMemberDTO member) {
         log.trace("Resending invitation to project member {}", member.displayName());
         resendInvitationTo(member.getPerson(), member.getProfiles());
+    }
+
+    /**
+     * Sends the invitation of the member awaiting their account chosen in the "send an invitation" dialog,
+     * to the address typed there. Reserved to the managers of the project.
+     */
+    public void sendInvitationToAwaitingMember() {
+        if (isNotProjectManager(project)) {
+            displayWarnMessage(langBean, PROJECT_SETTINGS_ERROR_NOT_MANAGER);
+            return;
+        }
+        inviteAwaitingMember();
     }
 
     @Override

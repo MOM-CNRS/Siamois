@@ -7,6 +7,7 @@ import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -19,6 +20,7 @@ import fr.siamois.ui.bean.dialog.institution.PersonRole;
 import fr.siamois.ui.bean.settings.AbstractMembersListBean;
 import fr.siamois.ui.email.InvitationMailer;
 import fr.siamois.ui.email.InvitationMessages;
+import jakarta.faces.context.FacesContext;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -64,10 +66,11 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
                                       NewOrganizationMemberDialogBean newOrganizationMemberDialogBean,
                                       LangBean langBean,
                                       PendingPersonService pendingPersonService,
+                                      PendingAccountPersonService pendingAccountPersonService,
                                       InvitationMailer invitationMailer,
                                       SessionSettingsBean sessionSettingsBean,
                                       ProfilePermissionService profilePermissionService) {
-        super(pendingPersonService, invitationMailer, langBean);
+        super(pendingPersonService, pendingAccountPersonService, invitationMailer, langBean);
         this.institutionService = institutionService;
         this.personService = personService;
         this.organizationMembersService = organizationMembersService;
@@ -93,6 +96,17 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
         members = new ArrayList<>(refMembers);
         availableProfiles = organizationMembersService.findAvailableProfiles(institution);
         loadPendingInvitations(refMembers.stream().map(m -> m.getPerson().getId()).toList());
+    }
+
+    /**
+     * Reloads the members each time the page is displayed (not on its own ajax requests): members may have
+     * joined since it was last opened, e.g. a person awaiting their account created from a form field.
+     */
+    public void reloadOnPageLoad() {
+        if (institution != null && !FacesContext.getCurrentInstance().isPostback()) {
+            init(institution);
+            filter();
+        }
     }
 
     /** Filters {@link #members} from {@link #refMembers} using {@link #searchInput}. */
@@ -147,6 +161,18 @@ public class InstitutionMembersListBean extends AbstractMembersListBean {
     public void resendInvitation(InstitutionMemberDTO member) {
         log.trace("Resending invitation to institution member {}", member.displayName());
         resendInvitationTo(member.getPerson(), member.getProfiles());
+    }
+
+    /**
+     * Sends the invitation of the member awaiting their account chosen in the "send an invitation" dialog,
+     * to the address typed there. Reserved to the managers of the organisation.
+     */
+    public void sendInvitationToAwaitingMember() {
+        if (isNotOrganisationManager(institution)) {
+            displayWarnMessage(langBean, SETTINGS_ERROR_NOT_MANAGER);
+            return;
+        }
+        inviteAwaitingMember();
     }
 
     @Override

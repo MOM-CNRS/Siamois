@@ -9,9 +9,14 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 
 /**
- * A pending person represents a person invited to the application.
- * The pending person has a disabled person associated with it and has profiles associated.
- * If the pending person expires, the profile attributions are deleted as well.
+ * A pending person represents a person whose account is not active yet. The pending person has a disabled
+ * person associated with it and has profiles associated. It is either:
+ * <ul>
+ *     <li>an invitation: the person was invited by e-mail and registers through the token's link;</li>
+ *     <li>awaiting the creation of their account: the person was created on the fly, from their first and
+ *     last name only (as the scientific manager of a project, say). They have no e-mail and no token until
+ *     a manager links them to an account they create (see {@code PendingAccountPersonService}).</li>
+ * </ul>
  */
 @Entity
 @Table(name = "pending_person")
@@ -32,6 +37,27 @@ public class PendingPerson implements Serializable {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_person_id")
     private Person disabledPerson;
+
+    /**
+     * Builds the pending person of someone created without account: no registration token until they are invited.
+     *
+     * @param disabledPerson the disabled person, created from their name only
+     * @return the pending person, not saved yet
+     */
+    public static PendingPerson awaitingAccountOf(Person disabledPerson) {
+        PendingPerson pendingPerson = new PendingPerson();
+        pendingPerson.setDisabledPerson(disabledPerson);
+        return pendingPerson;
+    }
+
+    /**
+     * Tells whether this pending person still awaits the creation of their account, i.e. has never been invited.
+     *
+     * @return {@code true} when no registration token was issued yet
+     */
+    public boolean isAwaitingAccount() {
+        return registerToken == null;
+    }
 
     @Override
     public boolean equals(Object o) {

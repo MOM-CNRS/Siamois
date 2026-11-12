@@ -24,7 +24,7 @@ public class StudyDTO extends AbstractEntityDTO {
     protected OffsetDateTime treatmentStart;
     protected OffsetDateTime treatmentEnd;
     protected String treatmentPlace;
-    protected String treatmentManager;
+    protected PersonDTO treatmentManager;
     protected String treatmentIdentifier;
     protected String treatmentComments;
 

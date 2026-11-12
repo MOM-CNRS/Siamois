@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -45,6 +46,8 @@ class UsersControllerApiTest {
     private PersonService personService;
     @Mock
     private InstitutionService institutionService;
+    @Mock
+    private PendingPersonService pendingPersonService;
 
     private MockMvc mockMvc;
 
@@ -57,7 +60,7 @@ class UsersControllerApiTest {
         ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
         MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
 
-        UserOpenApiService userOpenApiService = new UserOpenApiService(personService, institutionService);
+        UserOpenApiService userOpenApiService = new UserOpenApiService(personService, institutionService, pendingPersonService);
         UsersControllerApi controller = new UsersControllerApi(
                 projectApiService, userOpenApiService, new PersonOpenApiMapper());
 

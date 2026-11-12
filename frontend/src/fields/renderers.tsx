@@ -12,6 +12,8 @@ import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocompl
 import {Button} from "primereact/button";
 import {OverlayPanel} from "primereact/overlaypanel";
 import {CreateEntityOverlay} from "../components/create/CreateEntityOverlay";
+import {AnchoredFormOverlay} from "../components/layout/AnchoredFormOverlay";
+import {CreatePersonForm} from "./CreatePersonForm";
 import {useOpenEntity} from "../panels/pane/entityNavigation";
 import {getEntityType} from "../entities/registry";
 import {PROJECT_KEY} from "../entities/keys";
@@ -28,6 +30,7 @@ import {
     isExternalSuggestion,
     type OptionList,
     optionSourceFor,
+    personNameFromQuery,
     type ReferenceTarget,
     referenceTargetOf,
 } from "./optionSources";
@@ -228,6 +231,20 @@ function toOption(value: ResourceRefLike | ResolvedResourceLike): FilterOption {
 // (referenceTargetOf), so a new reference answerType is one line in optionSources.ts.
 const conceptItem = (o: FilterOption) => <ConceptOptionItem option={o} />;
 const placeItem = (o: FilterOption) => <PlaceOptionItem option={o} />;
+// A person awaiting the creation of their account says so beside their name.
+const personItem = (o: FilterOption) => (
+  <span className="person-option-item">
+    {o.label}
+    {o.accountPending && <small className="person-option-pending">{t("field.personAccountPending")}</small>}
+  </span>
+);
+
+function optionItemTemplate(resourceType: string) {
+  if (resourceType === "concepts") return conceptItem;
+  if (resourceType === "places") return placeItem;
+  if (resourceType === "persons") return personItem;
+  return undefined;
+}
 
 // A declared option matches a search on its label or, for a concept, on one of its alt labels — as
 // the thesaurus search of any other concept picker does.
@@ -242,6 +259,10 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
   // Where the « Nouveau » form is open (the picker itself), or null.
   const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
+  // Where the « Nouvelle personne » form is open (the picker itself), or null.
+  const [personAnchor, setPersonAnchor] = useState<HTMLElement | null>(null);
+  // The last text searched: what « Nouvelle personne » is prefilled with.
+  const lastQuery = useRef("");
   // What is being typed in a single picker's input: PrimeReact reports it through onChange as a
   // plain string, which is not a pick and must never reach the answer.
   const [typed, setTyped] = useState<string | null>(null);
@@ -267,6 +288,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
+    lastQuery.current = e.query;
     capTo(e);
     const found = (await loadOptions(e.query)) as OptionList;
     setUnnarrowedSources(found.unnarrowedSources ?? []);
@@ -335,6 +357,13 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
   // « Nouveau » creates the target in the edited entity's project and picks it straight away — it
   // is added to a multi-valued answer, it replaces a single one.
   const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
+  // A person is never created as an entity of the registry: « Nouvelle personne » creates someone
+  // awaiting their account, member of the edited entity's project — so only inside a project.
+  const personProjectId = !readOnly && target.resourceType === "persons" ? context?.projectId : undefined;
+  function pickCreated(created: FilterOption) {
+    if (multiple) commit([...(selected as FilterOption[]).filter((o) => o.id !== created.id), created]);
+    else commit(created);
+  }
   async function onCreated(id: string | number) {
     setCreateAnchor(null);
     let label = String(id);
@@ -344,10 +373,18 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       // The entity exists; only its label could not be read back. The id stands in for it until
       // the edit reloads the row.
     }
-    const created: FilterOption = { id: String(id), label };
-    if (multiple) commit([...(selected as FilterOption[]).filter((o) => o.id !== created.id), created]);
-    else commit(created);
+    pickCreated({ id: String(id), label });
   }
+  function onPersonCreated(person: FilterOption) {
+    setPersonAnchor(null);
+    pickCreated(person);
+  }
+  const newLabel = createConfig
+    ? t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })
+    : personProjectId ? t("field.newPerson") : undefined;
+  const openNew = createConfig
+    ? (anchor: HTMLElement | null) => setCreateAnchor(anchor)
+    : personProjectId ? (anchor: HTMLElement | null) => setPersonAnchor(anchor) : undefined;
 
   // Some sources searched without their filter: say which field to fill (or what is wrong with its place).
   const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
@@ -358,20 +395,20 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       ? t("field.fillToNarrow", { field: named(emptyParents) })
       : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
 
-  const footer = createConfig || unnarrowedSources.length > 0
+  const footer = openNew || unnarrowedSources.length > 0
     ? (_: unknown, hide: () => void) => (
         <div className="resource-ref-create-footer">
           {unnarrowedSources.length > 0 && <small className="resource-ref-narrow-hint">{narrowHint}</small>}
-          {createConfig && (
+          {openNew && (
             <Button
               type="button"
               text
               size="small"
               icon="bi bi-plus-lg"
-              label={t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })}
+              label={newLabel}
               onClick={() => {
                 hide();
-                setCreateAnchor(autoCompleteRef.current?.getElement() ?? null);
+                openNew(autoCompleteRef.current?.getElement() ?? null);
               }}
             />
           )}
@@ -417,12 +454,12 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
       placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
       emptyMessage={waitingForParent ? t("field.fillParentFirst") : undefined}
       loadOptions={loadOptions}
-      itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
+      itemTemplate={optionItemTemplate(target.resourceType)}
       onSearched={(found) => setUnnarrowedSources(found.unnarrowedSources ?? [])}
       hint={unnarrowedSources.length > 0 ? narrowHint : undefined}
       onCommit={(next) => void commitPicked(multiple ? next : (next[0] ?? null))}
-      onNew={createConfig ? (trigger) => setCreateAnchor(trigger) : undefined}
-      newLabel={createConfig ? t("field.newLower", { label: createConfig.labels.singular.toLowerCase() }) : undefined}
+      onNew={openNew}
+      newLabel={newLabel}
       style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
     />
   );
@@ -454,7 +491,7 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
         emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
         panelFooterTemplate={footer}
         panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={target.resourceType === "concepts" ? conceptItem : target.resourceType === "places" ? placeItem : undefined}
+        itemTemplate={optionItemTemplate(target.resourceType)}
         selectedItemTemplate={renderToken}
         onChange={(e) => {
           if (typeof e.value === "string") {
@@ -486,6 +523,18 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
           onCreated={(id) => void onCreated(id)}
           onHide={() => setCreateAnchor(null)}
         />
+      )}
+      {personProjectId && (
+        <AnchoredFormOverlay anchor={personAnchor} ariaLabel={t("person.create.title")} onHide={() => setPersonAnchor(null)}>
+          {(close) => (
+            <CreatePersonForm
+              projectId={personProjectId}
+              initial={personNameFromQuery(lastQuery.current)}
+              onCreated={onPersonCreated}
+              onCancel={close}
+            />
+          )}
+        </AnchoredFormOverlay>
       )}
     </>
   );

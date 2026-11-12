@@ -11,6 +11,7 @@
     <ui:define name="metadata">
     <f:event type="preRenderView" listener="#{navBean.onPreRenderView}"/>
     <f:event type="preRenderView" listener="#{institutionDetailsBean.checkInstitutionOrRedirect}"/>
+    <f:event type="preRenderView" listener="#{institutionMembersListBean.reloadOnPageLoad}"/>
     </ui:define>
 
     <ui:define name="head">
@@ -92,6 +93,12 @@
                                          actionListener="#{institutionMembersListBean.resendInvitation(member)}"
                                          update="membersDatatable"
                                          styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
+                        <p:commandButton value="#{langBean.msg('common.action.sendInvitation')}"
+                                         icon="bi bi-envelope"
+                                         rendered="#{institutionMembersListBean.isAwaitingAccount(member.person)}"
+                                         actionListener="#{institutionMembersListBean.openInvitationDialog(member.person, member.profiles)}"
+                                         process="@this"
+                                         styleClass="ui-button-flat ui-button-sm resend-invitation-button"/>
                     </p:column>
                     <p:column>
                         <p:commandButton value="#{langBean.msg('common.action.remove')}"
@@ -113,6 +120,10 @@
                 </div>
             </p:tab>
             </p:tabView>
+            <ui:include src="/dialog/shared/inviteAwaitingMemberDialog.xhtml">
+                <ui:param name="bean" value="#{institutionMembersListBean}"/>
+                <ui:param name="updateTarget" value=":orgMembersTabs:orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>
+            </ui:include>
             <ui:include src="/dialog/shared/newMemberDialog.xhtml">
                 <ui:param name="dialogBean" value="#{newOrganizationMemberDialogBean}"/>
                 <ui:param name="updateTarget" value=":orgMembersTabs:orgMembersDatatable:formCC:institutionMembersForm:membersDatatable"/>

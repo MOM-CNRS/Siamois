@@ -2152,6 +2152,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/persons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer une personne en attente de création de compte
+         * @description Crée, à partir de son seul prénom et nom, une personne sans compte (désactivée, sans e-mail) et l'ajoute aux membres du projet. Si l'organisation compte déjà une personne en attente de ce nom (casse et accents ignorés), c'est elle qui est renvoyée et ajoutée au projet. Droit requis : modifier le projet ou l'une de ses données (unités d'enregistrement, mobiliers, études, documents, phases ou contenants).
+         */
+        post: operations["create_5"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3790,6 +3810,8 @@ export interface components {
             name?: string;
             /** @description Nom de famille */
             lastname?: string;
+            /** @description Vrai pour une personne créée à partir de son seul nom, en attente de création de compte */
+            accountPending?: boolean;
         };
         StudyListResponse: {
             data?: components["schemas"]["StudyResource"][];
@@ -4582,6 +4604,22 @@ export interface components {
         };
         BookmarkStatusResponse: {
             bookmarked?: boolean;
+        };
+        /** @description Création d'une personne en attente de création de compte */
+        PersonCreateRequest: {
+            /**
+             * @description Prénom
+             * @example Marie
+             */
+            name: string;
+            /**
+             * @description Nom de famille
+             * @example Curie
+             */
+            lastname: string;
+        };
+        PersonResponse: {
+            data?: components["schemas"]["PersonResource"];
         };
     };
     responses: never;
@@ -13061,6 +13099,79 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    create_5: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Personne créée ou réutilisée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Prénom ou nom manquant ou trop long */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Modification des données du projet non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Projet introuvable ou non accessible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
             };
         };
     };

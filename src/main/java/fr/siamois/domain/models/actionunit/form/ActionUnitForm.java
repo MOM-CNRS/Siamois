@@ -7,6 +7,7 @@ import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldInteger;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
+import fr.siamois.domain.models.form.customfield.person.CustomFieldSelectOnePerson;
 import fr.siamois.domain.models.form.customfield.document.CustomFieldSelectOneDocument;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
@@ -374,7 +375,7 @@ public abstract class ActionUnitForm {
 
     @Transient
     @JsonIgnore
-    public static final CustomFieldText SCIENTIFIC_MANAGER_FIELD = CustomFieldText.builder()
+    public static final CustomFieldSelectOnePerson SCIENTIFIC_MANAGER_FIELD = CustomFieldSelectOnePerson.builder()
             .label("actionunit.field.scientificManager")
             .isSystemField(true)
             .id(-112L)

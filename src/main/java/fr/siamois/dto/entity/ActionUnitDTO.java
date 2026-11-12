@@ -32,7 +32,7 @@ public class ActionUnitDTO extends AbstractEntityDTO {
     private String oaCode;
     private String prescriptionOrderNumber;
     private OffsetDateTime prescriptionOrderDate;
-    private String scientificManager;
+    private PersonDTO scientificManager;
     private String hostStructure;
     private String developer;
     private Set<ConceptDTO> periods = new HashSet<>();

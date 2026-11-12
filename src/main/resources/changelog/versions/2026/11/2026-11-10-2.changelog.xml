@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The scientific manager of a project (field -112) and the manager of a study's treatment (field -813) are
+    persons, fk_scientific_manager_id / fk_treatment_manager_id, no longer free text.
+
+    Each text becomes a person:
+    - split into first and last name: "Nom, Prénom" or "Nom & Prénom" when it holds a comma or an ampersand;
+      otherwise the words in capitals are the last name ("Jean DUPONT"); otherwise the first word is the first
+      name on a project ("Jean Dupont") and the last name on a study, whose label asked for "Nom & Prénom";
+    - linked to the person of the record's institution who has this name (ignoring case and accents), if any;
+    - otherwise created as a person awaiting the creation of their account: disabled, without e-mail, with a
+      pending_person row without registration token, member of the record's organization and project.
+
+    The text columns are kept, unmapped: the original text is not lost if the split guessed wrong.
+    -->
+
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager" author="Julien Linget">
+        <addColumn schemaName="public" tableName="action_unit">
+            <column name="fk_scientific_manager_id" type="bigint">
+                <constraints foreignKeyName="fk_action_unit_scientific_manager"
+                             references="public.person(person_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-action-unit-aud-scientific-manager" author="Julien Linget">
+        <addColumn schemaName="public" tableName="action_unit_aud">
+            <column name="fk_scientific_manager_id" type="bigint"/>
+            <column name="fk_scientific_manager_id_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager-index" author="Julien Linget">
+        <createIndex schemaName="public" tableName="action_unit" indexName="idx_action_unit_scientific_manager">
+            <column name="fk_scientific_manager_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-study-treatment-manager" author="Julien Linget">
+        <addColumn schemaName="public" tableName="study">
+            <column name="fk_treatment_manager_id" type="bigint">
+                <constraints foreignKeyName="fk_study_treatment_manager"
+                             references="public.person(person_id)"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-study-aud-treatment-manager" author="Julien Linget">
+        <addColumn schemaName="public" tableName="study_aud">
+            <column name="fk_treatment_manager_id" type="bigint"/>
+            <column name="fk_treatment_manager_id_mod" type="boolean"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-study-treatment-manager-index" author="Julien Linget">
+        <createIndex schemaName="public" tableName="study" indexName="idx_study_treatment_manager">
+            <column name="fk_treatment_manager_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Migration helpers, dropped by the last changeSet of this file. -->
+    <changeSet id="2026-11-10-2-person-for-name-helpers" author="Julien Linget">
+        <sql splitStatements="false"><![CDATA[
+            CREATE OR REPLACE FUNCTION public.tmp_siamois_person_for_name(p_raw text, p_last_name_first boolean,
+                                                                          p_institution_id bigint)
+                RETURNS bigint
+                LANGUAGE plpgsql AS
+            $fn$
+            DECLARE
+                v_text      text := regexp_replace(trim(p_raw), '\s+', ' ', 'g');
+                v_first     text;
+                v_last      text;
+                v_words     text[];
+                v_capitals  text[] := '{}';
+                v_others    text[] := '{}';
+                v_word      text;
+                v_person_id bigint;
+                v_base      text;
+                v_username  text;
+                v_try       integer := 0;
+            BEGIN
+                IF v_text ~ '[,&]' THEN
+                    v_last := trim(substring(v_text from '^([^,&]*)'));
+                    v_first := trim(substring(v_text from '^[^,&]*[,&](.*)$'));
+                ELSE
+                    v_words := string_to_array(v_text, ' ');
+                    IF cardinality(v_words) = 1 THEN
+                        v_first := '';
+                        v_last := v_text;
+                    ELSE
+                        FOREACH v_word IN ARRAY v_words LOOP
+                            IF v_word ~ '[[:alpha:]]{2}' AND v_word = upper(v_word) THEN
+                                v_capitals := v_capitals || v_word;
+                            ELSE
+                                v_others := v_others || v_word;
+                            END IF;
+                        END LOOP;
+                        IF cardinality(v_capitals) > 0 AND cardinality(v_others) > 0 THEN
+                            v_last := array_to_string(v_capitals, ' ');
+                            v_first := array_to_string(v_others, ' ');
+                        ELSIF p_last_name_first THEN
+                            v_last := v_words[1];
+                            v_first := array_to_string(v_words[2:], ' ');
+                        ELSE
+                            v_first := v_words[1];
+                            v_last := array_to_string(v_words[2:], ' ');
+                        END IF;
+                    END IF;
+                END IF;
+                v_first := left(coalesce(v_first, ''), 64);
+                v_last := left(coalesce(v_last, ''), 64);
+
+                SELECT p.person_id
+                INTO v_person_id
+                FROM public.person p
+                WHERE lower(public.unaccent(trim(coalesce(p.name, '')))) = lower(public.unaccent(v_first))
+                  AND lower(public.unaccent(trim(coalesce(p.lastname, '')))) = lower(public.unaccent(v_last))
+                  AND EXISTS (SELECT 1
+                              FROM public.person_profile_assignment ppa
+                                       JOIN public.profile pr ON pr.profile_id = ppa.fk_profile_id
+                              WHERE ppa.fk_person_id = p.person_id
+                                AND pr.fk_institution_id = p_institution_id)
+                ORDER BY p.person_id
+                LIMIT 1;
+                IF v_person_id IS NOT NULL THEN
+                    RETURN v_person_id;
+                END IF;
+
+                v_base := regexp_replace(lower(public.unaccent(v_first || '.' || v_last)), '[^a-z0-9.]', '', 'g');
+                v_base := regexp_replace(regexp_replace(v_base, '\.{2,}', '.', 'g'), '^\.+|\.+$', '', 'g');
+                IF v_base = '' THEN
+                    v_base := 'user';
+                END IF;
+                v_base := left(v_base, 27);
+                v_username := v_base;
+                WHILE EXISTS (SELECT 1 FROM public.person WHERE username = v_username) LOOP
+                    v_try := v_try + 1;
+                    v_username := v_base || v_try;
+                END LOOP;
+
+                INSERT INTO public.person (name, lastname, username, password, is_enabled)
+                VALUES (v_first, v_last, v_username, md5(random()::text || clock_timestamp()::text), false)
+                RETURNING person_id INTO v_person_id;
+                INSERT INTO public.pending_person (fk_person_id) VALUES (v_person_id);
+                RETURN v_person_id;
+            END;
+            $fn$;
+
+            CREATE OR REPLACE FUNCTION public.tmp_siamois_add_awaiting_member(p_person_id bigint, p_institution_id bigint,
+                                                                              p_project_id bigint)
+                RETURNS void
+                LANGUAGE sql AS
+            $fn$
+            INSERT INTO public.person_profile_assignment (fk_person_id, fk_profile_id)
+            SELECT p_person_id, pr.profile_id
+            FROM public.profile pr
+            WHERE ((pr.code = 'ORGANIZATION_MEMBER' AND pr.fk_institution_id = p_institution_id AND pr.fk_action_unit_id IS NULL)
+                OR (pr.code = 'PROJECT_MEMBER' AND pr.fk_action_unit_id = p_project_id))
+              AND EXISTS (SELECT 1
+                          FROM public.pending_person pp
+                          WHERE pp.fk_person_id = p_person_id
+                            AND pp.register_token IS NULL)
+            ON CONFLICT DO NOTHING;
+            $fn$;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-action-unit-scientific-manager-from-text" author="Julien Linget">
+        <sql splitStatements="false"><![CDATA[
+            DO
+            $do$
+            DECLARE
+                r        record;
+                v_person bigint;
+            BEGIN
+                FOR r IN SELECT au.fk_institution_id                                       AS institution_id,
+                                regexp_replace(trim(au.scientific_manager), '\s+', ' ', 'g') AS raw
+                         FROM public.action_unit au
+                         WHERE nullif(trim(au.scientific_manager), '') IS NOT NULL
+                           AND au.fk_scientific_manager_id IS NULL
+                         GROUP BY 1, 2
+                         ORDER BY 1, 2
+                LOOP
+                    v_person := public.tmp_siamois_person_for_name(r.raw, false, r.institution_id);
+                    UPDATE public.action_unit au
+                    SET fk_scientific_manager_id = v_person
+                    WHERE au.fk_institution_id = r.institution_id
+                      AND regexp_replace(trim(au.scientific_manager), '\s+', ' ', 'g') = r.raw;
+                    PERFORM public.tmp_siamois_add_awaiting_member(v_person, r.institution_id, au.action_unit_id)
+                    FROM public.action_unit au
+                    WHERE au.fk_scientific_manager_id = v_person
+                      AND au.fk_institution_id = r.institution_id;
+                END LOOP;
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-study-treatment-manager-from-text" author="Julien Linget">
+        <sql splitStatements="false"><![CDATA[
+            DO
+            $do$
+            DECLARE
+                r        record;
+                v_person bigint;
+            BEGIN
+                FOR r IN SELECT s.fk_institution_id                                      AS institution_id,
+                                regexp_replace(trim(s.treatment_manager), '\s+', ' ', 'g') AS raw
+                         FROM public.study s
+                         WHERE nullif(trim(s.treatment_manager), '') IS NOT NULL
+                           AND s.fk_treatment_manager_id IS NULL
+                         GROUP BY 1, 2
+                         ORDER BY 1, 2
+                LOOP
+                    v_person := public.tmp_siamois_person_for_name(r.raw, true, r.institution_id);
+                    UPDATE public.study s
+                    SET fk_treatment_manager_id = v_person
+                    WHERE s.fk_institution_id = r.institution_id
+                      AND regexp_replace(trim(s.treatment_manager), '\s+', ' ', 'g') = r.raw;
+                    PERFORM public.tmp_siamois_add_awaiting_member(v_person, r.institution_id, s.fk_action_unit_id)
+                    FROM public.study s
+                    WHERE s.fk_treatment_manager_id = v_person
+                      AND s.fk_institution_id = r.institution_id;
+                END LOOP;
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-drop-person-for-name-helpers" author="Julien Linget">
+        <sql splitStatements="false"><![CDATA[
+            DROP FUNCTION IF EXISTS public.tmp_siamois_add_awaiting_member(bigint, bigint, bigint);
+            DROP FUNCTION IF EXISTS public.tmp_siamois_person_for_name(text, boolean, bigint);
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-10-2-manager-fields-type" author="Julien Linget">
+        <sql>
+            UPDATE public.custom_field
+            SET answer_type = 'SELECT_ONE_PERSON',
+                is_text_area = NULL
+            WHERE custom_field_id IN (-112, -813);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

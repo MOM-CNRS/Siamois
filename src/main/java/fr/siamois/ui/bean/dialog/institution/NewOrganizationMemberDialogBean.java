@@ -4,6 +4,7 @@ import fr.siamois.domain.models.permissions.ProfileConstants;
 import fr.siamois.domain.services.InstitutionService;
 import fr.siamois.domain.services.OrganizationMembersServiceInterface;
 import fr.siamois.domain.services.auth.PendingPersonService;
+import fr.siamois.domain.services.person.PendingAccountPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -38,12 +39,13 @@ public class NewOrganizationMemberDialogBean extends AbstractNewMemberDialogBean
 
     public NewOrganizationMemberDialogBean(PersonService personService,
                                             PendingPersonService pendingPersonService,
+                                            PendingAccountPersonService pendingAccountPersonService,
                                             InvitationMailer invitationMailer,
                                             InstitutionService institutionService,
                                             OrganizationMembersServiceInterface organizationMembersService,
                                             SessionSettingsBean sessionSettingsBean,
                                             LangBean langBean) {
-        super(personService, pendingPersonService, invitationMailer, sessionSettingsBean, langBean);
+        super(personService, pendingPersonService, pendingAccountPersonService, invitationMailer, sessionSettingsBean, langBean);
         this.institutionService = institutionService;
         this.organizationMembersService = organizationMembersService;
     }

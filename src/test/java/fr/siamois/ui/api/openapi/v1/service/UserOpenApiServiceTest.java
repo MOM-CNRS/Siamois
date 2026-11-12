@@ -1,6 +1,7 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.auth.PendingPersonService;
 import fr.siamois.domain.services.person.PersonService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
@@ -29,13 +30,15 @@ class UserOpenApiServiceTest {
     private PersonService personService;
     @Mock
     private InstitutionService institutionService;
+    @Mock
+    private PendingPersonService pendingPersonService;
 
     private UserOpenApiService service;
     private ProjectApiCaller caller;
 
     @BeforeEach
     void setUp() {
-        service = new UserOpenApiService(personService, institutionService);
+        service = new UserOpenApiService(personService, institutionService, pendingPersonService);
         PersonDTO person = new PersonDTO();
         person.setId(1L);
         caller = new ProjectApiCaller(person, SCOPE, List.of());
@@ -124,5 +127,16 @@ class UserOpenApiServiceTest {
         p.setLastname(lastname);
         p.setUsername(username);
         return p;
+    }
+
+    @Test
+    void idsAwaitingAccount_delegatesWithTheListedIds() {
+        PersonDTO alice = new PersonDTO();
+        alice.setId(5L);
+        PersonDTO bob = new PersonDTO();
+        bob.setId(6L);
+        when(pendingPersonService.findPersonIdsAwaitingAccount(List.of(5L, 6L))).thenReturn(Set.of(6L));
+
+        assertThat(service.idsAwaitingAccount(List.of(alice, bob))).containsExactly(6L);
     }
 }
