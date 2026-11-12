@@ -102,7 +102,7 @@ function normalizeCol(col: FormLayoutCol): FormLayoutCol {
   const classes = col.className.split(/\s+/);
   const read = (prefix: string) => {
     const match = classes.find((c) => c.startsWith(prefix));
-    const n = match ? Number(match.slice(prefix.length)) : NaN;
+    const n = match ? Number(match.slice(prefix.length)) : Number.NaN;
     return Number.isInteger(n) && n >= 1 && n <= 12 ? n : undefined;
   };
   const span = read("ui-g-");

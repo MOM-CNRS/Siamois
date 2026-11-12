@@ -110,6 +110,17 @@ export function keywordCompletion(
   return keywords.find((keyword) => keyword.names.some((name) => name.startsWith(last) && name !== last));
 }
 
+/**
+ * The input without its last word (`type proj` → `type `): what a completed keyword is appended to.
+ * Unchanged when the input ends with a space. Scans from the end instead of a `\S+$` regex, which
+ * backtracks quadratically on a long run of non-space characters.
+ */
+export function withoutLastWord(input: string): string {
+  let end = input.length;
+  while (end > 0 && !/\s/.test(input[end - 1])) end--;
+  return input.slice(0, end);
+}
+
 export interface TailKeyword {
   // Where the `keyword:` token starts in the input.
   start: number;

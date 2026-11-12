@@ -43,8 +43,8 @@ export function AnchoredFormOverlay({ anchor, ariaLabel, onHide, children }: Anc
   return (
     // Keys typed in the form must not bubble through the React tree to whatever hosts it (a cell
     // editor cancels its edit on Escape): the overlay is portalled out of its DOM box, not out of
-    // its React tree.
-    <div className="sia-contents" onKeyDown={(e) => e.stopPropagation()}>
+    // its React tree. role="presentation": the wrapper only stops the keys of the form, it is not interactive.
+    <div role="presentation" className="sia-contents" onKeyDown={(e) => e.stopPropagation()}>
       <OverlayPanel
         ref={overlayRef}
         className="entity-list-panel-create-overlay create-entity-overlay"

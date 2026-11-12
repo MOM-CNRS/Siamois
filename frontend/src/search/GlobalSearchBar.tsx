@@ -6,7 +6,7 @@ import {listProjects} from "../entities/project/api";
 import {queryKeys} from "../api/queryKeys";
 import {getContext, getNavigation, subscribeContext} from "../navigation/externalBus";
 import {t} from "../i18n";
-import {formatFilter, keywordCompletion, parseQuery, SEARCH_KEYWORDS, tailKeyword} from "./queryParser";
+import {formatFilter, keywordCompletion, parseQuery, SEARCH_KEYWORDS, tailKeyword, withoutLastWord} from "./queryParser";
 import {
     anchorOf,
     Highlighted,
@@ -227,7 +227,7 @@ export function GlobalSearchBar({ organizationId: mountOrganizationId }: Readonl
   function insertKeyword(name: string) {
     setInput((current) => {
       // A half-typed keyword (`proj`) is completed; otherwise the keyword starts a new word.
-      const base = completion ? current.replace(/\S+$/, "") : current;
+      const base = completion ? withoutLastWord(current) : current;
       const separator = base === "" || base.endsWith(" ") ? "" : " ";
       return `${base}${separator}${name}:`;
     });

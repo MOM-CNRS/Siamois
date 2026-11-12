@@ -42,7 +42,7 @@ export function InlineBooleanCell({ field, rowId, value, readOnly, onSave, onSav
 
   return (
     // The click is the toggle: it must not also open the row (list) or an editor.
-    <span className="inline-boolean-cell" onClick={(e) => e.stopPropagation()}>
+    <span role="presentation" className="inline-boolean-cell" onClick={(e) => e.stopPropagation()}>
       <BooleanRenderer field={field} value={shown} readOnly={readOnly || pending !== undefined} required={false} onChange={commit} />
     </span>
   );

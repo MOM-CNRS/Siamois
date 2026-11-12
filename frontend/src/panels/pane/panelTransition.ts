@@ -24,7 +24,7 @@ export function withPanelTransition(kind: PanelTransitionKind, update: () => voi
   const root = document.documentElement;
   root.dataset.panelTransition = kind;
   const transition = doc.startViewTransition(() => flushSync(update));
-  transition.finished.finally(() => {
+  void transition.finished.finally(() => {
     if (root.dataset.panelTransition === kind) delete root.dataset.panelTransition;
   });
 }

@@ -149,7 +149,8 @@ export function DateRenderer({ field, value, readOnly, required, onChange, bound
     onChange(date ? formatDateAnswer(date, showTime) : null);
   };
   return (
-    <span style={{ display: "contents" }} onKeyDown={(e) => e.key === "Enter" && commitTyped()}>
+    // role="presentation": the wrapper only catches the Enter typed in the calendar's input.
+    <span role="presentation" style={{ display: "contents" }} onKeyDown={(e) => e.key === "Enter" && commitTyped()}>
       <Calendar
         value={parseDateAnswer(value, showTime)}
         disabled={readOnly}

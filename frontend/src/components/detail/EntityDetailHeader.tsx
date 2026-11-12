@@ -148,7 +148,8 @@ export function EntityDetailHeader({
   const typeEditable = isEditing && type?.field != null;
 
   return (
-    <div className={`entity-detail-header ${chipPrefix}-detail-header sia-hstack`} onKeyDown={onKeyDown}>
+    // role="presentation": the header is not interactive itself, it only catches the keys of its inputs.
+    <div role="presentation" className={`entity-detail-header ${chipPrefix}-detail-header sia-hstack`} onKeyDown={onKeyDown}>
       {isEditing ? (
         <InputText
           className="entity-detail-header-primary-input"

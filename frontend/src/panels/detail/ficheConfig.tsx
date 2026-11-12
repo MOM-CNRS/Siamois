@@ -66,7 +66,7 @@ export interface FicheScope {
 }
 
 function toNumber(value: unknown): number | undefined {
-  const n = typeof value === "string" || typeof value === "number" ? Number(value) : NaN;
+  const n = typeof value === "string" || typeof value === "number" ? Number(value) : Number.NaN;
   return Number.isInteger(n) && n > 0 ? n : undefined;
 }
 

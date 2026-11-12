@@ -6,7 +6,7 @@ import type {FilterSpec} from "../../components/table/FilterChipBar";
 import type {FilterOption} from "../../fields/optionSources";
 import type {EntityTypeConfig, FilterValue, ListParams, PagedResult} from "../../entities/shared/types";
 import {t} from "../../i18n";
-import {formatFilter, keywordCompletion, parseQuery, type SearchKeyword, tailKeyword} from "../../search/queryParser";
+import {formatFilter, keywordCompletion, parseQuery, type SearchKeyword, tailKeyword, withoutLastWord} from "../../search/queryParser";
 import {
     anchorOf,
     Highlighted,
@@ -51,7 +51,7 @@ function slug(label: string): string {
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-|-$/g, "");
 }
 
 const OPTION_KINDS = new Set(["concept-one", "concept-many", "in"]);
@@ -92,8 +92,9 @@ export const ListSearchOverlayBox = memo(function ListSearchOverlayBox(props: Re
   return (
     <>
       <span className="p-input-icon-left sia-list-search" ref={field}>
-        {/* The icon is part of the clickable field: it sits over the input, so it opens the search too. */}
-        <i className="bi bi-search sia-list-search-icon" onClick={openOverlay} />
+        {/* The icon is part of the clickable field: it sits over the input, so it opens the search too.
+            Decorative for assistive technologies: the input itself is the keyboard path. */}
+        <i className="bi bi-search sia-list-search-icon" aria-hidden="true" onClick={openOverlay} />
         <InputText
           readOnly
           placeholder={t("list.search")}
@@ -273,7 +274,7 @@ function ListSearchPanel({
   function insertKeyword(key: string) {
     const name = keywords.find((k) => k.key === key)?.names[0] ?? key;
     const completion = keywordCompletion(input, keywords);
-    const base = completion ? input.replace(/\S+$/, "") : input;
+    const base = completion ? withoutLastWord(input) : input;
     setInput(`${base}${base === "" || base.endsWith(" ") ? "" : " "}${name}:`);
     inputRef.current?.focus();
   }
