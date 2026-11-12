@@ -85,6 +85,10 @@ export interface EntityTableProps {
   renderRowActions: (row: RowRecord) => ReactNode;
   selectedRows: RowRecord[];
   onSelectionChange: (rows: RowRecord[]) => void;
+  // The header's box selects the whole result set (the rows not fetched yet included), not only the
+  // rows drawn: controlled from outside. Absent: the box ticks the fetched rows.
+  allSelected?: boolean;
+  onSelectAllChange?: (checked: boolean) => void;
   onNavigate?: (entityType: string, id: string | number) => void;
   onOpenOverview?: (
     entityType: string,
@@ -129,6 +133,8 @@ export function EntityTable({
   renderRowActions,
   selectedRows,
   onSelectionChange,
+  allSelected,
+  onSelectAllChange,
   onNavigate,
   onOpenOverview,
   overviewEntityId,
@@ -670,6 +676,10 @@ export function EntityTable({
             onSelectionChange={(
               e: DataTableSelectionMultipleChangeEvent<RowRecord[]>,
             ) => onSelectionChange(e.value.filter((row) => !isSkeletonRow(row)))}
+            // The whole result set, not the fetched rows only, when the caller takes over the header's box.
+            {...(onSelectAllChange
+              ? { selectAll: allSelected === true, onSelectAllChange: (e: { checked: boolean }) => onSelectAllChange(e.checked) }
+              : {})}
             // Sticky header + frozen columns both require this; it also moves the scrolling from the
             // page onto the table's own body, which is the rule this shell is built on (the app is a
             // fixed 100vh frame — every panel scrolls inside itself, the document never does).

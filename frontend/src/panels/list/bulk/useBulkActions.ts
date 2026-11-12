@@ -17,38 +17,30 @@ export interface UseBulkActionsOptions {
   // The entity type's bulk endpoints (config.api.bulk).
   bulk: BulkApi;
   organizationId?: number;
-  selectedRows: RowRecord[];
-  onSelectionChange: (rows: RowRecord[]) => void;
+  // After a deletion: the rows that are gone, for the selection to let go of them.
+  onDeleted: (rows: RowRecord[]) => void;
 }
 
 export interface BulkActions {
   // An action is under way: the bar's controls wait for it.
   running: boolean;
-  // Writes one field's answer on every selected row the caller may edit.
-  applyAnswer: (fieldId: string, answer: AnswerInputBody) => Promise<void>;
-  // Links a document to (or unlinks it from) every selected row the caller may edit.
-  applyDocument: (documentId: string | number, mode: BulkLinkMode) => Promise<void>;
-  // Deletes every selected row the caller may delete; those deleted leave the selection.
-  deleteSelection: () => Promise<void>;
+  // Writes one field's answer on every one of the rows the caller may edit.
+  applyAnswer: (rows: RowRecord[], fieldId: string, answer: AnswerInputBody) => Promise<void>;
+  // Links a document to (or unlinks it from) every one of the rows the caller may edit.
+  applyDocument: (rows: RowRecord[], documentId: string | number, mode: BulkLinkMode) => Promise<void>;
+  // Deletes every one of the rows the caller may delete.
+  deleteRows: (rows: RowRecord[]) => Promise<void>;
 }
 
 const NOTHING_DONE: BulkResult = { succeeded: [], failed: [] };
 
 /**
- * The bulk actions of a list's selection — the Notion-style bar's behaviour, apart from how it is
- * drawn. Each action is ONE request to the entity type's bulk endpoints (`config.api.bulk`), which
- * treat every element as its unit endpoint would and answer
- * which ones it changed; this tells the user, failures included, and refreshes the lists and the
- * open fiches.
+ * The bulk actions on a list's selection — the Notion-style bar's behaviour, apart from how it is
+ * drawn and how the selection is gathered. Each action goes to the entity type's bulk endpoints
+ * (`config.api.bulk`), which treat every element as its unit endpoint would and answer which ones
+ * they changed; this tells the user, failures included, and refreshes the lists and the open fiches.
  */
-export function useBulkActions({
-  entityType,
-  config,
-  bulk,
-  organizationId,
-  selectedRows,
-  onSelectionChange,
-}: UseBulkActionsOptions): BulkActions {
+export function useBulkActions({ entityType, config, bulk, organizationId, onDeleted }: UseBulkActionsOptions): BulkActions {
   const queryClient = useQueryClient();
   const notify = useNotify();
   const [running, setRunning] = useState(false);
@@ -76,8 +68,8 @@ export function useBulkActions({
   }
 
   /**
-   * Sends one bulk request while the bar shows it is busy, then reports and refreshes. A request the
-   * server refuses as a whole (an empty selection, a patch it can't read) is reported as an error.
+   * Sends the bulk request while the bar shows it is busy, then reports and refreshes. A request the
+   * server refuses as a whole (a patch it can't read…) is reported as an error.
    */
   async function run(request: () => Promise<BulkResult>, successKey: "bulk.done" | "bulk.deleted"): Promise<BulkResult> {
     setRunning(true);
@@ -95,40 +87,40 @@ export function useBulkActions({
   }
 
   /**
-   * Writes the answer on every editable selected row, in the collection's own PATCH shape.
+   * Writes the answer on every editable row, in the collection's own PATCH shape.
    */
-  async function applyAnswer(fieldId: string, answer: AnswerInputBody): Promise<void> {
+  async function applyAnswer(rows: RowRecord[], fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run(() => bulk.patch(idsOf(editableRows(selectedRows)), patch), "bulk.done");
+    await run(() => bulk.patch(idsOf(editableRows(rows)), patch), "bulk.done");
   }
 
   /**
-   * Links or unlinks the document on every editable selected row.
+   * Links or unlinks the document on every editable row.
    */
-  async function applyDocument(documentId: string | number, mode: BulkLinkMode): Promise<void> {
+  async function applyDocument(rows: RowRecord[], documentId: string | number, mode: BulkLinkMode): Promise<void> {
     const linkDocument = bulk.linkDocument;
     if (!linkDocument) return;
-    await run(() => linkDocument(idsOf(editableRows(selectedRows)), documentId, mode), "bulk.done");
+    await run(() => linkDocument(idsOf(editableRows(rows)), documentId, mode), "bulk.done");
   }
 
   /**
-   * Deletes every deletable selected row; the deleted ones leave the selection and every pane
-   * showing them lets go of them.
+   * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
-  async function deleteSelection(): Promise<void> {
-    const result = await run(() => bulk.delete(idsOf(deletableRows(selectedRows))), "bulk.deleted");
+  async function deleteRows(rows: RowRecord[]): Promise<void> {
+    const result = await run(() => bulk.delete(idsOf(deletableRows(rows))), "bulk.deleted");
     if (result.succeeded.length === 0) return;
     const deleted = new Set(result.succeeded.map(String));
+    const deletedRows = rows.filter((row) => deleted.has(String(row.id)));
     // The rows' own ids (a string or a number, as the list gave them): what the caches are keyed by.
-    idsOf(selectedRows.filter((row) => deleted.has(String(row.id)))).forEach((id) => {
+    idsOf(deletedRows).forEach((id) => {
       queryClient.removeQueries({ queryKey: queryKeys.entityDetail(entityType, id) });
       announceEntityDeleted(entityType, id);
     });
     void queryClient.invalidateQueries({ queryKey: queryKeys.organizationCounts(organizationId) });
     void queryClient.invalidateQueries({ queryKey: queryKeys.projectHomeRecent(organizationId) });
-    onSelectionChange(selectedRows.filter((row) => !deleted.has(String(row.id))));
+    onDeleted(deletedRows);
   }
 
-  return { running, applyAnswer, applyDocument, deleteSelection };
+  return { running, applyAnswer, applyDocument, deleteRows };
 }

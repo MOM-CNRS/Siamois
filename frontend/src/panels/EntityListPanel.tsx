@@ -1,4 +1,4 @@
-import {type CSSProperties, type ReactNode, useCallback, useEffect, useRef, useState} from "react";
+import {type CSSProperties, type ReactNode, useEffect, useRef, useState} from "react";
 import {PaneStateScope, usePaneState} from "./pane/paneState";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Skeleton} from "primereact/skeleton";
@@ -39,6 +39,7 @@ import {listPath} from "../navigation/paths";
 import {ListSearchOverlayBox} from "./list/ListSearchOverlay";
 import {ListToolbar} from "./list/ListToolbar";
 import {BulkActionBar} from "./list/bulk/BulkActionBar";
+import {useListSelection} from "./list/bulk/useListSelection";
 import {type RowRecord, useEntityListData} from "./list/useEntityListData";
 import {useListColumns} from "./list/useListColumns";
 import {defaultOpenMode, listPrefsKey, loadListPrefs, type OpenMode, saveListPrefs} from "./list/listPreferences";
@@ -262,14 +263,9 @@ function EntityListPanelBody({
       scope,
     });
 
-  const [selectedRows, setSelectedRows] = usePaneState<RowRecord[]>(
-    "selection",
-    [],
-  );
-  const clearSelection = useCallback(
-    () => setSelectedRows([]),
-    [setSelectedRows],
-  );
+  // The rows ticked, or the whole result set but the rows unticked since (the header's box): what
+  // the bulk action bar acts on.
+  const selection = useListSelection({ config, params, rows, totalCount });
 
   // Created and duplicated entities open where a row's own identifier would (the overview).
   const rowActions = useRowActions({
@@ -386,8 +382,8 @@ function EntityListPanelBody({
           scope={scope}
           isLoading={isLoading}
           totalCount={showTree ? treeRows.matchCount : totalCount}
-          selectedCount={selectedRows.length}
-          onClearSelection={clearSelection}
+          selectedCount={selection.count}
+          onClearSelection={selection.clear}
           creatable={creatable}
           createPrefill={createPrefillWithType}
           endExtra={
@@ -487,8 +483,7 @@ function EntityListPanelBody({
           config={config}
           organizationId={organizationId}
           catalog={catalog}
-          selectedRows={selectedRows}
-          onSelectionChange={setSelectedRows}
+          selection={selection}
         />
       )}
       {showCards ? (
@@ -506,8 +501,8 @@ function EntityListPanelBody({
           onNavigate={onNavigate}
           onOpenOverview={rowOpenOverview}
           overviewEntityId={overviewEntityId}
-          selectedRows={selectedRows}
-          onSelectionChange={setSelectedRows}
+          selectedRows={selection.rows}
+          onSelectionChange={selection.setRows}
         />
       ) : (
       <EntityTable
@@ -531,8 +526,10 @@ function EntityListPanelBody({
         onSort={setSort}
         rowRules={rowRules}
         renderRowActions={rowActions.render}
-        selectedRows={selectedRows}
-        onSelectionChange={setSelectedRows}
+        selectedRows={selection.rows}
+        onSelectionChange={selection.setRows}
+        allSelected={selection.all}
+        onSelectAllChange={selection.setAll}
         onNavigate={onNavigate}
         onOpenOverview={rowOpenOverview}
         overviewEntityId={overviewEntityId}

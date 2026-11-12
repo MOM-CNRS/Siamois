@@ -2,15 +2,17 @@ import {useRef, useState} from "react";
 import {Button} from "primereact/button";
 import {Dialog} from "primereact/dialog";
 import {OverlayPanel} from "primereact/overlaypanel";
+import {messageForError} from "../../../api/errors";
 import {DeleteEntityDialog} from "../../../components/detail/DeleteEntityDialog";
 import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import type {FieldResource} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
+import {useNotify} from "../../../notify/NotifyProvider";
 import type {RowRecord} from "../useEntityListData";
 import {BulkDocumentEditor} from "./BulkDocumentEditor";
 import {BulkFieldEditor} from "./BulkFieldEditor";
-import {BulkFieldPicker} from "./BulkFieldPicker";
+import {BulkFieldPicker, type BulkRelationEntry} from "./BulkFieldPicker";
 import {
   bulkEditableFields,
   bulkEditContext,
@@ -20,6 +22,7 @@ import {
   spansSeveralProjects,
 } from "./bulkSelection";
 import {useBulkActions} from "./useBulkActions";
+import type {ListSelection} from "./useListSelection";
 
 export interface BulkActionBarProps {
   entityType: string;
@@ -27,23 +30,25 @@ export interface BulkActionBarProps {
   organizationId?: number;
   // The list's field catalog: the properties a bulk edit can write.
   catalog?: FieldCatalog;
-  selectedRows: RowRecord[];
-  onSelectionChange: (rows: RowRecord[]) => void;
+  selection: ListSelection;
 }
 
 // The dialog the bar has open, if any.
 type OpenDialog = { kind: "field"; field: FieldResource } | { kind: "documents" } | { kind: "delete" } | null;
 
+// The key of the documents among the picker's relations.
+const DOCUMENTS_RELATION = "documents";
+
 /**
  * The Notion-style bar laid over the top of a list while rows are ticked: how many are, a way to
- * untick them, and what can be done to all of them at once — edit one property or relation
- * (« Modifier », then a click on the property), link or unlink a document, delete them. Each action
- * only touches the rows the caller may change, and says how many it skips. Only for an entity type
- * that declares bulk endpoints (`config.api.bulk`).
+ * untick them, and what can be done to all of them at once — edit one property or relation, the
+ * linked documents included (« Modifier », then a click on it), or delete them. Each action only
+ * touches the rows the caller may change, and says how many it skips. Only for an entity type that
+ * declares bulk endpoints (`config.api.bulk`).
  */
 export function BulkActionBar(props: BulkActionBarProps) {
   const bulk = props.config.api.bulk;
-  if (props.selectedRows.length === 0 || !bulk) return null;
+  if (props.selection.count === 0 || !bulk) return null;
   return <BulkActionBarContent {...props} bulk={bulk} />;
 }
 
@@ -56,23 +61,83 @@ function BulkActionBarContent({
   bulk,
   organizationId,
   catalog,
-  selectedRows,
-  onSelectionChange,
+  selection,
 }: BulkActionBarProps & { bulk: BulkApi }) {
+  const notify = useNotify();
   const pickerRef = useRef<OverlayPanel>(null);
   const [dialog, setDialog] = useState<OpenDialog>(null);
-  const actions = useBulkActions({ entityType, config, bulk, organizationId, selectedRows, onSelectionChange });
+  // The rows the open picker or dialog acts on: the selection as it was gathered when it opened
+  // (under « select all », read back from the server, the rows not shown included).
+  const [target, setTarget] = useState<RowRecord[]>([]);
+  const [gathering, setGathering] = useState(false);
+  const actions = useBulkActions({
+    entityType,
+    config,
+    bulk,
+    organizationId,
+    onDeleted: (deletedRows) => {
+      // Under « select all » the deleted rows simply leave the result set.
+      if (selection.all) return;
+      const deleted = new Set(deletedRows.map((row) => String(row.id)));
+      selection.setRows(selection.rows.filter((row) => !deleted.has(String(row.id))));
+    },
+  });
 
-  const editable = editableRows(selectedRows);
-  const deletable = deletableRows(selectedRows);
-  const skippedCount = selectedRows.length - editable.length;
+  const editable = editableRows(target);
+  const deletable = deletableRows(target);
+  const skippedCount = target.length - editable.length;
   const fields = config.api.patchAnswers ? bulkEditableFields(catalog) : [];
   const context = bulkEditContext(editable, entityType, organizationId);
-  const canLinkDocuments = bulk.linkDocument != null;
-  // A document is linked only inside its project: the selection must not span several (rows with no
-  // project, places, take any document of the organization).
-  const documentsBlocked = canLinkDocuments && spansSeveralProjects(editable, entityType);
+  const relations: BulkRelationEntry[] = bulk.linkDocument
+    ? [
+        {
+          key: DOCUMENTS_RELATION,
+          label: t("entity.document.plural"),
+          icon: "bi bi-file-earmark",
+          // A document is linked only inside its project: the selection must not span several.
+          disabledReason: spansSeveralProjects(editable, entityType) ? t("bulk.documentsNeedOneProject") : undefined,
+        },
+      ]
+    : [];
+  const busy = actions.running || gathering;
   const close = () => setDialog(null);
+
+  /**
+   * The selected rows, every one of them: under « select all », read back from the server first.
+   * Null when they could not be read (the user is told).
+   */
+  async function gather(): Promise<RowRecord[] | null> {
+    if (!selection.all) return selection.rows;
+    setGathering(true);
+    try {
+      return await selection.resolve();
+    } catch (error) {
+      notify.error(messageForError(error, t("bulk.failed")));
+      return null;
+    } finally {
+      setGathering(false);
+    }
+  }
+
+  /**
+   * Gathers the selection, then opens the property picker under the « Modifier » button.
+   */
+  async function openPicker(anchor: HTMLElement) {
+    const rows = await gather();
+    if (!rows) return;
+    setTarget(rows);
+    pickerRef.current?.show(null, anchor);
+  }
+
+  /**
+   * Gathers the selection, then opens the deletion confirmation.
+   */
+  async function openDelete() {
+    const rows = await gather();
+    if (!rows) return;
+    setTarget(rows);
+    setDialog({ kind: "delete" });
+  }
 
   /**
    * Opens the bulk editor of the property clicked in the picker.
@@ -82,10 +147,18 @@ function BulkActionBarContent({
     setDialog({ kind: "field", field });
   }
 
+  /**
+   * Opens the bulk editor of the relation clicked in the picker that is no catalog field.
+   */
+  function pickRelation(key: string) {
+    pickerRef.current?.hide();
+    if (key === DOCUMENTS_RELATION) setDialog({ kind: "documents" });
+  }
+
   return (
     <div className="bulk-action-bar-anchor">
       <div className="bulk-action-bar" role="toolbar" aria-label={t("bulk.toolbar")}>
-        <span className="bulk-action-bar-count">{tn("bulk.selected", selectedRows.length)}</span>
+        <span className="bulk-action-bar-count">{tn("bulk.selected", selection.count)}</span>
         <Button
           type="button"
           icon="bi bi-x-lg"
@@ -95,33 +168,20 @@ function BulkActionBarContent({
           aria-label={t("bulk.clear")}
           tooltip={t("bulk.clear")}
           tooltipOptions={{ position: "bottom" }}
-          disabled={actions.running}
-          onClick={() => onSelectionChange([])}
+          disabled={busy}
+          onClick={selection.clear}
         />
         <span className="bulk-action-bar-separator" aria-hidden="true" />
-        {fields.length > 0 && (
+        {(fields.length > 0 || bulk.linkDocument) && (
           <Button
             type="button"
             label={t("bulk.edit")}
             icon="bi bi-pencil-square"
             text
             size="small"
-            disabled={actions.running || editable.length === 0}
-            onClick={(e) => pickerRef.current?.toggle(e)}
+            disabled={busy}
+            onClick={(e) => void openPicker(e.currentTarget)}
           />
-        )}
-        {canLinkDocuments && (
-          <span title={documentsBlocked ? t("bulk.documentsNeedOneProject") : undefined}>
-            <Button
-              type="button"
-              label={t("bulk.documents")}
-              icon="bi bi-link-45deg"
-              text
-              size="small"
-              disabled={actions.running || editable.length === 0 || documentsBlocked}
-              onClick={() => setDialog({ kind: "documents" })}
-            />
-          </span>
         )}
         {config.api.delete && (
           <Button
@@ -131,13 +191,14 @@ function BulkActionBarContent({
             text
             severity="danger"
             size="small"
-            disabled={actions.running || deletable.length === 0}
-            onClick={() => setDialog({ kind: "delete" })}
+            disabled={busy}
+            onClick={() => void openDelete()}
           />
         )}
-        {actions.running && (
+        {busy && (
           <span className="bulk-action-bar-running" role="status">
-            <i className="pi pi-spin pi-spinner" aria-hidden="true" /> {t("bulk.running")}
+            <i className="pi pi-spin pi-spinner" aria-hidden="true" />{" "}
+            {gathering ? t("bulk.loadingSelection") : t("bulk.running")}
           </span>
         )}
       </div>
@@ -147,15 +208,19 @@ function BulkActionBarContent({
           fields={fields}
           disabledReason={(field) => (canBulkEdit(field, editable, entityType) ? undefined : t("bulk.needsOneProject"))}
           onPick={pickField}
+          extraRelations={relations}
+          onPickRelation={pickRelation}
         />
       </OverlayPanel>
 
       <Dialog
-        visible={dialog?.kind === "field"}
+        visible={dialog?.kind === "field" || dialog?.kind === "documents"}
         onHide={() => !actions.running && close()}
         modal
         draggable={false}
-        header={dialog?.kind === "field" ? t("bulk.editTitle", { label: dialog.field.label }) : ""}
+        header={t("bulk.editTitle", {
+          label: dialog?.kind === "field" ? dialog.field.label : t("entity.document.plural"),
+        })}
         className="bulk-dialog"
       >
         {dialog?.kind === "field" && (
@@ -167,19 +232,9 @@ function BulkActionBarContent({
             skippedCount={skippedCount}
             running={actions.running}
             onCancel={close}
-            onApply={(answer) => void actions.applyAnswer(dialog.field.id, answer).then(close)}
+            onApply={(answer) => void actions.applyAnswer(target, dialog.field.id, answer).then(close)}
           />
         )}
-      </Dialog>
-
-      <Dialog
-        visible={dialog?.kind === "documents"}
-        onHide={() => !actions.running && close()}
-        modal
-        draggable={false}
-        header={t("bulk.documentsTitle")}
-        className="bulk-dialog"
-      >
         {dialog?.kind === "documents" && (
           <BulkDocumentEditor
             organizationId={organizationId}
@@ -188,9 +243,7 @@ function BulkActionBarContent({
             skippedCount={skippedCount}
             running={actions.running}
             onCancel={close}
-            onApply={(documentId, mode) =>
-              void actions.applyDocument(documentId, mode).then(close)
-            }
+            onApply={(documentId, mode) => void actions.applyDocument(target, documentId, mode).then(close)}
           />
         )}
       </Dialog>
@@ -201,7 +254,7 @@ function BulkActionBarContent({
         confirmName={config.deleteRequiresName ? t("bulk.deleteWord") : undefined}
         confirmPrompt={t("bulk.deleteType", { name: t("bulk.deleteWord") })}
         busy={actions.running}
-        onConfirm={() => void actions.deleteSelection().then(close)}
+        onConfirm={() => void actions.deleteRows(target).then(close)}
         onHide={() => !actions.running && close()}
       />
     </div>

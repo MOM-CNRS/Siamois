@@ -7,6 +7,7 @@ import type {EntityTypeConfig} from "../../../entities/shared/types";
 import {notifySpy} from "../../../test/notifySpy";
 import type {RowRecord} from "../useEntityListData";
 import {BulkActionBar} from "./BulkActionBar";
+import type {ListSelection} from "./useListSelection";
 
 const bulkDelete = vi.fn<BulkApi["delete"]>();
 const bulk: BulkApi = { delete: bulkDelete, patch: vi.fn() };
@@ -16,7 +17,7 @@ const config = {
   labels: { singular: "UE", plural: "UE" },
   collectionPath: "recording-units",
   icon: "bi bi-square",
-  api: { list: vi.fn(), get: vi.fn(), delete: vi.fn(), bulk },
+  api: { list: vi.fn(), get: vi.fn(), delete: vi.fn(), patchAnswers: vi.fn(), bulk },
   list: { columns: [], searchable: false },
   detail: { tabs: [] },
   routes: { list: "/ue", detail: (id: string | number) => `/ue/${id}` },
@@ -30,28 +31,47 @@ const rows: RowRecord[] = [
 
 let container: HTMLDivElement;
 let root: Root;
-const onSelectionChange = vi.fn();
 
 /**
- * Renders the bar over these selected rows.
+ * A selection of these rows: ticked one by one, or (`all`) the whole result set, read back by `resolve`.
  */
-function render(selected: RowRecord[]) {
-  const queryClient = new QueryClient();
+function selectionOf(selected: RowRecord[], all = false): ListSelection {
+  return {
+    all,
+    count: selected.length,
+    rows: all ? [] : selected,
+    resolve: vi.fn().mockResolvedValue(selected),
+    setRows: vi.fn(),
+    setAll: vi.fn(),
+    clear: vi.fn(),
+  };
+}
+
+/**
+ * Renders the bar over this selection.
+ */
+function render(selection: ListSelection, entityConfig: EntityTypeConfig<unknown, unknown> = config) {
   act(() => {
     root.render(
-      <QueryClientProvider client={queryClient}>
-        <BulkActionBar entityType="recordingUnit" config={config} organizationId={3} selectedRows={selected}
-          onSelectionChange={onSelectionChange} />
+      <QueryClientProvider client={new QueryClient()}>
+        <BulkActionBar entityType="recordingUnit" config={entityConfig} organizationId={3} selection={selection} />
       </QueryClientProvider>,
     );
   });
 }
 
 /**
- * The button labelled `label`, wherever it is drawn (the dialogs are portalled to the body).
+ * The button labelled `label`, wherever it is drawn (the dialogs are portalled to the body), or null.
+ */
+function findButton(label: string): HTMLButtonElement | null {
+  return [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === label) ?? null;
+}
+
+/**
+ * The button labelled `label`; fails when there is none.
  */
 function button(label: string): HTMLButtonElement {
-  const found = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === label);
+  const found = findButton(label);
   if (!found) throw new Error(`No button « ${label} »`);
   return found;
 }
@@ -80,46 +100,62 @@ afterEach(() => {
 
 describe("BulkActionBar", () => {
   it("stays hidden while nothing is selected", () => {
-    render([]);
+    render(selectionOf([]));
 
     expect(container.querySelector(".bulk-action-bar")).toBeNull();
   });
 
   it("stays hidden for an entity type with no bulk endpoints", () => {
-    const withoutBulk = { ...config, api: { ...config.api, bulk: undefined } };
-    act(() => {
-      root.render(
-        <QueryClientProvider client={new QueryClient()}>
-          <BulkActionBar entityType="recordingUnit" config={withoutBulk} selectedRows={rows}
-            onSelectionChange={onSelectionChange} />
-        </QueryClientProvider>,
-      );
-    });
+    render(selectionOf(rows), { ...config, api: { ...config.api, bulk: undefined } });
 
     expect(container.querySelector(".bulk-action-bar")).toBeNull();
   });
 
-  it("offers documents only for a type documents link to", () => {
-    render(rows);
+  it("counts the selection, the rows not shown included", () => {
+    render({ ...selectionOf(rows, true), count: 250 });
 
-    expect([...container.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Documents")).toBe(false);
+    expect(container.querySelector(".bulk-action-bar-count")?.textContent).toBe("250 sélectionnées");
   });
 
-  it("counts the selection", () => {
-    render(rows);
+  it("has no separate documents button", () => {
+    render(selectionOf(rows));
 
-    expect(container.querySelector(".bulk-action-bar-count")?.textContent).toBe("3 sélectionnées");
+    expect(findButton("Documents")).toBeNull();
+  });
+
+  it("lists the documents among the relations of « Modifier » for a type documents link to", async () => {
+    const withDocuments = { ...config, api: { ...config.api, bulk: { ...bulk, linkDocument: vi.fn() } } };
+    render(selectionOf(rows), withDocuments);
+
+    await click(button("Modifier"));
+
+    const relations = document.querySelector('[role="group"][aria-label="Relations"]');
+    expect(relations?.textContent).toContain("Documents");
   });
 
   it("deletes the deletable rows in one bulk request and drops them from the selection", async () => {
     bulkDelete.mockResolvedValue({ succeeded: [1], failed: [{ id: 2, status: 409, message: "Relations" }] });
-    render(rows);
+    const selection = selectionOf(rows);
+    render(selection);
 
     await click(button("Supprimer"));
     await click(button("Supprimer définitivement"));
 
     expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
-    expect(onSelectionChange).toHaveBeenCalledWith([rows[1], rows[2]]);
+    expect(selection.setRows).toHaveBeenCalledWith([rows[1], rows[2]]);
     expect(notifySpy.warn).toHaveBeenCalledWith("1 réussi(s), 1 en échec. Relations");
+  });
+
+  it("acts on the whole result set under « select all », read back before the action", async () => {
+    bulkDelete.mockResolvedValue({ succeeded: [1, 2], failed: [] });
+    const selection = selectionOf(rows, true);
+    render(selection);
+
+    await click(button("Supprimer"));
+    await click(button("Supprimer définitivement"));
+
+    expect(selection.resolve).toHaveBeenCalled();
+    expect(bulkDelete).toHaveBeenCalledWith(["1", "2"]);
+    expect(selection.setRows).not.toHaveBeenCalled();
   });
 });
