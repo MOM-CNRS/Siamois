@@ -139,7 +139,7 @@ public class RecordingUnitOpenApiService {
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, counts);
         RecordingUnitDTO dto = bundle.dto();
 
-        RecordingUnitResource resource = recordingUnitResponseMapper.convert(dto);
+        RecordingUnitResource resource = Objects.requireNonNull(recordingUnitResponseMapper.convert(dto));
         if (counts != null && counts.contains("documents") && resource.getCount() != null && dto.getId() != null) {
             resource.getCount().setDocuments(documentService.countLinkedTo(DocumentLinkKind.RECORDING_UNIT, dto.getId()));
         }
@@ -291,7 +291,7 @@ public class RecordingUnitOpenApiService {
     private RecordingUnitType buildRecordingUnitType(Long projectId, Concept concept,
                                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         RecordingUnitType type = new RecordingUnitType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -310,7 +310,7 @@ public class RecordingUnitOpenApiService {
     private FindType buildFindType(Long projectId, Concept concept,
                                    UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                    RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         FindType type = new FindType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -362,7 +362,7 @@ public class RecordingUnitOpenApiService {
     private PhaseType buildPhaseType(Long projectId, Concept concept,
                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         PhaseType type = new PhaseType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -402,7 +402,7 @@ public class RecordingUnitOpenApiService {
                 Document.class, institution, personDto, lang);
 
         List<Concept> configuredTypes = configurable ? OpenApiExecutionContext.callWithUserInfo(userInfo,
-                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT)) : List.<Concept>of();
+                () -> tableFieldConfigService.listConfiguredTypeConcepts(au.getId(), ConfigurableTable.DOCUMENT)) : List.of();
         Locale locale = langService.localeForApiLang(lang);
         TypeConceptDescriptions typeConcepts = describeTypes(configuredTypes, locale);
         List<DocumentType> types = configuredTypes.stream()
@@ -418,7 +418,7 @@ public class RecordingUnitOpenApiService {
     private DocumentType buildDocumentType(Long projectId, Concept concept,
                                      UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                      RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         DocumentType type = new DocumentType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -469,7 +469,7 @@ public class RecordingUnitOpenApiService {
     private ContainerType buildContainerType(Long projectId, Concept concept,
                                              UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         ContainerType type = new ContainerType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -520,7 +520,7 @@ public class RecordingUnitOpenApiService {
     private StudyType buildStudyType(Long projectId, Concept concept,
                                              UserInfo userInfo, Locale locale, TypeConceptDescriptions typeConcepts,
                                              RecordingUnitIdentifierConfig identifierConfig) {
-        ConceptDTO typeDto = conceptMapper.convert(concept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(concept));
         StudyType type = new StudyType();
         type.setConcept(typeConcepts.resourceOf(typeDto, dto -> toConceptResource(dto, locale.getLanguage())));
         type.setId(String.valueOf(concept.getId()));
@@ -538,7 +538,7 @@ public class RecordingUnitOpenApiService {
 
     /**
      * {@code GET /api/v1/organizations/{id}/project-types} (plan §5/§6) — supersedes
-     * {@link #buildProjectUiForm}/{@code GET /api/v1/projects/form}: layout, field configs and the
+     * {@code GET /api/v1/projects/form}: layout, field configs and the
      * shared field catalog in one call. Phase 1 populates only {@code _default}, simulated from the
      * hardcoded {@link ActionUnit#DETAILS_FORM} — the fiche's schema, not {@link ActionUnit#NEW_UNIT_FORM}
      * (the create-dialog schema {@code buildProjectUiForm} used) — since this endpoint drives the
@@ -671,7 +671,7 @@ public class RecordingUnitOpenApiService {
     }
 
     /**
-     * Mobilier existant : champs avec leurs valeurs ({@link Specimen#DETAILS_FORM}, comme le panel web).
+     * Mobilier existant : champs avec leurs valeurs DETAILS_FORM, comme le panel web).
      */
     private Long specimenProjectId(SpecimenDTO specimen) {
         if (specimen.getActionUnit() != null) return specimen.getActionUnit().getId();
@@ -743,7 +743,7 @@ public class RecordingUnitOpenApiService {
             return toFieldsMap(response, fieldSource, locale);
         } catch (RuntimeException ex) {
             log.warn("Impossible de construire les réponses formulaire pour le mobilier id={} (fallback null): {}",
-                    specimen.getId(), ex.toString(), ex);
+                    specimen.getId(), ex, ex);
             return buildNullAnswersMap(fieldSource, locale);
         }
     }
@@ -759,7 +759,7 @@ public class RecordingUnitOpenApiService {
             return toFieldsMap(response, fieldSource, locale);
         } catch (RuntimeException ex) {
             log.warn("Impossible de construire les réponses formulaire pour l'UE id={} (fallback métadonnées seules): {}",
-                    dto.getId(), ex.toString(), ex);
+                    dto.getId(), ex, ex);
             return buildNullAnswersMap(fieldSource, locale);
         }
     }
@@ -969,7 +969,7 @@ public class RecordingUnitOpenApiService {
         }
         Concept typeConcept = conceptRepository.findById(Long.parseLong(request.getTypeId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Type d'UE introuvable"));
-        ConceptDTO typeDto = conceptMapper.convert(typeConcept);
+        ConceptDTO typeDto = Objects.requireNonNull(conceptMapper.convert(typeConcept));
         // Checked up front so an out-of-scope link is a 404 before anything is written.
         RecordingUnitSummaryDTO parent = request.getParentRecordingUnitId() == null ? null
                 : requireParentInProject(request.getParentRecordingUnitId(), au.getId(), accessibleInstitutionIds);

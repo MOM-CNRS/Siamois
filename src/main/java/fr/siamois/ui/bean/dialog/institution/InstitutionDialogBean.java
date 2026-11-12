@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -85,7 +86,7 @@ public class InstitutionDialogBean implements Serializable {
     }
 
     public void save() {
-        assert actionFromBean != null;
+        Objects.requireNonNull(actionFromBean, "actionFromBean must not be null");
         actionFromBean.apply();
     }
 

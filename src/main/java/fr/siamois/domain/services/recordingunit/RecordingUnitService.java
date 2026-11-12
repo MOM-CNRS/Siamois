@@ -195,7 +195,7 @@ public class RecordingUnitService implements ArkEntityService {
     @Transactional
     public void updateStratigraphicRel(RecordingUnitDTO recordingUnitDTO) {
         RecordingUnit recordingUnit = recordingUnitMapper.invertConvert(recordingUnitDTO);
-        assert recordingUnit != null;
+        Objects.requireNonNull(recordingUnit, "recordingUnit must not be null");
         RecordingUnit managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
         setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);
     }
@@ -205,7 +205,7 @@ public class RecordingUnitService implements ArkEntityService {
         try {
             RecordingUnit managedRecordingUnit;
 
-            assert recordingUnit != null;
+            Objects.requireNonNull(recordingUnit, "recordingUnit must not be null");
             managedRecordingUnit = newOrGetRecordingUnit(recordingUnit);
 
             setupStratigraphicRelationships(recordingUnit, managedRecordingUnit);

@@ -81,7 +81,7 @@ public class PersonService {
         checkPassword(password);
 
         Person person = conversionService.convert(personDTO,Person.class);
-        assert person != null;
+        Objects.requireNonNull(person, "person must not be null");
         person.setPassword(passwordEncoder.encode(password));
         person.setEnabled(true);
 
@@ -115,7 +115,7 @@ public class PersonService {
         checkPersonData(personDTO, true);
 
         Person person = conversionService.convert(personDTO, Person.class);
-        assert person != null;
+        Objects.requireNonNull(person, "person must not be null");
         person.setPassword(passwordEncoder.encode(generateRandomPassword()));
         person.setEnabled(false);
 
@@ -295,7 +295,7 @@ public class PersonService {
         Person existingPerson = personRepository.findById(personDTO.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Person not found"));
         Person person = conversionService.convert(personDTO,Person.class);
-        assert person != null;
+        Objects.requireNonNull(person, "person must not be null");
         person.setPassword(existingPerson.getPassword()); // Keep existing password
         personRepository.save(person);
     }

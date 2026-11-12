@@ -29,7 +29,7 @@ function showLoneMinus(input: HTMLInputElement) {
  * @param props the InputNumber props, passed through unchanged apart from onChange and onKeyDown
  * @returns the number input
  */
-export function SignedInputNumber(props: InputNumberProps) {
+export function SignedInputNumber(props: Readonly<InputNumberProps>) {
   const { onChange, onKeyDown, min, value } = props;
   const inputRef = useRef<HTMLInputElement>(null);
   // Set while the input shows only the "-" this wrapper put there: a re-render with no value would

@@ -54,7 +54,7 @@ export function TextRenderer(props: FieldRendererProps) {
   return props.field.isTextArea ? <TextAreaRenderer {...props} /> : <SingleLineTextRenderer {...props} />;
 }
 
-function SingleLineTextRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+function SingleLineTextRenderer({ value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const stringValue = typeof value === "string" ? value : "";
   return (
     <InputText
@@ -66,7 +66,7 @@ function SingleLineTextRenderer({ value, readOnly, required, onChange }: FieldRe
   );
 }
 
-function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRendererProps) {
+function TextAreaRenderer({ value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const stringValue = typeof value === "string" ? value : "";
   return (
     <InputTextarea
@@ -83,7 +83,7 @@ function TextAreaRenderer({ value, readOnly, required, onChange }: FieldRenderer
 const GEOMETRY_PREVIEW_LENGTH = 20;
 
 // A geometry's WKT can run to thousands of characters: the field shows its first few, the rest opens in an overlay.
-export function GeometryRenderer({ value }: FieldRendererProps) {
+export function GeometryRenderer({ value }: Readonly<FieldRendererProps>) {
   const overlayRef = useRef<OverlayPanel>(null);
   const wkt = typeof value === "string" && value.length > 0 ? value : null;
   if (!wkt) return <span>—</span>;
@@ -100,7 +100,7 @@ export function GeometryRenderer({ value }: FieldRendererProps) {
   );
 }
 
-export function IntegerRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+export function IntegerRenderer({ field, value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const numberValue = typeof value === "number" ? value : null;
   return (
     <SignedInputNumber
@@ -118,7 +118,7 @@ export function IntegerRenderer({ field, value, readOnly, required, onChange }: 
   );
 }
 
-export function DecimalRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+export function DecimalRenderer({ field, value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const numberValue = typeof value === "number" ? value : null;
   return (
     <SignedInputNumber
@@ -136,7 +136,7 @@ export function DecimalRenderer({ field, value, readOnly, required, onChange }: 
   );
 }
 
-export function DateRenderer({ field, value, readOnly, required, onChange, bounds }: FieldRendererProps) {
+export function DateRenderer({ field, value, readOnly, required, onChange, bounds }: Readonly<FieldRendererProps>) {
   const showTime = field.constraints?.showTime === true;
   // A date field saves the instant its value changes (commitsImmediately), but PrimeReact reports a
   // valid partial parse on every keystroke ("12/03/20" is year 20): typed text is only held here
@@ -254,38 +254,286 @@ function declaredOptionMatches(option: FilterOption, needle: string): boolean {
   return labels.some((label) => label.toLowerCase().includes(needle));
 }
 
-function ResourceRefRenderer({ field, value, readOnly, required, onChange, organizationId, context, optionsContext, declaredOptions, placeContext, fieldLabelOf, multiple }: FieldRendererProps & { multiple: boolean }) {
+type RefPick = FilterOption[] | FilterOption | null;
+type OptionLoader = (q?: string) => Promise<FilterOption[]>;
+type OpenEntity = ReturnType<typeof useOpenEntity>;
+type CreateConfig = ReturnType<typeof creatableConfig>;
+type OpenNew = (anchor: HTMLElement | null) => void;
+
+// What the picker searches: the field's declared options, filtered locally, or its option source.
+function loadOptionsOf(
+  { field, context, optionsContext, declaredOptions, placeContext }: FieldRendererProps,
+  orgId: number | undefined,
+): OptionLoader | null {
+  if (declaredOptions) {
+    return async (q?: string) => {
+      const needle = (q ?? "").trim().toLowerCase();
+      return declaredOptions.filter((option) => needle === "" || declaredOptionMatches(option, needle));
+    };
+  }
+  if (orgId == null) return null;
+  return optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext });
+}
+
+// The picked values of the answer, as the picker's options: a list for a multiple picker, one option or null otherwise.
+function selectedOptionsOf(value: unknown, multiple: boolean): RefPick {
+  if (multiple) {
+    return Array.isArray(value)
+      ? value.filter((v): v is ResourceRefLike | ResolvedResourceLike => isResourceRef(v) || isResolvedResource(v)).map(toOption)
+      : [];
+  }
+  return isResourceRef(value) || isResolvedResource(value) ? toOption(value) : null;
+}
+
+// The picked values as a list, whatever the picker's multiplicity.
+function asOptionList(selected: RefPick): FilterOption[] {
+  if (selected == null) return [];
+  return Array.isArray(selected) ? selected : [selected];
+}
+
+// Some sources searched without their filter: say which field to fill (or what is wrong with its place).
+function narrowHintOf(placeContext: FieldRendererProps["placeContext"], fieldLabelOf: FieldRendererProps["fieldLabelOf"]): string {
+  const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
+  const parents = Object.entries(placeContext?.deps ?? {});
+  const emptyParents = parents.filter(([, placeId]) => placeId == null).map(([fieldId]) => fieldId);
+  return emptyParents.length > 0
+    ? t("field.fillToNarrow", { field: named(emptyParents) })
+    : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
+}
+
+// The « Nouveau » button's label: the entity it creates, or a person.
+function newLabelOf(createConfig: CreateConfig, personProjectId: string | undefined): string | undefined {
+  if (createConfig) return t("field.newLower", { label: createConfig.labels.singular.toLowerCase() });
+  if (personProjectId) return t("field.newPerson");
+  return undefined;
+}
+
+// What « Nouveau » opens: the entity creation form, the person form, or nothing.
+function openNewOf(
+  createConfig: CreateConfig,
+  personProjectId: string | undefined,
+  setCreateAnchor: (anchor: HTMLElement | null) => void,
+  setPersonAnchor: (anchor: HTMLElement | null) => void,
+): OpenNew | undefined {
+  if (createConfig) return setCreateAnchor;
+  if (personProjectId) return setPersonAnchor;
+  return undefined;
+}
+
+// Picks a value: places suggested by an external source (INSEE, GéoPlateforme) are created first —
+// once per organization, the server answers the existing one — then the answer is changed.
+function useResourceRefCommit(
+  { multiple, target, orgId, projectId, onChange }: {
+    multiple: boolean;
+    target: ReferenceTarget;
+    orgId: number | undefined;
+    projectId: FieldEditContext["projectId"] | undefined;
+    onChange: FieldRendererProps["onChange"];
+  },
+) {
+  const notify = useNotify();
+  const [creatingPlace, setCreatingPlace] = useState(false);
+  const toRef = (o: FilterOption): ResourceRefLike => ({ resourceId: o.id, resourceType: target.resourceType, label: o.label });
+
+  function commit(next: RefPick) {
+    if (multiple) {
+      onChange(((next as FilterOption[] | null) ?? []).map(toRef));
+    } else {
+      const option = next as FilterOption | null;
+      onChange(option ? toRef(option) : null);
+    }
+  }
+
+  async function commitPicked(next: RefPick) {
+    const picked = asOptionList(next);
+    if (orgId == null || !picked.some(isExternalSuggestion)) {
+      commit(next);
+      return;
+    }
+    setCreatingPlace(true);
+    try {
+      const resolved = await Promise.all(
+        picked.map((o) => (isExternalSuggestion(o) ? createPlaceFromSuggestion(orgId, o, projectId) : Promise.resolve(o))),
+      );
+      commit(Array.isArray(next) ? resolved : resolved[0] ?? null);
+    } catch (error) {
+      notify.error(messageForError(error, t("field.placeCreateFailed")));
+    } finally {
+      setCreatingPlace(false);
+    }
+  }
+
+  return { commit, commitPicked, creatingPlace };
+}
+
+// The suggestion panel's footer: why the list could not be narrowed, and the « Nouveau » button.
+function ResourceRefFooter({ hint, openNew, newLabel, hide, anchorOf }: Readonly<{
+  hint: string | undefined;
+  openNew: OpenNew | undefined;
+  newLabel: string | undefined;
+  hide: () => void;
+  anchorOf: () => HTMLElement | null;
+}>) {
+  return (
+    <div className="resource-ref-create-footer">
+      {hint && <small className="resource-ref-narrow-hint">{hint}</small>}
+      {openNew && (
+        <Button
+          type="button"
+          text
+          size="small"
+          icon="bi bi-plus-lg"
+          label={newLabel}
+          onClick={() => {
+            hide();
+            openNew(anchorOf());
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// A picked entity's chip label: it opens the entity's fiche.
+function ResourceRefTokenLink({ option, entityType, openEntity }: Readonly<{
+  option: FilterOption;
+  entityType: string;
+  openEntity: NonNullable<OpenEntity>;
+}>) {
+  const entityIcon = getEntityType(entityType)?.icon;
+  return (
+    <span
+      className="resource-ref-token-link"
+      role="link"
+      tabIndex={-1}
+      title={t("field.open", { label: option.label })}
+      // mousedown would focus the input and open the suggestions first.
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        openEntity(entityType, option.id);
+      }}
+    >
+      {entityIcon && <i className={`${entityIcon} ref-chip-icon`} aria-hidden="true" />}
+      {option.label}
+    </span>
+  );
+}
+
+// The forms « Nouveau » opens next to the picker.
+function ResourceRefCreateOverlays({ target, context, orgId, createConfig, createAnchor, onCreated, onHideCreate, personProjectId, personAnchor, personQuery, onPersonCreated, onHidePerson }: Readonly<{
+  target: ReferenceTarget;
+  context: FieldEditContext | undefined;
+  orgId: number | undefined;
+  createConfig: CreateConfig;
+  createAnchor: HTMLElement | null;
+  onCreated: (id: string | number) => void;
+  onHideCreate: () => void;
+  personProjectId: string | undefined;
+  personAnchor: HTMLElement | null;
+  personQuery: string;
+  onPersonCreated: (person: FilterOption) => void;
+  onHidePerson: () => void;
+}>) {
+  return (
+    <>
+      {createConfig && (
+        // Opens next to the picker, in an overlay that stops key events from reaching the edit
+        // overlay's own Escape/Enter handling (see CreateEntityOverlay).
+        <CreateEntityOverlay
+          entityType={target.createEntityType!}
+          anchor={createAnchor}
+          organizationId={orgId}
+          scope={context?.projectId ? { entityType: PROJECT_KEY, id: context.projectId } : undefined}
+          prefill={context ? createConfig.list.createPrefillFrom?.(context) : undefined}
+          onCreated={onCreated}
+          onHide={onHideCreate}
+        />
+      )}
+      {personProjectId && (
+        <AnchoredFormOverlay anchor={personAnchor} ariaLabel={t("person.create.title")} onHide={onHidePerson}>
+          {(close) => (
+            <CreatePersonForm
+              projectId={personProjectId}
+              initial={personNameFromQuery(personQuery)}
+              onCreated={onPersonCreated}
+              onCancel={close}
+            />
+          )}
+        </AnchoredFormOverlay>
+      )}
+    </>
+  );
+}
+
+// A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it depends on is empty.
+function isWaitingForParent(optionsContext: FieldRendererProps["optionsContext"]): boolean {
+  return optionsContext?.kind === "RELATED_CONCEPTS" && optionsContext.relatedTo == null;
+}
+
+// The entity type a picked value links to: only a value this app has a fiche for is a link.
+function linkEntityTypeOf(target: ReferenceTarget): string | undefined {
+  if (!target.entityType) return undefined;
+  return getEntityType(target.entityType) ? target.entityType : undefined;
+}
+
+// A single reference to an entity with a fiche is shown as a token too, not as the input's text:
+// the token is what links to the fiche (a click in the input means "edit the text"). Picking a
+// suggestion replaces it, its × clears the field.
+function isTokenPicker(multiple: boolean, linkEntityType: string | undefined, openEntity: OpenEntity): boolean {
+  if (multiple) return true;
+  return linkEntityType != null && openEntity != null;
+}
+
+// The query a focused picker searches with. A single picker whose input still shows the picked value's
+// label searches with "": that label would narrow the list to the value already there.
+function focusQuery(text: string, selected: RefPick, tokenPicker: boolean): string {
+  if (tokenPicker || Array.isArray(selected)) return text;
+  return text === selected?.label ? "" : text;
+}
+
+// The pick a change of the picker means: for a single token picker, its last token (none left: cleared).
+function pickOfChange(next: RefPick, tokenPicker: boolean, multiple: boolean): RefPick {
+  if (!tokenPicker || multiple) return next;
+  const picked = (next as FilterOption[] | null) ?? [];
+  return picked.length > 0 ? picked[picked.length - 1] : null;
+}
+
+// The pick the phone drawer commits: its whole selection, or its first option for a single picker.
+function sheetPickOf(next: FilterOption[], multiple: boolean): RefPick {
+  return multiple ? next : (next[0] ?? null);
+}
+
+// What the AutoComplete shows: the tokens, or the typed text, or the picked option.
+function pickerValueOf(tokenPicker: boolean, selected: RefPick, typed: string | null) {
+  if (tokenPicker) return asOptionList(selected);
+  return typed ?? selected;
+}
+
+// The suggestion panel's footer template, when it has something to show (a hint or « Nouveau »).
+function footerTemplateOf(hint: string | undefined, openNew: OpenNew | undefined, newLabel: string | undefined, anchorOf: () => HTMLElement | null) {
+  if (!openNew && !hint) return undefined;
+  return (_: unknown, hide: () => void) => (
+    <ResourceRefFooter hint={hint} openNew={openNew} newLabel={newLabel} hide={hide} anchorOf={anchorOf} />
+  );
+}
+
+// The template of a picked token: a link to its fiche, for an entity the app can open.
+function tokenTemplateOf(tokenPicker: boolean, linkEntityType: string | undefined, openEntity: OpenEntity) {
+  if (!tokenPicker || !linkEntityType || !openEntity) return undefined;
+  return (item: unknown) => <ResourceRefTokenLink option={item as FilterOption} entityType={linkEntityType} openEntity={openEntity} />;
+}
+
+// The search behind the picker: its suggestions, the sources it could not narrow and the last text searched.
+function useResourceRefSearch(loadOptions: OptionLoader | null, capTo: (e: AutoCompleteCompleteEvent) => void) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   // Sources of the last search that could not be narrowed because the field they depend on is empty.
   const [unnarrowedSources, setUnnarrowedSources] = useState<string[]>([]);
-  // Where the « Nouveau » form is open (the picker itself), or null.
-  const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
-  // Where the « Nouvelle personne » form is open (the picker itself), or null.
-  const [personAnchor, setPersonAnchor] = useState<HTMLElement | null>(null);
   // The last text searched: what « Nouvelle personne » is prefilled with.
   const lastQuery = useRef("");
-  // What is being typed in a single picker's input: PrimeReact reports it through onChange as a
-  // plain string, which is not a pick and must never reach the answer.
-  const [typed, setTyped] = useState<string | null>(null);
-  const orgId = organizationId ?? context?.organizationId;
-  const sourceOptions =
-    orgId != null
-      ? optionSourceFor(field, orgId, context?.projectId, { valueConceptId: context?.typeConceptId, optionsContext, placeContext })
-      : null;
-  const loadOptions = declaredOptions
-    ? async (q?: string) => {
-        const needle = (q ?? "").trim().toLowerCase();
-        return declaredOptions.filter((option) => needle === "" || declaredOptionMatches(option, needle));
-      }
-    : sourceOptions;
-  const autoCompleteRef = useRef<AutoComplete>(null);
-  const mobile = useIsMobile();
-  const { capTo, panelStyle } = useFieldWidthCap();
-  const target = referenceTargetOf(field);
-  const waitingForParent = optionsContext?.kind === "RELATED_CONCEPTS" && optionsContext.relatedTo == null;
-  const openEntity = useOpenEntity();
-  // Only a value this app has a fiche for is a link.
-  const linkEntityType = target.entityType && getEntityType(target.entityType) ? target.entityType : undefined;
 
   async function search(e: AutoCompleteCompleteEvent) {
     if (!loadOptions) return;
@@ -296,75 +544,58 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     setSuggestions(found);
   }
 
-  // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
-  // with no indication that there is anything to pick. Searching on focus gives the user the
-  // starting list immediately — every option source answers an empty query with its first page.
-  // A single picker whose input still shows the picked value's label searches with "" too: that
-  // label would narrow the list to the value already there.
-  function onFocus(e: React.FocusEvent<HTMLInputElement>) {
-    const text = e.target.value ?? "";
-    const current = !multiple && !asTokens ? (selected as FilterOption | null)?.label : undefined;
-    const query = text === current ? "" : text;
-    // `search` is AutoComplete's own imperative entry point. The source must not be "input":
-    // that is the only one it refuses a blank query for. "dropdown" is the typed value that means
-    // "opened rather than typed into", which is exactly this case (there is no dropdown button).
-    autoCompleteRef.current?.search(e, query, "dropdown");
+  return { suggestions, unnarrowedSources, setUnnarrowedSources, lastQuery, search };
+}
+
+// What is typed in a single picker's input and what a change of the picker commits. PrimeReact reports
+// typed text through onChange as a plain string, which is not a pick and must never reach the answer.
+function usePickerChange(tokenPicker: boolean, multiple: boolean, commitPicked: (next: RefPick) => Promise<void>) {
+  const [typed, setTyped] = useState<string | null>(null);
+
+  function onTyped(text: string) {
+    setTyped(text);
+    // An empty string means the input was cleared: commit null so the required-field
+    // check can fire (and the field can actually be cleared).
+    if (text === "") void commitPicked(null);
   }
 
-  const selected = multiple
-    ? (Array.isArray(value) ? value.filter((v): v is ResourceRefLike | ResolvedResourceLike => isResourceRef(v) || isResolvedResource(v)).map(toOption) : [])
-    : (isResourceRef(value) || isResolvedResource(value) ? toOption(value) : null);
-
-  // A single reference to an entity with a fiche is shown as a token too, not as the input's text:
-  // the token is what links to the fiche (a click in the input means "edit the text"). Picking a
-  // suggestion replaces it, its × clears the field.
-  const asTokens = multiple || (linkEntityType != null && openEntity != null);
-  const tokens = multiple ? selected : selected ? [selected as FilterOption] : [];
-
-  const toRef = (o: FilterOption): ResourceRefLike => ({ resourceId: o.id, resourceType: target.resourceType, label: o.label });
-
-  function commit(next: FilterOption[] | FilterOption | null) {
-    if (multiple) {
-      onChange(((next as FilterOption[] | null) ?? []).map(toRef));
-    } else {
-      const option = next as FilterOption | null;
-      onChange(option ? toRef(option) : null);
-    }
-  }
-
-  // A suggestion from an external source (INSEE, GéoPlateforme) is not a place yet: it is created
-  // — once per organization, the server answers the existing one — before it can be picked.
-  const notify = useNotify();
-  const [creatingPlace, setCreatingPlace] = useState(false);
-  async function commitPicked(next: FilterOption[] | FilterOption | null) {
-    const picked = next == null ? [] : Array.isArray(next) ? next : [next];
-    if (orgId == null || !picked.some(isExternalSuggestion)) {
-      commit(next);
+  function onPickerChange(next: unknown) {
+    if (typeof next === "string") {
+      onTyped(next);
       return;
     }
-    setCreatingPlace(true);
-    try {
-      const resolved = await Promise.all(
-        picked.map((o) => (isExternalSuggestion(o) ? createPlaceFromSuggestion(orgId, o, context?.projectId) : o)),
-      );
-      commit(Array.isArray(next) ? resolved : resolved[0] ?? null);
-    } catch (error) {
-      notify.error(messageForError(error, t("field.placeCreateFailed")));
-    } finally {
-      setCreatingPlace(false);
-    }
+    setTyped(null);
+    void commitPicked(pickOfChange(next as RefPick, tokenPicker, multiple));
   }
 
-  // « Nouveau » creates the target in the edited entity's project and picks it straight away — it
-  // is added to a multi-valued answer, it replaces a single one.
-  const createConfig = !readOnly ? creatableConfig(target, context) : undefined;
-  // A person is never created as an entity of the registry: « Nouvelle personne » creates someone
-  // awaiting their account, member of the edited entity's project — so only inside a project.
-  const personProjectId = !readOnly && target.resourceType === "persons" ? context?.projectId : undefined;
+  return { typed, clearTyped: () => setTyped(null), onPickerChange };
+}
+
+// « Nouveau » creates the target in the edited entity's project and picks it straight away — it is added
+// to a multi-valued answer, it replaces a single one. A person is never created as an entity of the
+// registry: « Nouvelle personne » creates someone awaiting their account, member of the edited entity's
+// project — so only inside a project.
+function useResourceRefCreation(
+  { target, context, readOnly, multiple, selectedList, commit }: {
+    target: ReferenceTarget;
+    context: FieldEditContext | undefined;
+    readOnly: boolean | undefined;
+    multiple: boolean;
+    selectedList: FilterOption[];
+    commit: (next: RefPick) => void;
+  },
+) {
+  // Where the « Nouveau » form is open (the picker itself), or null.
+  const [createAnchor, setCreateAnchor] = useState<HTMLElement | null>(null);
+  // Where the « Nouvelle personne » form is open (the picker itself), or null.
+  const [personAnchor, setPersonAnchor] = useState<HTMLElement | null>(null);
+  const createConfig = readOnly ? undefined : creatableConfig(target, context);
+  const personProjectId = readOnly || target.resourceType !== "persons" ? undefined : context?.projectId;
+
   function pickCreated(created: FilterOption) {
-    if (multiple) commit([...(selected as FilterOption[]).filter((o) => o.id !== created.id), created]);
-    else commit(created);
+    commit(multiple ? [...selectedList.filter((o) => o.id !== created.id), created] : created);
   }
+
   async function onCreated(id: string | number) {
     setCreateAnchor(null);
     let label = String(id);
@@ -376,167 +607,128 @@ function ResourceRefRenderer({ field, value, readOnly, required, onChange, organ
     }
     pickCreated({ id: String(id), label });
   }
+
   function onPersonCreated(person: FilterOption) {
     setPersonAnchor(null);
     pickCreated(person);
   }
-  const newLabel = createConfig
-    ? t("field.newLower", { label: createConfig.labels.singular.toLowerCase() })
-    : personProjectId ? t("field.newPerson") : undefined;
-  const openNew = createConfig
-    ? (anchor: HTMLElement | null) => setCreateAnchor(anchor)
-    : personProjectId ? (anchor: HTMLElement | null) => setPersonAnchor(anchor) : undefined;
 
-  // Some sources searched without their filter: say which field to fill (or what is wrong with its place).
-  const named = (ids: string[]) => ids.map((id) => `« ${fieldLabelOf?.(id) ?? id} »`).join(", ");
-  const parents = Object.entries(placeContext?.deps ?? {});
-  const emptyParents = parents.filter(([, placeId]) => placeId == null).map(([fieldId]) => fieldId);
-  const narrowHint =
-    emptyParents.length > 0
-      ? t("field.fillToNarrow", { field: named(emptyParents) })
-      : t("field.cannotNarrow", { field: named(parents.map(([fieldId]) => fieldId)) });
+  return {
+    createConfig,
+    personProjectId,
+    createAnchor,
+    personAnchor,
+    closeCreate: () => setCreateAnchor(null),
+    closePerson: () => setPersonAnchor(null),
+    onCreated,
+    onPersonCreated,
+    newLabel: newLabelOf(createConfig, personProjectId),
+    openNew: openNewOf(createConfig, personProjectId, setCreateAnchor, setPersonAnchor),
+  };
+}
 
-  const footer = openNew || unnarrowedSources.length > 0
-    ? (_: unknown, hide: () => void) => (
-        <div className="resource-ref-create-footer">
-          {unnarrowedSources.length > 0 && <small className="resource-ref-narrow-hint">{narrowHint}</small>}
-          {openNew && (
-            <Button
-              type="button"
-              text
-              size="small"
-              icon="bi bi-plus-lg"
-              label={newLabel}
-              onClick={() => {
-                hide();
-                openNew(autoCompleteRef.current?.getElement() ?? null);
-              }}
-            />
-          )}
-        </div>
-      )
-    : undefined;
+function ResourceRefRenderer(props: FieldRendererProps & { multiple: boolean }) {
+  const { field, value, readOnly, required, onChange, organizationId, context, optionsContext, placeContext, fieldLabelOf, multiple } = props;
+  const orgId = organizationId ?? context?.organizationId;
+  const loadOptions = loadOptionsOf(props, orgId);
+  const autoCompleteRef = useRef<AutoComplete>(null);
+  const mobile = useIsMobile();
+  const { capTo, panelStyle } = useFieldWidthCap();
+  const target = referenceTargetOf(field);
+  const waitingForParent = isWaitingForParent(optionsContext);
+  const openEntity = useOpenEntity();
+  const linkEntityType = linkEntityTypeOf(target);
+  const tokenPicker = isTokenPicker(multiple, linkEntityType, openEntity);
+  const selected = selectedOptionsOf(value, multiple);
+  const selectedList = asOptionList(selected);
 
-  // A picked entity's chip label opens its fiche.
-  const entityIcon = linkEntityType ? getEntityType(linkEntityType)?.icon : undefined;
-  const renderToken =
-    asTokens && linkEntityType && openEntity
-      ? (item: unknown) => {
-          const option = item as FilterOption;
-          return (
-            <span
-              className="resource-ref-token-link"
-              role="link"
-              tabIndex={-1}
-              title={t("field.open", { label: option.label })}
-              // mousedown would focus the input and open the suggestions first.
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                openEntity(linkEntityType, option.id);
-              }}
-            >
-              {entityIcon && <i className={`${entityIcon} ref-chip-icon`} aria-hidden="true" />}
-              {option.label}
-            </span>
-          );
-        }
-      : undefined;
+  const { commit, commitPicked, creatingPlace } = useResourceRefCommit({ multiple, target, orgId, projectId: context?.projectId, onChange });
+  const { suggestions, unnarrowedSources, setUnnarrowedSources, lastQuery, search } = useResourceRefSearch(loadOptions, capTo);
+  const { typed, clearTyped, onPickerChange } = usePickerChange(tokenPicker, multiple, commitPicked);
+  const creation = useResourceRefCreation({ target, context, readOnly, multiple, selectedList, commit });
+
+  // PrimeReact only searches once something is typed, so a freshly-focused picker is a blank box
+  // with no indication that there is anything to pick. Searching on focus gives the user the
+  // starting list immediately — every option source answers an empty query with its first page.
+  // `search` is AutoComplete's own imperative entry point. The source must not be "input": that is
+  // the only one it refuses a blank query for. "dropdown" is the typed value that means "opened
+  // rather than typed into", which is exactly this case (there is no dropdown button).
+  function onFocus(e: React.FocusEvent<HTMLInputElement>) {
+    autoCompleteRef.current?.search(e, focusQuery(e.target.value ?? "", selected, tokenPicker), "dropdown");
+  }
+
+  const narrowHint = unnarrowedSources.length > 0 ? narrowHintOf(placeContext, fieldLabelOf) : undefined;
+  const footer = footerTemplateOf(narrowHint, creation.openNew, creation.newLabel, () => autoCompleteRef.current?.getElement() ?? null);
+  const refStyle = { "--ref-chip-color": refColor(target.resourceType) } as CSSProperties;
+  const fillParentFirst = waitingForParent ? t("field.fillParentFirst") : undefined;
+  const disabled = Boolean(readOnly) || creatingPlace;
+  const itemTemplate = optionItemTemplate(target.resourceType);
 
   // Phone width: the field is a button opening a drawer (a dropdown under the keyboard is unusable).
-  const sheet = (
+  const picker = mobile ? (
     <ReferencePickerSheet
       multiple={multiple}
-      selected={(multiple ? selected : selected ? [selected] : []) as FilterOption[]}
-      disabled={readOnly || creatingPlace}
-      placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
-      emptyMessage={waitingForParent ? t("field.fillParentFirst") : undefined}
+      selected={selectedList}
+      disabled={disabled}
+      placeholder={fillParentFirst}
+      emptyMessage={fillParentFirst}
       loadOptions={loadOptions}
-      itemTemplate={optionItemTemplate(target.resourceType)}
+      itemTemplate={itemTemplate}
       onSearched={(found) => setUnnarrowedSources(found.unnarrowedSources ?? [])}
-      hint={unnarrowedSources.length > 0 ? narrowHint : undefined}
-      onCommit={(next) => void commitPicked(multiple ? next : (next[0] ?? null))}
-      onNew={openNew}
-      newLabel={newLabel}
-      style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
+      hint={narrowHint}
+      onCommit={(next) => void commitPicked(sheetPickOf(next, multiple))}
+      onNew={creation.openNew}
+      newLabel={creation.newLabel}
+      style={refStyle}
+    />
+  ) : (
+    <AutoComplete
+      ref={autoCompleteRef}
+      // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
+      className="resource-ref-picker"
+      style={refStyle}
+      // itemTemplate narrows the picker's value type, which excludes the null of an empty single pick.
+      value={pickerValueOf(tokenPicker, selected, typed) as FilterOption[] | FilterOption | undefined}
+      suggestions={suggestions}
+      completeMethod={search}
+      field="label"
+      multiple={tokenPicker}
+      dropdown={false}
+      disabled={disabled}
+      required={required}
+      onFocus={onFocus}
+      onBlur={clearTyped}
+      // A dependent list offers nothing while the field it depends on is empty — say so rather than
+      // showing an unexplained empty list.
+      placeholder={fillParentFirst}
+      // With a footer, the panel must open even on no match: that is exactly when « Nouveau » is wanted.
+      showEmptyMessage={footer != null || waitingForParent}
+      emptyMessage={fillParentFirst ?? t("field.noResult")}
+      panelFooterTemplate={footer}
+      panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
+      itemTemplate={itemTemplate}
+      selectedItemTemplate={tokenTemplateOf(tokenPicker, linkEntityType, openEntity)}
+      onChange={(e) => onPickerChange(e.value)}
     />
   );
 
   return (
     <>
-      {mobile ? sheet : <AutoComplete
-        ref={autoCompleteRef}
-        // Picked tokens take their type's colour, the same as the read-only chips (fields/display.tsx).
-        className="resource-ref-picker"
-        style={{ "--ref-chip-color": refColor(target.resourceType) } as CSSProperties}
-        // itemTemplate narrows the picker's value type, which excludes the null of an empty single pick.
-        value={(asTokens ? tokens : (typed ?? selected)) as FilterOption[] | FilterOption | undefined}
-        suggestions={suggestions}
-        completeMethod={search}
-        field="label"
-        multiple={asTokens}
-        dropdown={false}
-        disabled={readOnly || creatingPlace}
-        required={required}
-        onFocus={onFocus}
-        onBlur={() => setTyped(null)}
-        // A dependent list (rules: options RELATED_CONCEPTS) offers nothing while the field it
-        // depends on is empty — say so rather than showing an unexplained empty list.
-        placeholder={waitingForParent ? t("field.fillParentFirst") : undefined}
-        // With a footer, the panel must open even on no match: that is exactly when « Nouveau »
-        // is wanted.
-        showEmptyMessage={footer != null || waitingForParent}
-        emptyMessage={waitingForParent ? t("field.fillParentFirst") : t("field.noResult")}
-        panelFooterTemplate={footer}
-        panelStyle={target.resourceType === "concepts" ? panelStyle : undefined}
-        itemTemplate={optionItemTemplate(target.resourceType)}
-        selectedItemTemplate={renderToken}
-        onChange={(e) => {
-          if (typeof e.value === "string") {
-            setTyped(e.value);
-            // An empty string means the input was cleared: commit null so the required-field
-            // check can fire (and the field can actually be cleared).
-            if (e.value === "") void commitPicked(null);
-            return;
-          }
-          setTyped(null);
-          if (asTokens && !multiple) {
-            // The last pick is the value; none left means cleared.
-            const picked = (e.value as FilterOption[] | null) ?? [];
-            void commitPicked(picked.length > 0 ? picked[picked.length - 1] : null);
-          } else {
-            void commitPicked(e.value as FilterOption[] | FilterOption | null);
-          }
-        }}
-      />}
-      {createConfig && (
-        // Opens next to the picker, in an overlay that stops key events from reaching the edit
-        // overlay's own Escape/Enter handling (see CreateEntityOverlay).
-        <CreateEntityOverlay
-          entityType={target.createEntityType!}
-          anchor={createAnchor}
-          organizationId={orgId}
-          scope={context?.projectId ? { entityType: PROJECT_KEY, id: context.projectId } : undefined}
-          prefill={context ? createConfig.list.createPrefillFrom?.(context) : undefined}
-          onCreated={(id) => void onCreated(id)}
-          onHide={() => setCreateAnchor(null)}
-        />
-      )}
-      {personProjectId && (
-        <AnchoredFormOverlay anchor={personAnchor} ariaLabel={t("person.create.title")} onHide={() => setPersonAnchor(null)}>
-          {(close) => (
-            <CreatePersonForm
-              projectId={personProjectId}
-              initial={personNameFromQuery(lastQuery.current)}
-              onCreated={onPersonCreated}
-              onCancel={close}
-            />
-          )}
-        </AnchoredFormOverlay>
-      )}
+      {picker}
+      <ResourceRefCreateOverlays
+        target={target}
+        context={context}
+        orgId={orgId}
+        createConfig={creation.createConfig}
+        createAnchor={creation.createAnchor}
+        onCreated={(id) => void creation.onCreated(id)}
+        onHideCreate={creation.closeCreate}
+        personProjectId={creation.personProjectId}
+        personAnchor={creation.personAnchor}
+        personQuery={lastQuery.current}
+        onPersonCreated={creation.onPersonCreated}
+        onHidePerson={creation.closePerson}
+      />
     </>
   );
 }
@@ -552,11 +744,11 @@ function creatableConfig(target: ReferenceTarget, context: FieldEditContext | un
   return config;
 }
 
-export function SelectOneRefRenderer(props: FieldRendererProps) {
+export function SelectOneRefRenderer(props: Readonly<FieldRendererProps>) {
   return <ResourceRefRenderer {...props} multiple={false} />;
 }
 
-export function SelectManyRefRenderer(props: FieldRendererProps) {
+export function SelectManyRefRenderer(props: Readonly<FieldRendererProps>) {
   return <ResourceRefRenderer {...props} multiple />;
 }
 
@@ -567,12 +759,19 @@ export const SelectOneSpatialUnitRenderer = SelectOneRefRenderer;
 
 // BOOLEAN: a checkbox, where unchecked reads as "no". A field that allows "no answer" has a third
 // state, so it gets PrimeReact's TriStateCheckbox: not specified ("?"), yes (ticked), no (empty).
-export function BooleanRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+export function BooleanRenderer({ field, value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const current = typeof value === "boolean" ? value : null;
+
+  function resolveLabel() {
+    if (current === true) return t("field.yes");
+    if (current === false) return t("field.no");
+    return t("field.notSpecified");
+  }
+
   if (field.constraints?.allowNoAnswer) {
     // The renderer only lives in the editing overlay: the current state is named beside the box there,
     // while a read-only display (fields/display.tsx) shows the bare disabled checkbox.
-    const label = current === true ? t("field.yes") : current === false ? t("field.no") : t("field.notSpecified");
+    const label = resolveLabel()
     return (
       // The gap is inline, like the overlay's padding: it must not depend on a stylesheet being reloaded.
       <span className="boolean-renderer boolean-renderer-tristate" style={{ display: "inline-flex", alignItems: "center", gap: "0.6rem" }}>
@@ -615,7 +814,7 @@ const MEASUREMENT_LABEL: CSSProperties = {
 // field's configuration offers (constraints.units), disabled when there is only one; the picked symbol
 // travels with the number. Emits the MeasurementRef shape the PATCH accepts
 // ({ numericValue, symbol, comment }), or null once the number and the comment are both empty.
-export function MeasurementRenderer({ field, value, readOnly, required, onChange }: FieldRendererProps) {
+export function MeasurementRenderer({ field, value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const current = (value != null && typeof value === "object" ? value : {}) as MeasurementValue;
   const units = field.constraints?.units ?? null;
   // Before any number is entered there is no answer to carry the choice: keep it here until there is.
@@ -641,9 +840,16 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
       onChange={(e) => emit({ ...current, numericValue: e.value ?? null })}
     />
   );
+
+  function resolveOffered() {
+    if (units && units.length > 0) return units;
+    if (unit) return [unit];
+    return [];
+  }
+
   // The unit is always a selector over the units the field's configuration offers; with a single one
   // it is shown disabled.
-  const offered = units && units.length > 0 ? units : unit ? [unit] : [];
+  const offered = resolveOffered();
   const onlyOne = offered.length <= 1;
 
   // A small form: the value and its unit on the first line, the comment on the second.
@@ -686,7 +892,7 @@ export function MeasurementRenderer({ field, value, readOnly, required, onChange
   );
 }
 
-export function FallbackRenderer({ field, value }: FieldRendererProps) {
+export function FallbackRenderer({ field, value }: Readonly<FieldRendererProps>) {
   return (
     <span className="field-renderer-unsupported" title={`answerType "${field.answerType}" has no renderer yet`}>
       {formatFallbackValue(value)}

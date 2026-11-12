@@ -672,7 +672,7 @@ public class ActionUnitService implements ArkEntityService {
 
     private ActionUnitDTO convertWithCount(ActionUnit au) {
         ActionUnitDTO dto = actionUnitMapper.convert(au);
-        assert dto != null;
+        Objects.requireNonNull(dto, "dto must not be null");
         Integer count = recordingUnitRepository.countByActionContext(au.getId());
         dto.setRecordingUnitCount(count != null ? count : 0);
         return dto;

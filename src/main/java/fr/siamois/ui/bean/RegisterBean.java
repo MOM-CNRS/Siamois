@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -62,7 +63,7 @@ public class RegisterBean {
     public void init(PendingPerson pendingPerson) {
         reset();
         this.person = personMapper.convert(pendingPerson.getDisabledPerson());
-        assert person != null;
+        Objects.requireNonNull(person, "person must not be null");
         this.email = person.getEmail();
         this.firstName = person.firstName();
         this.lastName = person.getLastname();
