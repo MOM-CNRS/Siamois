@@ -96,4 +96,15 @@ describe("useListSelection", () => {
 
     expect(current.all).toBe(false);
   });
+
+  it("empties a selection ticked row by row when the filters change, but keeps it on a sort", () => {
+    render({ search: "fosse", sort: "identifier:asc" });
+    act(() => current.setRows([fetched[0]]));
+
+    render({ search: "fosse", sort: "identifier:desc" });
+    expect(current.count).toBe(1);
+
+    render({ search: "mur", sort: "identifier:desc" });
+    expect(current.count).toBe(0);
+  });
 });

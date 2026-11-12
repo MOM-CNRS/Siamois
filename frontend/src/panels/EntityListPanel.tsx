@@ -40,6 +40,7 @@ import {ListSearchOverlayBox} from "./list/ListSearchOverlay";
 import {ListToolbar} from "./list/ListToolbar";
 import {BulkActionBar} from "./list/bulk/BulkActionBar";
 import {useListSelection} from "./list/bulk/useListSelection";
+import {useSelectionGuard} from "./list/bulk/useSelectionGuard";
 import {type RowRecord, useEntityListData} from "./list/useEntityListData";
 import {useListColumns} from "./list/useListColumns";
 import {defaultOpenMode, listPrefsKey, loadListPrefs, type OpenMode, saveListPrefs} from "./list/listPreferences";
@@ -266,6 +267,8 @@ function EntityListPanelBody({
   // The rows ticked, or the whole result set but the rows unticked since (the header's box): what
   // the bulk action bar acts on.
   const selection = useListSelection({ config, params, rows, totalCount });
+  // A search or a filter changes the rows: applied over a selection only once the user agrees to lose it.
+  const selectionGuard = useSelectionGuard(selection);
 
   // Created and duplicated entities open where a row's own identifier would (the overview).
   const rowActions = useRowActions({
@@ -309,12 +312,14 @@ function EntityListPanelBody({
     value: FilterValue | undefined,
     options?: FilterOption[],
   ) {
-    const next = { ...state.filters };
-    if (value) next[key] = withLabels(value, options);
-    else delete next[key];
-    setFilters(next);
-    if (options)
-      setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
+    selectionGuard.guard(() => {
+      const next = { ...state.filters };
+      if (value) next[key] = withLabels(value, options);
+      else delete next[key];
+      setFilters(next);
+      if (options)
+        setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
+    });
   }
 
   // Re-fetches the list (so the saved row's new value shows without a full page reload) and, in
@@ -461,13 +466,15 @@ function EntityListPanelBody({
                   filterSpecs={filterSpecs}
                   optionsByKey={filterOptionsByKey}
                   value={state.search ?? ""}
-                  onApply={(search, filters, options) => {
-                    setFilters(
-                      Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, withLabels(value, options[key])])),
-                    );
-                    setSearch(search);
-                    if (Object.keys(options).length > 0) setFilterOptionsByKey((byKey) => ({ ...byKey, ...options }));
-                  }}
+                  onApply={(search, filters, options) =>
+                    selectionGuard.guard(() => {
+                      setFilters(
+                        Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, withLabels(value, options[key])])),
+                      );
+                      setSearch(search);
+                      if (Object.keys(options).length > 0) setFilterOptionsByKey((byKey) => ({ ...byKey, ...options }));
+                    })
+                  }
                   onFilterRemove={(key) => onFilterChange(key, undefined)}
                   onOpenRow={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id)}
                 />
@@ -539,6 +546,7 @@ function EntityListPanelBody({
       />
       )}
       {rowActions.dialog}
+      {selectionGuard.dialog}
     </>
   );
 

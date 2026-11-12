@@ -17,8 +17,7 @@ type ResultSetParams = Omit<ListParams, "offset" | "limit" | "fields">;
 
 export interface UseListSelectionOptions {
   config: EntityTypeConfig<unknown, unknown> | undefined;
-  // The result set the selection belongs to (search, filters, sort, scope): changing it ends a
-  // « select all ».
+  // The result set the selection belongs to (search, filters, scope): changing it empties the selection.
   params: ResultSetParams;
   // The list's rows as drawn (placeholders where not fetched yet), and the size of the result set.
   rows: RowRecord[];
@@ -81,20 +80,23 @@ export async function fetchWholeResultSet(
 
 /**
  * The selection of a list (kept in the pane, like the rest of its state). Ticking the header's box
- * selects the whole result set — not only the rows fetched so far — and a change of search, filters,
- * sort or scope lets go of it, since it would no longer be the same rows.
+ * selects the whole result set — not only the rows fetched so far — and a change of search, filters
+ * or scope empties the selection, since it would no longer be about the same rows (a sort keeps it).
  */
 export function useListSelection({ config, params, rows, totalCount }: UseListSelectionOptions): ListSelection {
   const [picked, setPicked] = usePaneState<RowRecord[]>("selection", []);
   const [allSelected, setAllSelected] = usePaneState<AllSelected | null>("selectionAll", null);
 
-  const resultSetKey = JSON.stringify(params);
+  // The rows the selection is about: the result set, whatever its order (a sort keeps the selection).
+  const resultSetKey = JSON.stringify({ ...params, sort: undefined });
   const previousKey = useRef(resultSetKey);
   useEffect(() => {
     if (previousKey.current === resultSetKey) return;
     previousKey.current = resultSetKey;
+    // Other rows now: the selection is emptied (the list warns first when the user filters).
     setAllSelected(null);
-  }, [resultSetKey, setAllSelected]);
+    setPicked([]);
+  }, [resultSetKey, setAllSelected, setPicked]);
 
   const excluded = new Set(allSelected?.excluded ?? []);
   const shownRows = allSelected ? fetchedRows(rows).filter((row) => !excluded.has(keyOf(row))) : picked;
