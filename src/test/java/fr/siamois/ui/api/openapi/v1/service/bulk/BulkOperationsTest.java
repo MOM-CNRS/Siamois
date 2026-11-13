@@ -3,6 +3,10 @@ package fr.siamois.ui.api.openapi.v1.service.bulk;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentLinkService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.request.container.ContainerPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.document.DocumentPatchRequest;
@@ -12,6 +16,9 @@ import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
+import fr.siamois.ui.api.openapi.v1.resource.find.FindResource;
+import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.service.ContainerOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentContentOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentOpenApiService;
@@ -25,6 +32,7 @@ import fr.siamois.ui.api.openapi.v1.service.RecordingUnitStratigraphyWriteServic
 import fr.siamois.ui.api.openapi.v1.service.StudyOpenApiService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -37,9 +45,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Each collection's bulk operations hand each element to its unit service call, with the caller's
@@ -76,6 +86,12 @@ class BulkOperationsTest {
     @Mock
     private RecordingUnitStratigraphyWriteService stratigraphyWriteService;
     @Mock
+    private RecordingUnitService recordingUnitService;
+    @Mock
+    private SpecimenService specimenService;
+    @Mock
+    private DocumentLinkService documentLinkService;
+    @Mock
     private StudyOpenApiService studyOpenApiService;
 
     /**
@@ -93,7 +109,7 @@ class BulkOperationsTest {
      */
     private RecordingUnitBulkOperations recordingUnits() {
         return new RecordingUnitBulkOperations(projectApiService, recordingUnitOpenApiService, stratigraphyWriteService,
-                patchReader);
+                recordingUnitService, documentLinkService, patchReader);
     }
 
     /**
@@ -175,7 +191,8 @@ class BulkOperationsTest {
      */
     @Test
     void findOperationsCallTheFindService() {
-        FindBulkOperations operations = new FindBulkOperations(findOpenApiService, patchReader);
+        FindBulkOperations operations = new FindBulkOperations(findOpenApiService, specimenService,
+                documentLinkService, patchReader);
 
         operations.delete(CALLER, 5L, SELECTION, LANG);
         operations.patch(CALLER, 5L, answersPatch(), LANG);
@@ -186,6 +203,24 @@ class BulkOperationsTest {
         verify(findOpenApiService).applyPatchFind(eq(5L), any(FindPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
         verify(findOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
+    }
+
+    /**
+     * A duplicated find keeps its source's relations and documents.
+     */
+    @Test
+    void findDuplicateCopiesTheRelations() {
+        FindResource copy = new FindResource();
+        copy.setId("9");
+        when(findOpenApiService.duplicateFind(5L, PERSON, INSTITUTIONS, LANG)).thenReturn(copy);
+
+        new FindBulkOperations(findOpenApiService, specimenService, documentLinkService, patchReader)
+                .duplicate(CALLER, 5L, LANG);
+
+        InOrder order = inOrder(findOpenApiService, specimenService, documentLinkService);
+        order.verify(findOpenApiService).duplicateFind(5L, PERSON, INSTITUTIONS, LANG);
+        order.verify(specimenService).copyRelations(5L, 9L);
+        order.verify(documentLinkService).copyLinks(DocumentLinkKind.FIND, 5L, 9L);
     }
 
     /**
@@ -208,7 +243,7 @@ class BulkOperationsTest {
      */
     @Test
     void placeOperationsCallThePlaceService() {
-        PlaceBulkOperations operations = new PlaceBulkOperations(placeOpenApiService, patchReader);
+        PlaceBulkOperations operations = new PlaceBulkOperations(placeOpenApiService, documentLinkService, patchReader);
 
         ObjectNode patch = objectMapper.createObjectNode();
         patch.put("name", "Site");
@@ -224,7 +259,20 @@ class BulkOperationsTest {
     }
 
     /**
-     * Projects: deleted and patched.
+     * A duplicated place keeps its source's documents (its parents are kept by the unit duplication).
+     */
+    @Test
+    void placeDuplicateCopiesTheDocuments() {
+        when(placeOpenApiService.duplicatePlace(CALLER, 5L, LANG))
+                .thenReturn(new PlaceCreatedResponse.PlaceCreatedItem(9L, "Site (1)", null));
+
+        new PlaceBulkOperations(placeOpenApiService, documentLinkService, patchReader).duplicate(CALLER, 5L, LANG);
+
+        verify(documentLinkService).copyLinks(DocumentLinkKind.PLACE, 5L, 9L);
+    }
+
+    /**
+     * Projects: deleted, patched, duplicated with their places.
      */
     @Test
     void projectOperationsCallTheProjectService() {
@@ -232,10 +280,13 @@ class BulkOperationsTest {
 
         operations.delete(CALLER, 5L, SELECTION, LANG);
         operations.patch(CALLER, 5L, answersPatch(), LANG);
+        operations.duplicate(CALLER, 5L, LANG);
 
         assertThat(operations.collection()).isEqualTo("projects");
         verify(projectApiService).deleteProject(CALLER, "5", LANG);
         verify(projectApiService).patchProject(eq(CALLER), eq("5"), any(ProjectPatchRequest.class), eq(LANG));
+        verify(projectApiService).duplicateProjectWithPlaces(CALLER, "5", LANG);
+        verify(projectApiService, never()).duplicateProject(any(), any(), any());
     }
 
     /**
@@ -256,6 +307,23 @@ class BulkOperationsTest {
         verify(recordingUnitOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
         verify(stratigraphyWriteService).add("5", relationship, PERSON, INSTITUTIONS);
         verify(stratigraphyWriteService).remove("5", 8L, PERSON, INSTITUTIONS);
+    }
+
+    /**
+     * A duplicated recording unit keeps its source's relations and documents.
+     */
+    @Test
+    void recordingUnitDuplicateCopiesTheRelations() {
+        RecordingUnitResource copy = new RecordingUnitResource();
+        copy.setId("9");
+        when(recordingUnitOpenApiService.duplicateRecordingUnit("5", PERSON, INSTITUTIONS, LANG)).thenReturn(copy);
+
+        recordingUnits().duplicate(CALLER, 5L, LANG);
+
+        InOrder order = inOrder(recordingUnitOpenApiService, recordingUnitService, documentLinkService);
+        order.verify(recordingUnitOpenApiService).duplicateRecordingUnit("5", PERSON, INSTITUTIONS, LANG);
+        order.verify(recordingUnitService).copyRelations(5L, 9L);
+        order.verify(documentLinkService).copyLinks(DocumentLinkKind.RECORDING_UNIT, 5L, 9L);
     }
 
     /**

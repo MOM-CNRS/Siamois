@@ -946,6 +946,24 @@ class PlaceOpenApiServiceTest {
         assertThat(triedNames).containsExactly("Site (1)", "Site (2)");
     }
 
+    /**
+     * A copy is new: it takes today's creation time, not its source's, to come first in the lists.
+     */
+    @Test
+    void duplicatePlace_givesTheCopyTodaysCreationTime() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO source = placeIn(5L, 10L, "Site");
+        java.time.OffsetDateTime old = java.time.OffsetDateTime.parse("2000-01-01T00:00:00Z");
+        source.setCreationTime(old);
+        when(spatialUnitService.findById(5L)).thenReturn(source);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        org.mockito.ArgumentCaptor<SpatialUnitDTO> copy = org.mockito.ArgumentCaptor.forClass(SpatialUnitDTO.class);
+        when(spatialUnitService.save(any(UserInfo.class), copy.capture())).thenReturn(placeIn(7L, 10L, "Site (1)"));
+
+        service.duplicatePlace(caller, 5L, "fr");
+
+        assertThat(copy.getValue().getCreationTime()).isAfter(old);
+    }
+
     @Test
     void duplicatePlace_withoutPlaceManagement_throws403() throws SpatialUnitAlreadyExistsException {
         when(spatialUnitService.findById(5L)).thenReturn(placeIn(5L, 10L, "Site"));
