@@ -19,7 +19,6 @@ import {getEntityType} from "../entities/registry";
 import {PROJECT_KEY} from "../entities/keys";
 import type {Bound} from "../rules";
 import type {FieldRendererProps} from "./registry";
-import type {FieldResource} from "./types";
 import type {FieldEditContext} from "./editContext";
 import {formatDateAnswer, parseDateAnswer} from "./dateAnswer";
 import {SignedInputNumber} from "./SignedInputNumber";
@@ -487,15 +486,6 @@ function linkEntityTypeOf(target: ReferenceTarget): string | undefined {
 function isTokenPicker(multiple: boolean, linkEntityType: string | undefined, openEntity: OpenEntity): boolean {
   if (multiple) return true;
   return linkEntityType != null && openEntity != null;
-}
-
-/**
- * Whether the field's picker shows what is picked as chips (tokens) of its own — every multi-valued
- * reference, and a single reference to an entity with a fiche. Otherwise the picked value is the
- * input's plain text, and whoever hosts the editor shows it as a chip itself, as a fiche field does.
- */
-export function picksAsChips(field: FieldResource, openEntity: OpenEntity): boolean {
-  return isTokenPicker(field.answerType.startsWith("SELECT_MULTIPLE"), linkEntityTypeOf(referenceTargetOf(field)), openEntity);
 }
 
 // The query a focused picker searches with. A single picker whose input still shows the picked value's

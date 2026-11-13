@@ -2,13 +2,10 @@ import {useState} from "react";
 import {Button} from "primereact/button";
 import {SelectButton} from "primereact/selectbutton";
 import type {FieldEditContext} from "../../../fields/editContext";
-import {renderAnswerCell} from "../../../fields/display";
 import {isEmptyValue} from "../../../fields/FieldLabel";
 import {getFieldRenderer} from "../../../fields/registry";
-import {picksAsChips} from "../../../fields/renderers";
 import type {AnswerInputBody, FieldResource} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
-import {useOpenEntity} from "../../pane/entityNavigation";
 import type {BulkFieldState} from "./bulkFieldState";
 import {bulkAnswerInput, type BulkEditMode, isMultiValued} from "./bulkSelection";
 
@@ -66,13 +63,6 @@ export function BulkFieldEditor({
   const [mode, setMode] = useState<BulkEditMode>(multiple ? "add" : "set");
   const [value, setValue] = useState<unknown>(multiple ? [] : null);
   const Renderer = getFieldRenderer(field.answerType);
-  const openEntity = useOpenEntity();
-  // A single reference whose picker holds the picked value as plain text (a concept, a person): shown
-  // as the chip a fiche field shows it as. The other pickers already show their own chips.
-  const pickedChip =
-    field.answerType.startsWith("SELECT_ONE") && !picksAsChips(field, openEntity) && !isEmptyValue(value)
-      ? renderAnswerCell(field, value, { all: true })
-      : null;
   // Adding or removing nothing does nothing: only replacing may be done with an empty value (it clears).
   const nothingToChange = mode !== "set" && isEmptyValue(value);
 
@@ -105,7 +95,6 @@ export function BulkFieldEditor({
           onChange={setValue}
         />
       </div>
-      {pickedChip && <div className="bulk-field-editor-picked">{pickedChip}</div>}
       {mode === "set" && isEmptyValue(value) && <small className="bulk-field-editor-hint">{t("bulk.emptyClears")}</small>}
       {skippedCount > 0 && (
         <small className="bulk-field-editor-skipped" role="note">

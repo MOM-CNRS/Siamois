@@ -205,18 +205,4 @@ describe("BulkActionBar", () => {
 
     expect(notifySpy.warn).toHaveBeenCalledWith("Aucun des éléments sélectionnés n'est modifiable par vous.");
   });
-
-  it("shows a picked single reference as the chip a fiche field shows", async () => {
-    const catalog: FieldCatalog = {
-      fields: {
-        nature: { id: "nature", resourceType: "field", label: "Nature", answerType: "SELECT_ONE", isSystemField: false },
-      },
-      columns: [],
-    };
-    render(selectionOf(rows), config, catalog);
-    await click(button("Modifier"));
-    await click(button("Nature"));
-
-    expect(document.querySelector(".bulk-field-editor-picked")).toBeNull();
-  });
 });
