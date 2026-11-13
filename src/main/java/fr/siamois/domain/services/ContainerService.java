@@ -275,6 +275,18 @@ public class ContainerService {
      * @throws IllegalStateException si le contenant a encore des relations
      */
     public void deleteById(long id) {
+        deleteById(id, Set.of());
+    }
+
+    /**
+     * Supprime un contenant supprimé en même temps que d'autres : ses liens parent / enfants avec
+     * ceux-ci ne bloquent pas et sont retirés avec lui ; toute autre relation bloque.
+     *
+     * @param id        le contenant à supprimer
+     * @param alongside les contenants supprimés avec lui
+     * @throws IllegalStateException si le contenant a encore d'autres relations
+     */
+    public void deleteById(long id, Set<Long> alongside) {
         Container entity = containerRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Contenant introuvable: " + id));
 
@@ -285,11 +297,26 @@ public class ContainerService {
         }
 
         EntityLinkGuard.Kind kind = EntityLinkGuard.Kind.CONTAINER;
-        entityLinkGuard.requireNoLinks(kind, id, "le contenant");
+        entityLinkGuard.requireNoLinks(kind, id, "le contenant", alongside);
+        detachFromContainersAlongside(entity, alongside);
 
         ContainerDTO idOnly = new ContainerDTO();
         idOnly.setId(id);
         customFieldAnswerService.deleteAdditionalFieldAnswers(idOnly);
         containerRepository.delete(entity);
+    }
+
+    /**
+     * Unhooks from the container its children deleted along with it (their own row holds the link; the
+     * link to its parent goes with the container's row). The sets are only iterated: Container's
+     * equals/hashCode cover its parent and children.
+     */
+    private static void detachFromContainersAlongside(Container container, Set<Long> alongside) {
+        if (alongside.isEmpty()) {
+            return;
+        }
+        container.getChildren().stream()
+                .filter(child -> alongside.contains(child.getId()))
+                .forEach(child -> child.setParent(null));
     }
 }

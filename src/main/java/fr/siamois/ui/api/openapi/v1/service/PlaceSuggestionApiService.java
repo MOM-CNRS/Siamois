@@ -93,8 +93,8 @@ public class PlaceSuggestionApiService {
     }
 
     private List<PlaceSuggestionItemApi> ownPlaces(SuggestionRequest request) {
-        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                request.organizationId(), request.query(), null, null, null, request.lang(),
+        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByName(
+                request.organizationId(), request.query(),
                 PageRequest.of(0, request.limit(), Sort.by("name")));
         return page.getContent().stream()
                 .map(dto -> new PlaceSuggestionItemApi(dto.getId(), dto.getName(), dto.getInseeCode(), SOURCE_INTERNAL,

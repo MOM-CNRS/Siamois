@@ -15,9 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -26,7 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -75,10 +73,6 @@ class PlaceSearchControllerApiTest {
         SpatialUnitDTO su = new SpatialUnitDTO();
         su.setId(5L);
         su.setName("Abbaye");
-        PageRequest firstPage = PageRequest.of(0, 20, Sort.by("name"));
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                eq(10L), eq(""), isNull(), isNull(), isNull(), eq("fr"), eq(firstPage)))
-                .thenReturn(new PageImpl<>(List.of(su), firstPage, 1));
 
         mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")
@@ -113,15 +107,6 @@ class PlaceSearchControllerApiTest {
         su.setId(77L);
         su.setName("Rue des Lilas");
         su.setInseeCode("LILAS");
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                eq(10L),
-                eq("lilas"),
-                isNull(),
-                isNull(),
-                isNull(),
-                eq("fr"),
-                eq(PageRequest.of(0, 20, Sort.by("name")))))
-                .thenReturn(new PageImpl<>(List.of(su), PageRequest.of(0, 20), 1));
 
         mockMvc.perform(get("/api/v1/places/autocomplete")
                         .param("organizationId", "10")

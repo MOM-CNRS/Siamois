@@ -197,9 +197,7 @@ public class PhaseOpenApiService {
     public void requireEditable(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(phase.getActionUnit().getCreatedByInstitution(), personDto, lang);
-        if (!canEdit(phase, userInfo)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(canEdit(phase, userInfo));
     }
 
     /**

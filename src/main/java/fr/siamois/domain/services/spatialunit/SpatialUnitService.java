@@ -36,6 +36,7 @@ import fr.siamois.infrastructure.database.repositories.specs.ExactMatchFirst;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryDtoMapper;
+import fr.siamois.utils.HierarchyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -589,6 +590,12 @@ public class SpatialUnitService implements ArkEntityService {
         return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
     }
 
+    public Page<SpatialUnitDTO> findAllByInstitutionAndByName(Long institutionId, String name, Pageable pageable) {
+        Specification<SpatialUnit> specs = SpatialUnitSpec.belongsToInstitution(institutionId)
+                .and(SpatialUnitSpec.nameContaining(name));
+        return spatialUnitRepository.findAll(specs, pageable).map(spatialUnitMapper::convert);
+    }
+
     public Page<SpatialUnitDTO> searchSpatialUnits(InstitutionDTO institutionDTO, FilterDTO filterDTO, Pageable pageable) {
         Specification<SpatialUnit> specs = prepareSpecs(institutionDTO, filterDTO);
         specs = applyCountSort(specs, pageable.getSort());
@@ -914,10 +921,24 @@ public class SpatialUnitService implements ArkEntityService {
     @Transactional
     @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
     public void deleteIfUnused (long spatialUnitId) {
-        spatialUnitRepository.findById(spatialUnitId)
+        deleteIfUnused(spatialUnitId, Set.of());
+    }
+
+    /**
+     * Supprime un lieu supprimé en même temps que d'autres : ses liens hiérarchiques avec ceux-ci ne
+     * bloquent pas et sont retirés avec lui ; toute autre référence bloque.
+     *
+     * @param spatialUnitId le lieu à supprimer
+     * @param alongside     les lieux supprimés avec lui
+     */
+    @Transactional
+    @CacheEvict({"InstitutionHasRootChildrenSU", "ParentHasRootChildrenSU"})
+    public void deleteIfUnused(long spatialUnitId, Set<Long> alongside) {
+        SpatialUnit spatialUnit = spatialUnitRepository.findById(spatialUnitId)
                 .orElseThrow(() -> new SpatialUnitNotFoundException("SpatialUnit not found with ID: " + spatialUnitId));
 
-        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPATIAL_UNIT, spatialUnitId, "le lieu");
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPATIAL_UNIT, spatialUnitId, "le lieu", alongside);
+        HierarchyUtils.detachFrom(spatialUnit, SpatialUnit::getParents, SpatialUnit::getChildren, SpatialUnit::getId, alongside);
 
         spatialUnitRepository.deleteById(spatialUnitId);
     }

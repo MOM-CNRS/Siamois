@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -1211,9 +1212,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO dto = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
                 recordingUnitId, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto));
     }
 
     /** 400 when the unit has no organization: the caller's context is read in it. */

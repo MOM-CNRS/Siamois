@@ -515,7 +515,7 @@ class ContainerServiceTest {
 
         containerService.deleteById(4L);
 
-        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant");
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant", java.util.Set.of());
         verify(customFieldAnswerService).deleteAdditionalFieldAnswers(any(ContainerDTO.class));
         verify(containerRepository).delete(target);
     }
@@ -530,11 +530,41 @@ class ContainerServiceTest {
         when(containerRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
         when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
         doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
-                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant");
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant", java.util.Set.of());
 
         org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> containerService.deleteById(4L));
 
         verify(containerRepository, never()).delete(any(Container.class));
+    }
+
+    @Test
+    void deleteById_alongside_unhooksTheChildrenOfTheSelectionOnly() {
+        fr.siamois.domain.models.actionunit.ActionUnit au = new fr.siamois.domain.models.actionunit.ActionUnit();
+        au.setId(9L);
+        Container target = new Container();
+        target.setId(4L);
+        target.setActionUnit(au);
+        Container selectedChild = new Container();
+        selectedChild.setId(5L);
+        selectedChild.setParent(target);
+        Container otherChild = new Container();
+        otherChild.setId(6L);
+        otherChild.setParent(target);
+        // Container's hashCode covers its parent and children: an identity set keeps the fixture finite.
+        java.util.Set<Container> children = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        children.add(selectedChild);
+        children.add(otherChild);
+        target.setChildren(children);
+        when(containerRepository.findById(4L)).thenReturn(java.util.Optional.of(target));
+        when(profilePermissionService.hasDeleteEntitiesPermission(any(), eq(9L))).thenReturn(true);
+        java.util.Set<Long> selection = java.util.Set.of(4L, 5L);
+
+        containerService.deleteById(4L, selection);
+
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.CONTAINER, 4L, "le contenant", selection);
+        assertNull(selectedChild.getParent());
+        assertSame(target, otherChild.getParent());
+        verify(containerRepository).delete(target);
     }
 
     @Test

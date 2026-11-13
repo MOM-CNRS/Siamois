@@ -1428,7 +1428,7 @@ class RecordingUnitServiceTest {
             when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
             doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
                     .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.RECORDING_UNIT, 1L,
-                            "l'unité d'enregistrement");
+                            "l'unité d'enregistrement", java.util.Set.of());
 
             assertThrows(IllegalStateException.class,
                     () -> recordingUnitService.deleteRecordingUnitById(1L));
@@ -1463,6 +1463,45 @@ class RecordingUnitServiceTest {
             recordingUnitService.deleteRecordingUnitById(5L);
 
             verify(arkRepository, never()).deleteById(any());
+            verify(recordingUnitRepository).delete(ru);
+        }
+
+        /**
+         * Deleted with other units, the unit loses its hierarchy and stratigraphic links to them, and
+         * keeps those to units left in place until its own deletion.
+         */
+        @Test
+        void deleteRecordingUnitById_alongside_removesTheLinksWithinTheSelection() {
+            RecordingUnit ru = new RecordingUnit();
+            ru.setId(1L);
+            ru.setFullIdentifier("RU-1");
+            RecordingUnit selectedParent = new RecordingUnit();
+            selectedParent.setId(2L);
+            selectedParent.getChildren().add(ru);
+            ru.getParents().add(selectedParent);
+            RecordingUnit selectedNeighbour = new RecordingUnit();
+            selectedNeighbour.setId(3L);
+            RecordingUnit otherNeighbour = new RecordingUnit();
+            otherNeighbour.setId(4L);
+            StratigraphicRelationship withinSelection = new StratigraphicRelationship();
+            ru.addRelationshipAsUnit1(withinSelection);
+            selectedNeighbour.addRelationshipAsUnit2(withinSelection);
+            StratigraphicRelationship outside = new StratigraphicRelationship();
+            ru.addRelationshipAsUnit1(outside);
+            otherNeighbour.addRelationshipAsUnit2(outside);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(ru));
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L))
+                    .thenReturn(List.of(withinSelection, outside));
+            Set<Long> selection = Set.of(1L, 2L, 3L);
+
+            recordingUnitService.deleteRecordingUnitById(1L, selection);
+
+            verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.RECORDING_UNIT, 1L,
+                    "l'unité d'enregistrement", selection);
+            assertTrue(ru.getParents().isEmpty());
+            assertTrue(selectedParent.getChildren().isEmpty());
+            verify(stratigraphicRelationshipRepository).deleteAll(List.of(withinSelection));
+            assertFalse(selectedNeighbour.getRelationshipsAsUnit2().contains(withinSelection));
             verify(recordingUnitRepository).delete(ru);
         }
     }

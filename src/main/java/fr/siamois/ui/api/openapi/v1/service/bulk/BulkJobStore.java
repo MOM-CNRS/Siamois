@@ -49,15 +49,15 @@ public class BulkJobStore {
         if (!repository.findByOwnerIdAndStatus(job.ownerId(), BulkJobStatus.RUNNING.name()).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, ALREADY_RUNNING);
         }
-        BulkJobRecord record = new BulkJobRecord();
-        record.setId(job.id());
-        record.setOwnerId(job.ownerId());
-        record.setStatus(BulkJobStatus.RUNNING.name());
-        record.setTotal(job.toResource().total());
-        record.setCreatedAt(now);
-        record.setUpdatedAt(now);
+        BulkJobRecord bulkJobRecord = new BulkJobRecord();
+        bulkJobRecord.setId(job.id());
+        bulkJobRecord.setOwnerId(job.ownerId());
+        bulkJobRecord.setStatus(BulkJobStatus.RUNNING.name());
+        bulkJobRecord.setTotal(job.total());
+        bulkJobRecord.setCreatedAt(now);
+        bulkJobRecord.setUpdatedAt(now);
         try {
-            repository.saveAndFlush(record);
+            repository.saveAndFlush(bulkJobRecord);
         } catch (DataIntegrityViolationException e) {
             // Two starts racing past the check above: the partial unique index keeps one.
             throw new ResponseStatusException(HttpStatus.CONFLICT, ALREADY_RUNNING, e);
@@ -73,11 +73,11 @@ public class BulkJobStore {
      */
     @Transactional
     public boolean saveProgress(BulkJobResource snapshot, Instant now) {
-        return repository.findById(snapshot.id()).map(record -> {
-            record.setSucceededCount(snapshot.succeededCount());
-            record.setFailedCount(snapshot.failedCount());
-            record.setUpdatedAt(now);
-            return record.isCancelRequested();
+        return repository.findById(snapshot.id()).map(bulkJobRecord -> {
+            bulkJobRecord.setSucceededCount(snapshot.succeededCount());
+            bulkJobRecord.setFailedCount(snapshot.failedCount());
+            bulkJobRecord.setUpdatedAt(now);
+            return bulkJobRecord.isCancelRequested();
         }).orElse(false);
     }
 
@@ -89,15 +89,15 @@ public class BulkJobStore {
      */
     @Transactional
     public void saveEnd(BulkJobResource snapshot, Instant now) {
-        repository.findById(snapshot.id()).ifPresent(record -> {
-            record.setStatus(snapshot.status().name());
-            record.setSucceededCount(snapshot.succeededCount());
-            record.setFailedCount(snapshot.failedCount());
-            record.setSucceeded(List.copyOf(snapshot.succeeded()));
-            record.setFailed(snapshot.failed().stream().map(BulkJobStore::failureToJson).toList());
-            record.setError(snapshot.error());
-            record.setUpdatedAt(now);
-            record.setFinishedAt(now);
+        repository.findById(snapshot.id()).ifPresent(bulkJobRecord -> {
+            bulkJobRecord.setStatus(snapshot.status().name());
+            bulkJobRecord.setSucceededCount(snapshot.succeededCount());
+            bulkJobRecord.setFailedCount(snapshot.failedCount());
+            bulkJobRecord.setSucceeded(List.copyOf(snapshot.succeeded()));
+            bulkJobRecord.setFailed(snapshot.failed().stream().map(BulkJobStore::failureToJson).toList());
+            bulkJobRecord.setError(snapshot.error());
+            bulkJobRecord.setUpdatedAt(now);
+            bulkJobRecord.setFinishedAt(now);
         });
     }
 
@@ -111,9 +111,9 @@ public class BulkJobStore {
      */
     @Transactional
     public Optional<BulkJobResource> find(String jobId, long ownerId, Instant now) {
-        return repository.findByIdAndOwnerId(jobId, ownerId).map(record -> {
-            if (isStale(record, now)) markInterrupted(record, now);
-            return toResource(record);
+        return repository.findByIdAndOwnerId(jobId, ownerId).map(bulkJobRecord -> {
+            if (isStale(bulkJobRecord, now)) markInterrupted(bulkJobRecord, now);
+            return toResource(bulkJobRecord);
         });
     }
 
@@ -127,9 +127,9 @@ public class BulkJobStore {
     @Transactional
     public boolean requestCancel(String jobId, long ownerId) {
         return repository.findByIdAndOwnerId(jobId, ownerId)
-                .filter(record -> BulkJobStatus.RUNNING.name().equals(record.getStatus()))
-                .map(record -> {
-                    record.setCancelRequested(true);
+                .filter(bulkJobRecord -> BulkJobStatus.RUNNING.name().equals(bulkJobRecord.getStatus()))
+                .map(bulkJobRecord -> {
+                    bulkJobRecord.setCancelRequested(true);
                     return true;
                 })
                 .orElse(false);
@@ -151,42 +151,42 @@ public class BulkJobStore {
      */
     private void failStaleRunning(long ownerId, Instant now) {
         repository.findByOwnerIdAndStatus(ownerId, BulkJobStatus.RUNNING.name()).stream()
-                .filter(record -> isStale(record, now))
-                .forEach(record -> markInterrupted(record, now));
+                .filter(bulkJobRecord -> isStale(bulkJobRecord, now))
+                .forEach(bulkJobRecord -> markInterrupted(bulkJobRecord, now));
         repository.flush();
     }
 
     /**
      * Whether a running job wrote no progress for too long.
      */
-    private static boolean isStale(BulkJobRecord record, Instant now) {
-        return BulkJobStatus.RUNNING.name().equals(record.getStatus())
-                && record.getUpdatedAt().plus(STALE_AFTER).isBefore(now);
+    private static boolean isStale(BulkJobRecord bulkJobRecord, Instant now) {
+        return BulkJobStatus.RUNNING.name().equals(bulkJobRecord.getStatus())
+                && bulkJobRecord.getUpdatedAt().plus(STALE_AFTER).isBefore(now);
     }
 
     /**
      * A running job that died with its instance: failed, its progress kept.
      */
-    private static void markInterrupted(BulkJobRecord record, Instant now) {
-        record.setStatus(BulkJobStatus.FAILED.name());
-        record.setError(INTERRUPTED);
-        record.setFinishedAt(now);
-        record.setUpdatedAt(now);
+    private static void markInterrupted(BulkJobRecord bulkJobRecord, Instant now) {
+        bulkJobRecord.setStatus(BulkJobStatus.FAILED.name());
+        bulkJobRecord.setError(INTERRUPTED);
+        bulkJobRecord.setFinishedAt(now);
+        bulkJobRecord.setUpdatedAt(now);
     }
 
     /**
      * The job as clients see it: the lists only once it has ended.
      */
-    private static BulkJobResource toResource(BulkJobRecord record) {
-        BulkJobStatus status = BulkJobStatus.valueOf(record.getStatus());
-        boolean ended = status != BulkJobStatus.RUNNING;
-        List<Long> succeeded = ended && record.getSucceeded() != null ? record.getSucceeded().stream().map(Number::longValue).toList() : List.of();
-        List<BulkFailureResource> failed = ended && record.getFailed() != null
-                ? record.getFailed().stream().map(BulkJobStore::failureFromJson).toList()
+    private static BulkJobResource toResource(BulkJobRecord bulkJobRecord) {
+        BulkJobStatus status = BulkJobStatus.valueOf(bulkJobRecord.getStatus());
+        boolean ended = status.ended();
+        List<Long> succeeded = ended && bulkJobRecord.getSucceeded() != null ? bulkJobRecord.getSucceeded().stream().map(Number::longValue).toList() : List.of();
+        List<BulkFailureResource> failed = ended && bulkJobRecord.getFailed() != null
+                ? bulkJobRecord.getFailed().stream().map(BulkJobStore::failureFromJson).toList()
                 : List.of();
-        return new BulkJobResource(record.getId(), status, record.getTotal(),
-                record.getSucceededCount() + record.getFailedCount(), record.getSucceededCount(), record.getFailedCount(),
-                succeeded, failed, record.getError());
+        return new BulkJobResource(bulkJobRecord.getId(), status, bulkJobRecord.getTotal(),
+                bulkJobRecord.getSucceededCount() + bulkJobRecord.getFailedCount(), bulkJobRecord.getSucceededCount(), bulkJobRecord.getFailedCount(),
+                succeeded, failed, bulkJobRecord.getError());
     }
 
     /**

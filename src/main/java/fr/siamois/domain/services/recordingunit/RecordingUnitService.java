@@ -45,6 +45,7 @@ import fr.siamois.mapper.*;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import fr.siamois.utils.HierarchyUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.FlushModeType;
 import jakarta.persistence.PersistenceContext;
@@ -560,6 +561,23 @@ public class RecordingUnitService implements ArkEntityService {
             "ActionHasRootChildrenRU"
     })
     public void deleteRecordingUnitById(long recordingUnitId) {
+        deleteRecordingUnitById(recordingUnitId, Set.of());
+    }
+
+    /**
+     * Supprime une UE supprimée en même temps que d'autres : ses liens avec celles-ci (hiérarchie,
+     * stratigraphie) ne bloquent pas et sont retirés avec elle ; toute autre relation bloque.
+     *
+     * @param recordingUnitId l'UE à supprimer
+     * @param alongside       les UE supprimées avec elle
+     * @throws IllegalStateException si l'UE a encore d'autres relations
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public void deleteRecordingUnitById(long recordingUnitId, Set<Long> alongside) {
         RecordingUnit ru = recordingUnitRepository.findById(recordingUnitId)
                 .orElseThrow(() -> new RecordingUnitNotFoundException(
                         RECORDING_UNIT_NOT_FOUND_WITH_ID + recordingUnitId));
@@ -570,7 +588,8 @@ public class RecordingUnitService implements ArkEntityService {
             throw new ForbiddenOperationException("You are not allowed to delete this recording unit");
         }
 
-        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.RECORDING_UNIT, recordingUnitId, "l'unité d'enregistrement");
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.RECORDING_UNIT, recordingUnitId, "l'unité d'enregistrement", alongside);
+        detachFromUnitsAlongside(ru, alongside);
 
         recordingUnitRepository.deleteContributorLinksForRecordingUnit(recordingUnitId);
         if (ru.getContributors() != null) {
@@ -582,6 +601,22 @@ public class RecordingUnitService implements ArkEntityService {
         if (arkId != null) {
             arkRepository.deleteById(arkId);
         }
+    }
+
+    /**
+     * Retire les liens hiérarchiques et stratigraphiques de l'UE avec les UE supprimées en même temps.
+     */
+    private void detachFromUnitsAlongside(RecordingUnit ru, Set<Long> alongside) {
+        if (alongside.isEmpty()) {
+            return;
+        }
+        HierarchyUtils.detachFrom(ru, RecordingUnit::getParents, RecordingUnit::getChildren, RecordingUnit::getId, alongside);
+        List<StratigraphicRelationship> withinSelection = stratigraphicRelationshipRepository
+                .findAllInvolvingRecordingUnitId(ru.getId()).stream()
+                .filter(relationship -> relationship.joinsUnitsAmong(alongside))
+                .toList();
+        withinSelection.forEach(StratigraphicRelationship::detachFromUnits);
+        stratigraphicRelationshipRepository.deleteAll(withinSelection);
     }
 
     /**

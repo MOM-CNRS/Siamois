@@ -7,6 +7,8 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /**
  * Bulk operations on projects: each element goes through the same service call as the unit
  * DELETE / PATCH /api/v1/projects/{id}.
@@ -30,15 +32,15 @@ public class ProjectBulkOperations implements BulkEntityOperations {
      * {@inheritDoc}
      */
     @Override
-    public void delete(ProjectApiCaller caller, long id, String acceptLanguage) {
-        projectApiService.deleteProject(caller, String.valueOf(id), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    public void delete(ProjectApiCaller caller, long id, Set<Long> selection, String lang) {
+        projectApiService.deleteProject(caller, String.valueOf(id), lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        projectApiService.patchProject(caller, String.valueOf(id), patchReader.read(patch, ProjectPatchRequest.class), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String lang) {
+        projectApiService.patchProject(caller, String.valueOf(id), patchReader.read(patch, ProjectPatchRequest.class), lang);
     }
 }

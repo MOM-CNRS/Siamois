@@ -11,5 +11,14 @@ public enum BulkJobStatus {
     /** The action stopped before the end, on an unexpected error. */
     FAILED,
     /** Its owner stopped the action: the elements processed until then stay changed. */
-    CANCELLED
+    CANCELLED;
+
+    /**
+     * Whether the action has ended, whichever way.
+     *
+     * @return false while it runs
+     */
+    public boolean ended() {
+        return this != RUNNING;
+    }
 }

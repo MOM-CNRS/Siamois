@@ -38,8 +38,8 @@ public final class OpenApiServiceUtils {
                 request.getAnswers() != null && !request.getAnswers().isEmpty(),
                 IdentifierPatch.changes(newIdentifier, entity.getIdentifier()),
                 ValidationOpenApiService.changes(entity.getValidationStatus(), request.getValidationStatus()));
-        if (changes.writesContent() && !rights.canEdit()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        if (changes.writesContent()) {
+            requireEditRight(rights.canEdit());
         }
         validation.requireAllowed(entity.getValidationStatus(), request.getValidationStatus(),
                 rights.canEdit(), rights.canValidate());
@@ -48,5 +48,17 @@ public final class OpenApiServiceUtils {
             IdentifierPatch.requireFree(identifierTaken.getAsBoolean());
         }
         return changes;
+    }
+
+    /**
+     * Fails with 403 unless the caller may edit the entity: the check of every PATCH that writes its
+     * content, and of a bulk action before it changes an element's relations.
+     *
+     * @param canEdit whether the caller may edit the entity's content
+     */
+    public static void requireEditRight(boolean canEdit) {
+        if (!canEdit) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
     }
 }

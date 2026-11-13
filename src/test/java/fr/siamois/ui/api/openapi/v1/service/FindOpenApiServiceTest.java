@@ -974,7 +974,7 @@ class FindOpenApiServiceTest {
 
         service.deleteFind(7L, personDto, SCOPE, LANG);
 
-        verify(specimenService).deleteSpecimenById(7L);
+        verify(specimenService).deleteSpecimenById(7L, java.util.Set.of());
     }
 
     @Test
@@ -982,7 +982,7 @@ class FindOpenApiServiceTest {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
-        doThrow(new IllegalStateException("lié")).when(specimenService).deleteSpecimenById(7L);
+        doThrow(new IllegalStateException("lié")).when(specimenService).deleteSpecimenById(7L, java.util.Set.of());
 
         assertThatThrownBy(() -> service.deleteFind(7L, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)
@@ -994,7 +994,7 @@ class FindOpenApiServiceTest {
         SpecimenDTO specimen = accessibleSpecimen();
         when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
-        doThrow(new IllegalArgumentException("absent")).when(specimenService).deleteSpecimenById(7L);
+        doThrow(new IllegalArgumentException("absent")).when(specimenService).deleteSpecimenById(7L, java.util.Set.of());
 
         assertThatThrownBy(() -> service.deleteFind(7L, personDto, SCOPE, LANG))
                 .isInstanceOf(ResponseStatusException.class)

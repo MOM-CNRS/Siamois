@@ -12,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigra
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
+import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitStratigraphyWriteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,7 +21,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
@@ -72,19 +72,17 @@ public class BulkActionOpenApiService {
                                     DocumentLinksOpenApiService documentLinksOpenApiService,
                                     BulkJobRegistry jobRegistry,
                                     BulkAsyncRunner runner) {
-        this.operationsByCollection = operations.stream()
-                .collect(Collectors.toMap(BulkEntityOperations::collection, Function.identity()));
-        this.documentTargetsByCollection = documentTargets.stream()
-                .collect(Collectors.toMap(BulkDocumentLinkTarget::collection, Function.identity()));
-        this.stratigraphyTargetsByCollection = stratigraphyTargets.stream()
-                .collect(Collectors.toMap(BulkStratigraphyTarget::collection, Function.identity()));
+        this.operationsByCollection = byCollection(operations);
+        this.documentTargetsByCollection = byCollection(documentTargets);
+        this.stratigraphyTargetsByCollection = byCollection(stratigraphyTargets);
         this.documentLinksOpenApiService = documentLinksOpenApiService;
         this.jobRegistry = jobRegistry;
         this.runner = runner;
     }
 
     /**
-     * Deletes each element, as its unit DELETE would.
+     * Deletes each element, as its unit DELETE would — a link between two elements of the selection
+     * does not stop their deletion: it goes with them.
      *
      * @param collection     the collection's path segment
      * @param request        the elements to delete
@@ -94,8 +92,11 @@ public class BulkActionOpenApiService {
      */
     public BulkJobResource delete(String collection, BulkDeleteRequest request, ProjectApiCaller caller,
                                      String acceptLanguage) {
-        BulkEntityOperations operations = operationsOf(collection);
-        return startJob(caller, idsOf(request.getIds()), id -> operations.delete(caller, id, acceptLanguage));
+        BulkEntityOperations operations = targetOf(operationsByCollection, collection);
+        List<Long> ids = idsOf(request.getIds());
+        Set<Long> selection = Set.copyOf(ids);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return startJob(caller, ids, id -> operations.delete(caller, id, selection, lang));
     }
 
     /**
@@ -109,9 +110,10 @@ public class BulkActionOpenApiService {
      */
     public BulkJobResource patch(String collection, BulkPatchRequest request, ProjectApiCaller caller,
                                     String acceptLanguage) {
-        BulkEntityOperations operations = operationsOf(collection);
+        BulkEntityOperations operations = targetOf(operationsByCollection, collection);
         JsonNode patch = requireBulkPatch(request.getPatch());
-        return startJob(caller, idsOf(request.getIds()), id -> operations.patch(caller, id, patch, acceptLanguage));
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return startJob(caller, idsOf(request.getIds()), id -> operations.patch(caller, id, patch, lang));
     }
 
     /**
@@ -126,14 +128,14 @@ public class BulkActionOpenApiService {
      */
     public BulkJobResource linkDocument(String segment, BulkDocumentLinkRequest request, ProjectApiCaller caller,
                                            String acceptLanguage) {
-        BulkDocumentLinkTarget target = documentTargetOf(segment);
+        BulkDocumentLinkTarget target = targetOf(documentTargetsByCollection, segment);
         DocumentLinkKind kind = DocumentLinkKind.ofPathSegment(segment)
                 .orElseThrow(() -> unknownCollection(segment));
-        long documentId = requireDocumentId(request.getDocumentId());
-        BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
-        LongConsumer link = documentLinkAction(mode, kind, documentId, caller);
+        long documentId = requireId(request.getDocumentId(), "documentId");
+        LongConsumer link = documentLinkAction(modeOf(request.getMode()), kind, documentId, caller);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         return startJob(caller, idsOf(request.getIds()), id -> {
-            target.requireEditable(caller, id, acceptLanguage);
+            target.requireEditable(caller, id, lang);
             link.accept(id);
         });
     }
@@ -148,11 +150,9 @@ public class BulkActionOpenApiService {
      * @return the job changing their relationships, to poll
      */
     public BulkJobResource linkStratigraphy(String segment, BulkStratigraphyRequest request, ProjectApiCaller caller) {
-        BulkStratigraphyTarget target = Optional.ofNullable(stratigraphyTargetsByCollection.get(segment))
-                .orElseThrow(() -> unknownCollection(segment));
-        long relatedId = requireRelatedUnit(request.getRelatedRecordingUnitId());
-        BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
-        LongConsumer action = switch (mode) {
+        BulkStratigraphyTarget target = targetOf(stratigraphyTargetsByCollection, segment);
+        long relatedId = requireId(request.getRelatedRecordingUnitId(), "relatedRecordingUnitId");
+        LongConsumer action = switch (modeOf(request.getMode())) {
             case LINK -> {
                 RecordingUnitStratigraphicRelationshipRequest relationship = relationshipOf(request, relatedId);
                 yield id -> target.addStratigraphy(caller, id, relationship);
@@ -178,13 +178,20 @@ public class BulkActionOpenApiService {
     }
 
     /**
-     * The other unit of a stratigraphic relationship.
+     * What to do to the links: link, unless told otherwise.
      */
-    private static long requireRelatedUnit(Long relatedId) {
-        if (relatedId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "relatedRecordingUnitId est obligatoire");
+    private static BulkLinkMode modeOf(BulkLinkMode requested) {
+        return Objects.requireNonNullElse(requested, BulkLinkMode.LINK);
+    }
+
+    /**
+     * A mandatory id of the request (400 when absent).
+     */
+    private static long requireId(Long id, String name) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, name + " est obligatoire");
         }
-        return relatedId;
+        return id;
     }
 
     /**
@@ -245,21 +252,17 @@ public class BulkActionOpenApiService {
     }
 
     /**
-     * The operations of the collection, or 404 for a collection with no bulk actions.
+     * The targets indexed by their collection's path segment.
      */
-    private BulkEntityOperations operationsOf(String collection) {
-        BulkEntityOperations operations = operationsByCollection.get(collection);
-        if (operations == null) {
-            throw unknownCollection(collection);
-        }
-        return operations;
+    private static <T extends BulkCollectionTarget> Map<String, T> byCollection(List<T> targets) {
+        return targets.stream().collect(Collectors.toMap(BulkCollectionTarget::collection, Function.identity()));
     }
 
     /**
-     * The collection's document link target, or 404 for a collection documents can't be linked to in bulk.
+     * The collection's target for a kind of bulk action, or 404 for a collection without that action.
      */
-    private BulkDocumentLinkTarget documentTargetOf(String collection) {
-        BulkDocumentLinkTarget target = documentTargetsByCollection.get(collection);
+    private static <T> T targetOf(Map<String, T> targetsByCollection, String collection) {
+        T target = targetsByCollection.get(collection);
         if (target == null) {
             throw unknownCollection(collection);
         }
@@ -308,15 +311,5 @@ public class BulkActionOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "L'identifiant ne peut pas être modifié en lot");
         }
         return patch;
-    }
-
-    /**
-     * The document to link or unlink.
-     */
-    private static long requireDocumentId(Long documentId) {
-        if (documentId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "documentId est obligatoire");
-        }
-        return documentId;
     }
 }

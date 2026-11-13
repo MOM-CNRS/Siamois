@@ -4,7 +4,6 @@ import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobStatus;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -53,6 +52,15 @@ public final class BulkJob {
      */
     long ownerId() {
         return ownerId;
+    }
+
+    /**
+     * How many elements the job acts on.
+     *
+     * @return its total
+     */
+    int total() {
+        return total;
     }
 
     /**
@@ -141,7 +149,7 @@ public final class BulkJob {
      * @return true until it has ended
      */
     synchronized boolean running() {
-        return status == BulkJobStatus.RUNNING;
+        return !status.ended();
     }
 
     /**
@@ -151,12 +159,7 @@ public final class BulkJob {
      * @return the snapshot
      */
     synchronized BulkJobResource toResource() {
-        boolean ended = status != BulkJobStatus.RUNNING;
-        return new BulkJobResource(id, status, total, succeeded.size() + failed.size(),
-                succeeded.size(), failed.size(),
-                ended ? List.copyOf(succeeded) : List.of(),
-                ended ? List.copyOf(failed) : List.of(),
-                error);
+        return snapshot(status.ended());
     }
 
     /**
@@ -165,7 +168,17 @@ public final class BulkJob {
      * @return the full snapshot
      */
     synchronized BulkJobResource toFullResource() {
+        return snapshot(true);
+    }
+
+    /**
+     * The job's counts and, when asked, its lists (the caller holds the lock).
+     */
+    private BulkJobResource snapshot(boolean withLists) {
         return new BulkJobResource(id, status, total, succeeded.size() + failed.size(),
-                succeeded.size(), failed.size(), List.copyOf(succeeded), List.copyOf(failed), error);
+                succeeded.size(), failed.size(),
+                withLists ? List.copyOf(succeeded) : List.of(),
+                withLists ? List.copyOf(failed) : List.of(),
+                error);
     }
 }

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -115,9 +116,7 @@ public class FindOpenApiService {
         SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
         RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru));
     }
 
     /**
@@ -323,6 +322,24 @@ public class FindOpenApiService {
                            PersonDTO personDto,
                            Set<Long> accessibleInstitutionIds,
                            String lang) {
+        deleteFind(specimenId, Set.of(), personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Supprime un mobilier supprimé en même temps que d'autres : ses liens avec ceux-ci ne bloquent pas.
+     *
+     * @param specimenId               le mobilier à supprimer
+     * @param alongside                les mobiliers supprimés avec lui
+     * @param personDto                l'appelant
+     * @param accessibleInstitutionIds les organisations de l'appelant
+     * @param lang                     la langue de la requête
+     */
+    @Transactional
+    public void deleteFind(long specimenId,
+                           Set<Long> alongside,
+                           PersonDTO personDto,
+                           Set<Long> accessibleInstitutionIds,
+                           String lang) {
         SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
 
@@ -334,8 +351,8 @@ public class FindOpenApiService {
         if (ruSum == null || ruSum.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
         }
-        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
-                ruSum.getId(), accessibleInstitutionIds);
+
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo,
@@ -345,7 +362,7 @@ public class FindOpenApiService {
 
         try {
             // The domain check reads the execution context, which a token-authenticated call has no session for.
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> specimenService.deleteSpecimenById(specimenId));
+            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> specimenService.deleteSpecimenById(specimenId, alongside));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         } catch (IllegalArgumentException e) {

@@ -1491,7 +1491,7 @@ class SpatialUnitServiceTest {
 
         spatialUnitService.deleteIfUnused(5L);
 
-        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu");
+        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu", java.util.Set.of());
         verify(spatialUnitRepository).deleteById(5L);
     }
 
@@ -1500,8 +1500,8 @@ class SpatialUnitServiceTest {
         SpatialUnit unit = new SpatialUnit();
         unit.setId(5L);
         when(spatialUnitRepository.findById(5L)).thenReturn(Optional.of(unit));
-        org.mockito.Mockito.doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
-                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu");
+        doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
+                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPATIAL_UNIT, 5L, "le lieu", java.util.Set.of());
 
         assertThrows(IllegalStateException.class, () -> spatialUnitService.deleteIfUnused(5L));
 

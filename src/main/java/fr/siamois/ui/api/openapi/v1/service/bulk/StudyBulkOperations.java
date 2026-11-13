@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
 import fr.siamois.ui.api.openapi.v1.service.StudyOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
 
 /**
  * Bulk operations on studies: each element goes through the same service call as the unit
@@ -31,17 +32,17 @@ public class StudyBulkOperations implements BulkEntityOperations {
      * {@inheritDoc}
      */
     @Override
-    public void delete(ProjectApiCaller caller, long id, String acceptLanguage) {
-        studyOpenApiService.deleteStudy(id, caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    public void delete(ProjectApiCaller caller, long id, Set<Long> selection, String lang) {
+        studyOpenApiService.deleteStudy(id, caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
+    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String lang) {
         studyOpenApiService.applyPatchStudy(id, patchReader.read(patch, StudyPatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(),
-                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+                lang);
     }
 }

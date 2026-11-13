@@ -7,14 +7,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
  * A collection whose elements take stratigraphic relationships in bulk: each one goes through the
  * same service call (rights and rules) as the unit POST / DELETE of its relationships.
  */
-public interface BulkStratigraphyTarget {
-
-    /**
-     * The REST collection segment of the elements ("recording-units").
-     *
-     * @return the collection's path segment
-     */
-    String collection();
+public interface BulkStratigraphyTarget extends BulkCollectionTarget {
 
     /**
      * Adds the relationship to one element.

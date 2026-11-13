@@ -9,10 +9,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class EntityLinkGuardTest {
@@ -64,5 +67,57 @@ class EntityLinkGuardTest {
         everyLinkCount(0L);
 
         assertDoesNotThrow(() -> guard.requireNoLinks(EntityLinkGuard.Kind.CONTAINER, 7L, "le contenant"));
+    }
+
+    /**
+     * The message names the entity and enumerates its links.
+     */
+    @Test
+    void requireNoLinks_namesEveryLinkInOneSentence() {
+        everyLinkCount(1L);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> guard.requireNoLinks(EntityLinkGuard.Kind.PHASE, 7L, "la phase"));
+
+        assertEquals("Impossible de supprimer la phase, qui a encore des liens avec des unités d'enregistrement, "
+                + "des mobiliers et des documents. Retirez d'abord ces relations.", ex.getMessage());
+    }
+
+    /**
+     * A link to an entity of the same kind deleted together is left out of the count.
+     */
+    @Test
+    void alongside_leavesOutTheLinksToEntitiesDeletedTogether() {
+        Query sameKind = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(query);
+        when(entityManager.createNativeQuery(contains("IN (:alongside)"))).thenReturn(sameKind);
+        when(query.setParameter("id", 7L)).thenReturn(query);
+        when(query.getSingleResult()).thenReturn(0L);
+        when(sameKind.setParameter("id", 7L)).thenReturn(sameKind);
+        when(sameKind.setParameter("alongside", Set.of(7L, 8L))).thenReturn(sameKind);
+        when(sameKind.getSingleResult()).thenReturn(0L);
+
+        assertDoesNotThrow(() -> guard.requireNoLinks(EntityLinkGuard.Kind.RECORDING_UNIT, 7L,
+                "l'unité d'enregistrement", Set.of(7L, 8L)));
+
+        // hierarchy (parents, children) and stratigraphy
+        verify(entityManager, times(3)).createNativeQuery(contains("AND NOT ("));
+        verify(query, never()).setParameter(eq("alongside"), org.mockito.ArgumentMatchers.<Object>any());
+    }
+
+    /**
+     * Links to other entities still block, and the message says they lie outside the selection.
+     */
+    @Test
+    void alongside_stillBlocksOnOtherLinks_andSaysSo() {
+        everyLinkCount(1L);
+        lenient().when(query.setParameter(eq("alongside"), org.mockito.ArgumentMatchers.<Object>any())).thenReturn(query);
+
+        Set<Long> ids = Set.of(7L, 8L);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> guard.requireNoLinks(EntityLinkGuard.Kind.DOCUMENT, 7L, "le document", ids));
+
+        assertTrue(ex.getMessage().contains("en dehors de la sélection"));
     }
 }

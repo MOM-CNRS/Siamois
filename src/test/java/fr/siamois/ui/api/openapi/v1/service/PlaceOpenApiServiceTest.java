@@ -415,7 +415,7 @@ class PlaceOpenApiServiceTest {
 
         service.deletePlace(caller, 5L, "fr");
 
-        verify(spatialUnitService).deleteIfUnused(5L);
+        verify(spatialUnitService).deleteIfUnused(5L, java.util.Set.of());
         verify(projectApiService).assertOrganizationInCallerScope(10L, SCOPE);
     }
 
@@ -427,7 +427,7 @@ class PlaceOpenApiServiceTest {
         when(spatialUnitService.findById(5L)).thenReturn(existing);
         when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         doThrow(new IllegalStateException("Impossible de supprimer : le lieu possède des lieux enfants"))
-                .when(spatialUnitService).deleteIfUnused(5L);
+                .when(spatialUnitService).deleteIfUnused(5L, java.util.Set.of());
 
         assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -448,7 +448,7 @@ class PlaceOpenApiServiceTest {
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
                         .isEqualTo(HttpStatus.FORBIDDEN.value()));
 
-        verify(spatialUnitService, never()).deleteIfUnused(anyLong());
+        verify(spatialUnitService, never()).deleteIfUnused(anyLong(), any());
     }
 
     @Test
@@ -705,7 +705,7 @@ class PlaceOpenApiServiceTest {
         when(spatialUnitService.findById(5L)).thenReturn(existing);
         when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
         doThrow(new SpatialUnitNotFoundException("missing"))
-                .when(spatialUnitService).deleteIfUnused(5L);
+                .when(spatialUnitService).deleteIfUnused(5L, java.util.Set.of());
 
         assertThatThrownBy(() -> service.deletePlace(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -723,7 +723,7 @@ class PlaceOpenApiServiceTest {
 
         service.deletePlace(caller, 5L, "fr");
 
-        verify(spatialUnitService).deleteIfUnused(5L);
+        verify(spatialUnitService).deleteIfUnused(5L, java.util.Set.of());
     }
 
     // --- getPlaceById ---

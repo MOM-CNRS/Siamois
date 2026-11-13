@@ -145,7 +145,7 @@ class RecordingUnitsControllerApiTest {
                 containerService, mock(fr.siamois.domain.services.study.StudyService.class),
                 bookmarkService,
                 historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
-                org.mockito.Mockito.mock(fr.siamois.domain.services.person.PersonService.class));
+                mock(fr.siamois.domain.services.person.PersonService.class));
 
         RecordingUnitsControllerApi controller = new RecordingUnitsControllerApi(
                 projectApiService,
@@ -888,7 +888,7 @@ class RecordingUnitsControllerApiTest {
         mockMvc.perform(delete("/api/v1/recording-units/5"))
                 .andExpect(status().isForbidden());
 
-        verify(recordingUnitService, never()).deleteRecordingUnitById(anyLong());
+        verify(recordingUnitService, never()).deleteRecordingUnitById(anyLong(), any());
     }
 
     @Test
@@ -902,12 +902,12 @@ class RecordingUnitsControllerApiTest {
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(9L, Set.of(10L)))
                 .thenReturn(ru);
         when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
-        doNothing().when(recordingUnitService).deleteRecordingUnitById(9L);
+        doNothing().when(recordingUnitService).deleteRecordingUnitById(9L, java.util.Set.of());
 
         mockMvc.perform(delete("/api/v1/recording-units/9"))
                 .andExpect(status().isNoContent());
 
-        verify(recordingUnitService).deleteRecordingUnitById(9L);
+        verify(recordingUnitService).deleteRecordingUnitById(9L, java.util.Set.of());
     }
 
     @Test
@@ -921,7 +921,7 @@ class RecordingUnitsControllerApiTest {
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(3L, Set.of(10L)))
                 .thenReturn(ru);
         when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
-        doThrow(new IllegalStateException("finds")).when(recordingUnitService).deleteRecordingUnitById(3L);
+        doThrow(new IllegalStateException("finds")).when(recordingUnitService).deleteRecordingUnitById(3L, java.util.Set.of());
 
         mockMvc.perform(delete("/api/v1/recording-units/3"))
                 .andExpect(status().isConflict());

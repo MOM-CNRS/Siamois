@@ -4,9 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.ui.api.openapi.v1.request.phase.PhasePatchRequest;
 import fr.siamois.ui.api.openapi.v1.service.PhaseOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
-import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
 
 /**
  * Bulk operations on phases: each element goes through the same service call as the unit
@@ -31,25 +32,25 @@ public class PhaseBulkOperations implements BulkEntityOperations, BulkDocumentLi
      * {@inheritDoc}
      */
     @Override
-    public void delete(ProjectApiCaller caller, long id, String acceptLanguage) {
-        phaseOpenApiService.deletePhase(id, caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    public void delete(ProjectApiCaller caller, long id, Set<Long> selection, String lang) {
+        phaseOpenApiService.deletePhase(id, caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
+    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String lang) {
         phaseOpenApiService.applyPatchPhase(id, patchReader.read(patch, PhasePatchRequest.class),
-                caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+                caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void requireEditable(ProjectApiCaller caller, long id, String acceptLanguage) {
+    public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         phaseOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
-                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+                lang);
     }
 }
