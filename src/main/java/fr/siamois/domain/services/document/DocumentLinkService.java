@@ -75,6 +75,20 @@ public class DocumentLinkService {
         };
     }
 
+    /**
+     * Links to {@code copyId} every document linked to {@code sourceId}: a duplicated entity keeps its
+     * source's documents (the documents themselves are not copied).
+     *
+     * @param kind     the kind of both entities
+     * @param sourceId the duplicated entity
+     * @param copyId   its copy
+     */
+    @Transactional
+    public void copyLinks(DocumentLinkKind kind, long sourceId, long copyId) {
+        documentRepository.findAll(kind.documentsLinkedTo(sourceId))
+                .forEach(document -> link(document.getId(), kind, copyId));
+    }
+
     private Document requireDocument(long documentId) {
         Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("Document " + documentId + " not found"));

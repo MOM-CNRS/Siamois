@@ -685,6 +685,42 @@ public class RecordingUnitService implements ArkEntityService {
     }
 
     /**
+     * Donne à une copie les relations de son UE source : ses parents, ses phases et ses relations
+     * stratigraphiques. Pas ses enfants : dupliquer un parent ne duplique pas la hiérarchie en dessous.
+     * La copie, tout juste créée, n'a ni enfant ni relation : aucun cycle ne peut en naître.
+     *
+     * @param sourceId l'UE dupliquée
+     * @param copyId   sa copie
+     */
+    @Transactional
+    @CacheEvict({
+            "InstitutionHasRootChildrenRU",
+            "ActionHasRootChildrenRU"
+    })
+    public void copyRelations(long sourceId, long copyId) {
+        RecordingUnit source = requireRecordingUnitEntity(sourceId);
+        RecordingUnit copy = requireRecordingUnitEntity(copyId);
+        assertSameActionUnit(source, copy);
+        source.getParents().forEach(parent -> {
+            parent.getChildren().add(copy);
+            copy.getParents().add(parent);
+        });
+        copy.getPhases().addAll(source.getPhases());
+        stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(sourceId).stream()
+                .map(relationship -> relationship.copiedFor(source, copy))
+                .forEach(stratigraphicRelationshipRepository::save);
+        recordingUnitRepository.save(copy);
+    }
+
+    /**
+     * The recording unit with this id, or a not-found error.
+     */
+    private RecordingUnit requireRecordingUnitEntity(long id) {
+        return recordingUnitRepository.findById(id)
+                .orElseThrow(() -> new RecordingUnitNotFoundException(RECORDING_UNIT_NOT_FOUND_WITH_ID + id));
+    }
+
+    /**
      * Supprime le lien hiérarchique direct parent → enfant.
      */
     @Transactional

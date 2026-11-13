@@ -46,9 +46,11 @@ public class ProjectBulkOperations implements BulkEntityOperations, BulkDuplicat
 
     /**
      * {@inheritDoc}
+     * <p>
+     * The copy keeps its source's places (main location and precise locations); its content is not copied.
      */
     @Override
     public void duplicate(ProjectApiCaller caller, long id, String lang) {
-        projectApiService.duplicateProject(caller, String.valueOf(id), lang);
+        projectApiService.duplicateProjectWithPlaces(caller, String.valueOf(id), lang);
     }
 }

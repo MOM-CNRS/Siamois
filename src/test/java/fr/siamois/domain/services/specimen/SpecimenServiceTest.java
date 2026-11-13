@@ -1,5 +1,8 @@
 package fr.siamois.domain.services.specimen;
 
+import java.util.Set;
+import fr.siamois.domain.models.phase.Phase;
+import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
@@ -1919,5 +1922,39 @@ class SpecimenServiceTest {
         assertEquals(fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.MOBILIER, specCaptor.getValue().table());
         assertEquals("UE-42", specCaptor.getValue().displayValues().get("ID_UE").apply(entity));
         verify(specimenRepository, never()).save(any());
+    }
+
+    /**
+     * The copy gets the source's parents, containers and phases, never its children.
+     */
+    @Test
+    void copyRelations_copiesParentsContainersAndPhases_notChildren() {
+        Specimen source = new Specimen();
+        source.setId(1L);
+        Specimen copy = new Specimen();
+        copy.setId(2L);
+        Specimen parent = new Specimen();
+        parent.setId(3L);
+        Specimen child = new Specimen();
+        child.setId(4L);
+        source.getParents().add(parent);
+        source.getChildren().add(child);
+        Container container = new Container();
+        container.setId(5L);
+        source.getContainers().add(container);
+        Phase phase = new Phase();
+        phase.setId(6L);
+        source.getPhases().add(phase);
+        when(specimenRepository.findById(1L)).thenReturn(Optional.of(source));
+        when(specimenRepository.findById(2L)).thenReturn(Optional.of(copy));
+
+        specimenService.copyRelations(1L, 2L);
+
+        assertEquals(Set.of(parent), copy.getParents());
+        assertTrue(parent.getChildren().contains(copy));
+        assertTrue(copy.getChildren().isEmpty());
+        assertEquals(Set.of(container), copy.getContainers());
+        assertEquals(Set.of(phase), copy.getPhases());
+        verify(specimenRepository).save(copy);
     }
 }

@@ -1,6 +1,9 @@
 package fr.siamois.ui.api.openapi.v1.service.bulk;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentLinkService;
+import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
@@ -9,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -23,6 +27,8 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDo
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
     private final RecordingUnitStratigraphyWriteService stratigraphyWriteService;
+    private final RecordingUnitService recordingUnitService;
+    private final DocumentLinkService documentLinkService;
     private final BulkPatchReader patchReader;
 
     /**
@@ -77,9 +83,17 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDo
 
     /**
      * {@inheritDoc}
+     * <p>
+     * The copy keeps its source's parents, phases, stratigraphic relationships and documents, in the same
+     * transaction: a relation that can't be copied undoes the copy.
      */
     @Override
+    @Transactional
     public void duplicate(ProjectApiCaller caller, long id, String lang) {
-        recordingUnitOpenApiService.duplicateRecordingUnit(String.valueOf(id), caller.person(), caller.accessibleInstitutionIds(), lang);
+        long copyId = Long.parseLong(recordingUnitOpenApiService
+                .duplicateRecordingUnit(String.valueOf(id), caller.person(), caller.accessibleInstitutionIds(), lang)
+                .getId());
+        recordingUnitService.copyRelations(id, copyId);
+        documentLinkService.copyLinks(DocumentLinkKind.RECORDING_UNIT, id, copyId);
     }
 }

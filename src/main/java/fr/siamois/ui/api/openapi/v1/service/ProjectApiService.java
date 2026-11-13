@@ -614,17 +614,45 @@ public class ProjectApiService {
     @Transactional
     public AccessibleProjectForApi duplicateProject(ProjectApiCaller caller, String projectIdOrKey, String lang) {
         ActionUnitDTO source = requireAccessibleProject(caller, projectIdOrKey).actionUnit();
+        return create(caller, copyRequest(source), lang);
+    }
+
+    /**
+     * The duplication of a bulk action: as {@link #duplicateProject}, the copy also keeping the source's
+     * places — its main location and its precise locations. Its content (units, finds…) is not copied.
+     *
+     * @param caller         the authenticated caller
+     * @param projectIdOrKey the project to duplicate
+     * @param lang           the request's language
+     * @return the new project
+     */
+    @Transactional
+    public AccessibleProjectForApi duplicateProjectWithPlaces(ProjectApiCaller caller, String projectIdOrKey, String lang) {
+        ActionUnitDTO source = requireAccessibleProject(caller, projectIdOrKey).actionUnit();
+        ProjectCreateRequest request = copyRequest(source);
+        if (source.getMainLocation() != null && source.getMainLocation().getId() != null) {
+            request.setMainLocationId(String.valueOf(source.getMainLocation().getId()));
+        }
+        request.setSpatialContextSpatialUnitIds(source.getSpatialContext() == null ? List.of()
+                : source.getSpatialContext().stream().map(place -> String.valueOf(place.getId())).toList());
+        return create(caller, request, lang);
+    }
+
+    /**
+     * The creation of a copy of the project: same organization and type, configured from it, named
+     * « name (n) » with the first free n.
+     */
+    private ProjectCreateRequest copyRequest(ActionUnitDTO source) {
         InstitutionDTO institution = source.getCreatedByInstitution();
         if (institution == null || source.getType() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Projet sans organisation ou sans type");
         }
-
         ProjectCreateRequest request = new ProjectCreateRequest();
         request.setOrganizationId(String.valueOf(institution.getId()));
         request.setTypeId(String.valueOf(source.getType().getId()));
         request.setTemplateId(ProjectTemplate.projectId(source.getId()));
         request.setName(freeCopyName(institution.getId(), source.getName()));
-        return create(caller, request, lang);
+        return request;
     }
 
     private String freeCopyName(Long institutionId, String sourceName) {
