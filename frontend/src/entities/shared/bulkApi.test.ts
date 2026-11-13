@@ -51,6 +51,25 @@ describe("createBulkApi", () => {
     });
   });
 
+  it("adds the same stratigraphic relationship to every unit", async () => {
+    mockedApiFetch.mockResolvedValueOnce(job("RUNNING", 0));
+
+    await createBulkApi("recording-units", { linksStratigraphy: true }).linkStratigraphy!(
+      ["12"],
+      { relatedRecordingUnitId: "42", position: "anterior", typeConceptId: "9", uncertain: true },
+      "LINK",
+    );
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/bulk/recording-units/stratigraphy", {
+      method: "POST",
+      body: { ids: [12], relatedRecordingUnitId: 42, position: "anterior", typeConceptId: 9, uncertain: true, mode: "LINK" },
+    });
+  });
+
+  it("offers no stratigraphy for a type without it", () => {
+    expect(createBulkApi("finds", { linksDocuments: true }).linkStratigraphy).toBeUndefined();
+  });
+
   it("offers no document link for a type documents don't link to", () => {
     expect(createBulkApi("studies").linkDocument).toBeUndefined();
   });

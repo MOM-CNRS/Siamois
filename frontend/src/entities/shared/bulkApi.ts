@@ -46,11 +46,24 @@ export interface BulkApi {
   patch(ids: Ids, patch: unknown): Promise<BulkJobRef[]>;
   // Links a document to each element, or unlinks it. Absent: documents can't be linked to this type.
   linkDocument?(ids: Ids, documentId: string | number, mode: BulkLinkMode): Promise<BulkJobRef[]>;
+  // Adds the same stratigraphic relationship to each element, or removes it. Absent: no stratigraphy.
+  linkStratigraphy?(ids: Ids, relationship: BulkStratigraphy, mode: BulkLinkMode): Promise<BulkJobRef[]>;
+}
+
+/** A stratigraphic relationship every element of a bulk action gets towards the same unit. */
+export interface BulkStratigraphy {
+  relatedRecordingUnitId: string | number;
+  // Where the other unit stands relative to each element.
+  position: "anterior" | "posterior" | "synchronous";
+  typeConceptId?: string | number | null;
+  uncertain?: boolean;
 }
 
 export interface BulkApiOptions {
   // Documents can be linked to this type (it has a Documents tab): « Documents » is among its relations.
   linksDocuments?: boolean;
+  // Its elements have stratigraphic relationships (recording units): its stratigraphy fields are among its relations.
+  linksStratigraphy?: boolean;
 }
 
 // A bulk action as the server reports it (BulkJobResource): the lists only once it has ended.
@@ -136,10 +149,28 @@ export function createBulkApi(collectionPath: string, options: BulkApiOptions = 
     delete: (ids) => startJobs(ids, (chunk) => startJob(`${collectionPath}/delete`, { ids: chunk })),
     patch: (ids, patch) => startJobs(ids, (chunk) => startJob(`${collectionPath}/patch`, { ids: chunk, patch })),
   };
-  if (!options.linksDocuments) return api;
   return {
     ...api,
-    linkDocument: (ids, documentId, mode) =>
-      startJobs(ids, (chunk) => startJob(`${collectionPath}/documents`, { ids: chunk, documentId: Number(documentId), mode })),
+    ...(options.linksDocuments
+      ? {
+          linkDocument: (ids: Ids, documentId: string | number, mode: BulkLinkMode) =>
+            startJobs(ids, (chunk) => startJob(`${collectionPath}/documents`, { ids: chunk, documentId: Number(documentId), mode })),
+        }
+      : {}),
+    ...(options.linksStratigraphy
+      ? {
+          linkStratigraphy: (ids: Ids, relationship: BulkStratigraphy, mode: BulkLinkMode) =>
+            startJobs(ids, (chunk) =>
+              startJob(`${collectionPath}/stratigraphy`, {
+                ids: chunk,
+                relatedRecordingUnitId: Number(relationship.relatedRecordingUnitId),
+                position: relationship.position,
+                typeConceptId: relationship.typeConceptId == null ? null : Number(relationship.typeConceptId),
+                uncertain: relationship.uncertain === true,
+                mode,
+              }),
+            ),
+        }
+      : {}),
   };
 }

@@ -2,7 +2,7 @@ import {useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
-import type {BulkApi, BulkJobRef, BulkLinkMode, BulkResult} from "../../../entities/shared/bulkApi";
+import type {BulkApi, BulkJobRef, BulkLinkMode, BulkResult, BulkStratigraphy} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig} from "../../../entities/shared/types";
 import type {AnswerInputBody} from "../../../fields/types";
 import {type MessageKey, t} from "../../../i18n";
@@ -29,6 +29,8 @@ export interface BulkActions {
   applyAnswer: (rows: RowRecord[], fieldId: string, answer: AnswerInputBody) => Promise<void>;
   // Links a document to (or unlinks it from) every one of the rows the caller may edit.
   applyDocument: (rows: RowRecord[], documentId: string | number, mode: BulkLinkMode) => Promise<void>;
+  // Adds a stratigraphic relationship to (or removes it from) every one of the rows the caller may edit.
+  applyStratigraphy: (rows: RowRecord[], relationship: BulkStratigraphy, mode: BulkLinkMode) => Promise<void>;
   // Deletes every one of the rows the caller may delete.
   deleteRows: (rows: RowRecord[]) => Promise<void>;
 }
@@ -107,6 +109,15 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   }
 
   /**
+   * Adds or removes the stratigraphic relationship on every editable row.
+   */
+  async function applyStratigraphy(rows: RowRecord[], relationship: BulkStratigraphy, mode: BulkLinkMode): Promise<void> {
+    const linkStratigraphy = bulk.linkStratigraphy;
+    if (!linkStratigraphy) return;
+    await run("bulk.taskLinks", "bulk.linksDone", () => linkStratigraphy(idsOf(editableRows(rows)), relationship, mode));
+  }
+
+  /**
    * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
   async function deleteRows(rows: RowRecord[]): Promise<void> {
@@ -124,5 +135,5 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
     onDeleted(deletedRows);
   }
 
-  return { running, applyAnswer, applyDocument, deleteRows };
+  return { running, applyAnswer, applyDocument, applyStratigraphy, deleteRows };
 }

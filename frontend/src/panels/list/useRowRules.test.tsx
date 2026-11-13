@@ -19,6 +19,7 @@ const greyedUnlessSeven: FieldRules = {
 const typeRules: TypeRules = {
   columnSets: [[{ fieldId: "10", rules: greyedUnlessSeven }, { fieldId: "20", rules: null }]],
   rulesOf: (row, fieldId) => (row.type?.id === "A" && fieldId === "10" ? greyedUnlessSeven : undefined),
+  hasForm: (row) => row.type?.id === "A",
 };
 
 const rowA = { id: 1, projectId: "p", type: { id: "A" }, "20": null };
@@ -52,5 +53,18 @@ describe("rules per (project, type)", () => {
     const { result } = renderHook(() => useRowRules(fields, ["10"], ["20"], [rowA, rowB], typeRules));
     expect(result.current.stateOf(rowA, "10")?.enabled).toBe(false);
     expect(result.current.stateOf(rowB, "10")?.enabled).not.toBe(false);
+  });
+
+  it("evaluates a field the list doesn't show with the rules of the row's own form, as its fiche does", () => {
+    const withSources = {
+      ...fields,
+      "30": { id: "30", label: "Lieu", rules: { placeSources: [{ params: {} }] } },
+    } as unknown as Record<string, FieldResource>;
+    const { result } = renderHook(() => useRowRules(withSources, ["10"], ["20"], [rowA, rowB], typeRules));
+
+    // Type A's form is loaded and gives #30 no source: none, whatever the catalog says.
+    expect(result.current.stateFor(rowA, "30")?.placeContext).toBeUndefined();
+    // Type B's form is not known: the catalog's sources.
+    expect(result.current.stateFor(rowB, "30")?.placeContext).toEqual({ deps: {} });
   });
 });

@@ -6,11 +6,17 @@ import {isEmptyValue} from "../../../fields/FieldLabel";
 import {getFieldRenderer} from "../../../fields/registry";
 import type {AnswerInputBody, FieldResource} from "../../../fields/types";
 import {t, tn} from "../../../i18n";
+import type {BulkFieldState} from "./bulkFieldState";
 import {bulkAnswerInput, type BulkEditMode, isMultiValued} from "./bulkSelection";
 
 export interface BulkFieldEditorProps {
   field: FieldResource;
   context: FieldEditContext;
+  // What the fiche's editor of the field gets from the form's rules: the place sources (INSEE…) and
+  // the options the field is narrowed to.
+  state?: BulkFieldState;
+  // Names another field in the picker's hints ("fill X to narrow the search").
+  fieldLabelOf?: (fieldId: string) => string;
   // The selected rows the caller may edit (written), and those they may not (skipped).
   editableCount: number;
   skippedCount: number;
@@ -45,6 +51,8 @@ function modeOptions(): { label: string; value: BulkEditMode }[] {
 export function BulkFieldEditor({
   field,
   context,
+  state,
+  fieldLabelOf,
   editableCount,
   skippedCount,
   running,
@@ -81,6 +89,9 @@ export function BulkFieldEditor({
           required={false}
           organizationId={context.organizationId}
           context={context}
+          optionsContext={state?.optionsContext}
+          placeContext={state?.placeContext}
+          fieldLabelOf={fieldLabelOf}
           onChange={setValue}
         />
       </div>

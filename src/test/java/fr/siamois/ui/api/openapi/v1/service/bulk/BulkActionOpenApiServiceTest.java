@@ -8,6 +8,9 @@ import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
+import org.mockito.ArgumentCaptor;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
@@ -50,6 +53,7 @@ class BulkActionOpenApiServiceTest {
 
     private BulkEntityOperations recordingUnits;
     private BulkDocumentLinkTarget finds;
+    private BulkStratigraphyTarget stratigraphy;
     private BulkActionOpenApiService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -62,8 +66,11 @@ class BulkActionOpenApiServiceTest {
         when(recordingUnits.collection()).thenReturn("recording-units");
         finds = mock(BulkDocumentLinkTarget.class);
         when(finds.collection()).thenReturn("finds");
+        stratigraphy = mock(BulkStratigraphyTarget.class);
+        when(stratigraphy.collection()).thenReturn("recording-units");
         // Called directly (no Spring proxy), the runner processes the job synchronously: the job is done on return.
-        service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), documentLinksOpenApiService,
+        service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), List.of(stratigraphy),
+                documentLinksOpenApiService,
                 new BulkJobRegistry(), new BulkAsyncRunner(new BulkFailureTranslator()));
     }
 
@@ -291,6 +298,58 @@ class BulkActionOpenApiServiceTest {
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
         assertThatThrownBy(() -> service.job("unknown", CALLER.person()))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    /**
+     * LINK adds the same relationship to each unit, towards the same other unit.
+     */
+    @Test
+    void linkStratigraphyAddsTheSameRelationshipToEachUnit() {
+        BulkStratigraphyRequest request = new BulkStratigraphyRequest();
+        request.setIds(List.of(3L, 4L));
+        request.setRelatedRecordingUnitId(42L);
+        request.setPosition("anterior");
+        request.setTypeConceptId(9L);
+
+        BulkJobResource job = service.linkStratigraphy("recording-units", request, CALLER);
+
+        ArgumentCaptor<RecordingUnitStratigraphicRelationshipRequest> sent =
+                ArgumentCaptor.forClass(RecordingUnitStratigraphicRelationshipRequest.class);
+        verify(stratigraphy).addStratigraphy(org.mockito.ArgumentMatchers.eq(CALLER), org.mockito.ArgumentMatchers.eq(3L), sent.capture());
+        assertThat(sent.getValue().getRelatedRecordingUnitId()).isEqualTo(42L);
+        assertThat(sent.getValue().getPosition()).isEqualTo("anterior");
+        assertThat(sent.getValue().getTypeConceptId()).isEqualTo(9L);
+        assertThat(job.succeeded()).containsExactly(3L, 4L);
+    }
+
+    /**
+     * UNLINK removes the relationship with the other unit from each unit.
+     */
+    @Test
+    void unlinkStratigraphyRemovesTheRelationshipFromEachUnit() {
+        BulkStratigraphyRequest request = new BulkStratigraphyRequest();
+        request.setIds(List.of(3L));
+        request.setRelatedRecordingUnitId(42L);
+        request.setMode(BulkLinkMode.UNLINK);
+
+        service.linkStratigraphy("recording-units", request, CALLER);
+
+        verify(stratigraphy).removeStratigraphy(CALLER, 3L, 42L);
+    }
+
+    /**
+     * Adding needs a valid position; a collection without stratigraphy is unknown.
+     */
+    @Test
+    void linkStratigraphyRefusesAMissingPositionOrAnotherCollection() {
+        BulkStratigraphyRequest request = new BulkStratigraphyRequest();
+        request.setIds(List.of(3L));
+        request.setRelatedRecordingUnitId(42L);
+
+        assertThatThrownBy(() -> service.linkStratigraphy("recording-units", request, CALLER))
+                .isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.linkStratigraphy("finds", request, CALLER))
                 .isInstanceOf(ResponseStatusException.class);
     }
 }

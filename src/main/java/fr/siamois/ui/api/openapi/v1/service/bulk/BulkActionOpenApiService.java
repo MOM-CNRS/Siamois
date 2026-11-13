@@ -7,9 +7,12 @@ import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitStratigraphyWriteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
@@ -41,9 +46,12 @@ public class BulkActionOpenApiService {
     public static final int MAX_IDS = 10_000;
 
     private static final String IDENTIFIER_PROPERTY = "identifier";
+    private static final Set<String> STRATIGRAPHIC_POSITIONS = Set.of(RecordingUnitStratigraphyWriteService.ANTERIOR,
+            RecordingUnitStratigraphyWriteService.POSTERIOR, RecordingUnitStratigraphyWriteService.SYNCHRONOUS);
 
     private final Map<String, BulkEntityOperations> operationsByCollection;
     private final Map<String, BulkDocumentLinkTarget> documentTargetsByCollection;
+    private final Map<String, BulkStratigraphyTarget> stratigraphyTargetsByCollection;
     private final DocumentLinksOpenApiService documentLinksOpenApiService;
     private final BulkJobRegistry jobRegistry;
     private final BulkAsyncRunner runner;
@@ -53,12 +61,14 @@ public class BulkActionOpenApiService {
      *
      * @param operations                  one per collection that supports bulk actions
      * @param documentTargets             one per collection documents can be linked to in bulk
+     * @param stratigraphyTargets         one per collection whose elements take stratigraphic relationships in bulk
      * @param documentLinksOpenApiService the document links' unit service
      * @param jobRegistry                 the jobs running or recently ended
      * @param runner                      what processes a job's elements in the background
      */
     public BulkActionOpenApiService(List<BulkEntityOperations> operations,
                                     List<BulkDocumentLinkTarget> documentTargets,
+                                    List<BulkStratigraphyTarget> stratigraphyTargets,
                                     DocumentLinksOpenApiService documentLinksOpenApiService,
                                     BulkJobRegistry jobRegistry,
                                     BulkAsyncRunner runner) {
@@ -66,6 +76,8 @@ public class BulkActionOpenApiService {
                 .collect(Collectors.toMap(BulkEntityOperations::collection, Function.identity()));
         this.documentTargetsByCollection = documentTargets.stream()
                 .collect(Collectors.toMap(BulkDocumentLinkTarget::collection, Function.identity()));
+        this.stratigraphyTargetsByCollection = stratigraphyTargets.stream()
+                .collect(Collectors.toMap(BulkStratigraphyTarget::collection, Function.identity()));
         this.documentLinksOpenApiService = documentLinksOpenApiService;
         this.jobRegistry = jobRegistry;
         this.runner = runner;
@@ -124,6 +136,55 @@ public class BulkActionOpenApiService {
             target.requireEditable(caller, id, acceptLanguage);
             link.accept(id);
         });
+    }
+
+    /**
+     * Adds to each element a stratigraphic relationship with the same other unit, or removes that
+     * relationship from each — through the same service as the unit relationship endpoints.
+     *
+     * @param segment the elements' collection path segment
+     * @param request the elements, the other unit, the relationship and what to do
+     * @param caller  the authenticated caller
+     * @return the job changing their relationships, to poll
+     */
+    public BulkJobResource linkStratigraphy(String segment, BulkStratigraphyRequest request, ProjectApiCaller caller) {
+        BulkStratigraphyTarget target = Optional.ofNullable(stratigraphyTargetsByCollection.get(segment))
+                .orElseThrow(() -> unknownCollection(segment));
+        long relatedId = requireRelatedUnit(request.getRelatedRecordingUnitId());
+        BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
+        LongConsumer action = switch (mode) {
+            case LINK -> {
+                RecordingUnitStratigraphicRelationshipRequest relationship = relationshipOf(request, relatedId);
+                yield id -> target.addStratigraphy(caller, id, relationship);
+            }
+            case UNLINK -> id -> target.removeStratigraphy(caller, id, relatedId);
+        };
+        return startJob(caller, idsOf(request.getIds()), action);
+    }
+
+    /**
+     * The relationship each element gets: the same position, type and certainty towards the same unit.
+     */
+    private static RecordingUnitStratigraphicRelationshipRequest relationshipOf(BulkStratigraphyRequest request, long relatedId) {
+        if (request.getPosition() == null || !STRATIGRAPHIC_POSITIONS.contains(request.getPosition())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "position doit valoir anterior, posterior ou synchronous");
+        }
+        RecordingUnitStratigraphicRelationshipRequest relationship = new RecordingUnitStratigraphicRelationshipRequest();
+        relationship.setRelatedRecordingUnitId(relatedId);
+        relationship.setPosition(request.getPosition());
+        relationship.setTypeConceptId(request.getTypeConceptId());
+        relationship.setUncertain(Boolean.TRUE.equals(request.getUncertain()));
+        return relationship;
+    }
+
+    /**
+     * The other unit of a stratigraphic relationship.
+     */
+    private static long requireRelatedUnit(Long relatedId) {
+        if (relatedId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "relatedRecordingUnitId est obligatoire");
+        }
+        return relatedId;
     }
 
     /**

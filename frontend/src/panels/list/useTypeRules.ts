@@ -16,6 +16,8 @@ import type {FieldRules, RuledColumn} from "../../rules";
 export interface TypeRules {
   /** The rules of a field for the row's (project, type); undefined while they are not loaded or there are none. */
   rulesOf(row: RowTypeRef, fieldId: string): FieldRules | null | undefined;
+  /** Whether the row's (project, type) form is loaded: its rules are then exactly the fiche's, none included. */
+  hasForm(row: RowTypeRef): boolean;
   /** Every loaded form's columns, to work out which other fields the rules read. */
   columnSets: RuledColumn[][];
 }
@@ -86,14 +88,15 @@ export function useTypeRules(segment: string | undefined, projectIds: readonly s
         columnSets.push([...form.entries()].map(([fieldId, rules]) => ({ fieldId, rules }))),
       ),
     );
+    const formOf = (row: RowTypeRef): FormRules | undefined => {
+      const project = row.projectId != null ? byProject.get(row.projectId) : undefined;
+      if (!project) return undefined;
+      return (row.type?.id != null ? project.get(row.type.id) : undefined) ?? project.get(DEFAULT_KEY);
+    };
     return {
       columnSets,
-      rulesOf(row: RowTypeRef, fieldId: string) {
-        const project = row.projectId != null ? byProject.get(row.projectId) : undefined;
-        if (!project) return undefined;
-        const form = (row.type?.id != null ? project.get(row.type.id) : undefined) ?? project.get(DEFAULT_KEY);
-        return form?.get(fieldId);
-      },
+      rulesOf: (row: RowTypeRef, fieldId: string) => formOf(row)?.get(fieldId),
+      hasForm: (row: RowTypeRef) => formOf(row) != null,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segment, projectIds, loaded]);

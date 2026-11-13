@@ -11,6 +11,7 @@ import fr.siamois.ui.api.openapi.v1.request.phase.PhasePatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
 import fr.siamois.ui.api.openapi.v1.service.ContainerOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.DocumentContentOpenApiService;
@@ -21,6 +22,7 @@ import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RecordingUnitOpenApiService;
+import fr.siamois.ui.api.openapi.v1.service.RecordingUnitStratigraphyWriteService;
 import fr.siamois.ui.api.openapi.v1.service.StudyOpenApiService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +75,8 @@ class BulkOperationsTest {
     @Mock
     private RecordingUnitOpenApiService recordingUnitOpenApiService;
     @Mock
+    private RecordingUnitStratigraphyWriteService stratigraphyWriteService;
+    @Mock
     private StudyOpenApiService studyOpenApiService;
 
     /**
@@ -89,7 +93,8 @@ class BulkOperationsTest {
      * The recording unit bulk operations over the mocks.
      */
     private RecordingUnitBulkOperations recordingUnits() {
-        return new RecordingUnitBulkOperations(projectApiService, recordingUnitOpenApiService, patchReader);
+        return new RecordingUnitBulkOperations(projectApiService, recordingUnitOpenApiService, stratigraphyWriteService,
+                patchReader);
     }
 
     /**
@@ -237,21 +242,26 @@ class BulkOperationsTest {
     }
 
     /**
-     * Recording units: deleted, patched and checked editable.
+     * Recording units: deleted, patched, checked editable, their stratigraphy added or removed.
      */
     @Test
     void recordingUnitOperationsCallTheRecordingUnitServices() {
         RecordingUnitBulkOperations operations = recordingUnits();
+        RecordingUnitStratigraphicRelationshipRequest relationship = new RecordingUnitStratigraphicRelationshipRequest();
 
         operations.delete(CALLER, 5L, ACCEPT);
         operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
         operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.addStratigraphy(CALLER, 5L, relationship);
+        operations.removeStratigraphy(CALLER, 5L, 8L);
 
         assertThat(operations.collection()).isEqualTo("recording-units");
         verify(projectApiService).deleteRecordingUnit(CALLER, 5L, ACCEPT);
         verify(recordingUnitOpenApiService).patchRecordingUnit(eq("5"), any(RecordingUnitPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
         verify(recordingUnitOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
+        verify(stratigraphyWriteService).add("5", relationship, PERSON, INSTITUTIONS);
+        verify(stratigraphyWriteService).remove("5", 8L, PERSON, INSTITUTIONS);
     }
 
     /**

@@ -205,4 +205,23 @@ describe("BulkActionBar", () => {
 
     expect(notifySpy.warn).toHaveBeenCalledWith("Aucun des éléments sélectionnés n'est modifiable par vous.");
   });
+
+  it("lists the stratigraphy fields among the relations of a type with stratigraphy", async () => {
+    const catalog: FieldCatalog = {
+      fields: {
+        anterior: {
+          id: "anterior", resourceType: "field", label: "Antérieur à", answerType: "SELECT_MULTIPLE_STRATIGRAPHY",
+          isSystemField: true, valueBinding: "anteriorRelationships",
+        },
+      },
+      columns: [],
+    };
+    const withStratigraphy = { ...config, api: { ...config.api, bulk: { ...bulk, linkStratigraphy: vi.fn() } } };
+    render(selectionOf(rows), withStratigraphy, catalog);
+
+    await click(button("Modifier"));
+
+    const relations = document.querySelector('[role="group"][aria-label="Relations"]');
+    expect(relations?.textContent).toContain("Antérieur à");
+  });
 });

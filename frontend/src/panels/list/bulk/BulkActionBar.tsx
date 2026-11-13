@@ -7,14 +7,19 @@ import {DeleteEntityDialog} from "../../../components/detail/DeleteEntityDialog"
 import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import type {FieldResource} from "../../../fields/types";
+import type {FieldState} from "../../../rules";
 import {t, tn} from "../../../i18n";
 import {useNotify} from "../../../notify/NotifyProvider";
 import type {RowRecord} from "../useEntityListData";
 import {BulkDocumentEditor} from "./BulkDocumentEditor";
 import {BulkFieldEditor} from "./BulkFieldEditor";
+import {BulkStratigraphyEditor} from "./BulkStratigraphyEditor";
+import {stratigraphyPositionOf} from "../../../fields/stratigraphy";
+import {bulkFieldState} from "./bulkFieldState";
 import {BulkFieldPicker, type BulkRelationEntry} from "./BulkFieldPicker";
 import {
   bulkEditableFields,
+  bulkStratigraphyFields,
   bulkEditContext,
   canBulkEdit,
   deletableRows,
@@ -31,13 +36,28 @@ export interface BulkActionBarProps {
   // The list's field catalog: the properties a bulk edit can write.
   catalog?: FieldCatalog;
   selection: ListSelection;
+  // The list's rules (useRowRules): a field's state on a row, and the fields' labels — what gives a
+  // bulk editor the same sources and options as the fiche's.
+  rowRules?: {
+    // The field's state on a row as the row's fiche evaluates it (its own type's form), shown or not.
+    stateFor: (row: RowRecord, fieldId: string) => FieldState | undefined;
+    labelOf: (fieldId: string) => string;
+  };
 }
 
 // The dialog the bar has open, if any.
-type OpenDialog = { kind: "field"; field: FieldResource } | { kind: "documents" } | { kind: "delete" } | null;
+type OpenDialog =
+  | { kind: "field"; field: FieldResource }
+  | { kind: "documents" }
+  | { kind: "stratigraphy"; field: FieldResource }
+  | { kind: "delete" }
+  | null;
 
 // The key of the documents among the picker's relations.
 const DOCUMENTS_RELATION = "documents";
+
+// The prefix of a stratigraphy field's key among the picker's relations (followed by the field's id).
+const STRATIGRAPHY_RELATION = "stratigraphy:";
 
 /**
  * The Notion-style bar laid over the top of a list while rows are ticked: how many are, a way to
@@ -62,6 +82,7 @@ function BulkActionBarContent({
   organizationId,
   catalog,
   selection,
+  rowRules,
 }: BulkActionBarProps & { bulk: BulkApi }) {
   const notify = useNotify();
   const pickerRef = useRef<OverlayPanel>(null);
@@ -90,17 +111,27 @@ function BulkActionBarContent({
   // Not one selected row the caller may edit: every property says so, rather than a misleading reason.
   const noneEditable = target.length > 0 && editable.length === 0 ? t("bulk.noneEditable") : undefined;
   const context = bulkEditContext(editable, entityType, organizationId);
-  const relations: BulkRelationEntry[] = bulk.linkDocument
-    ? [
-        {
-          key: DOCUMENTS_RELATION,
-          label: t("entity.document.plural"),
-          icon: "bi bi-file-earmark",
-          // A document is linked only inside its project: the selection must not span several.
-          disabledReason: noneEditable ?? (spansSeveralProjects(editable, entityType) ? t("bulk.documentsNeedOneProject") : undefined),
-        },
-      ]
-    : [];
+  // A relation is only made inside one project (a document, another unit): the selection must not span several.
+  const severalProjects = spansSeveralProjects(editable, entityType);
+  const stratigraphyFields = bulk.linkStratigraphy ? bulkStratigraphyFields(catalog) : [];
+  const relations: BulkRelationEntry[] = [
+    ...stratigraphyFields.map((field) => ({
+      key: `${STRATIGRAPHY_RELATION}${field.id}`,
+      label: field.label,
+      icon: field.icon ?? "bi bi-layers",
+      disabledReason: noneEditable ?? (severalProjects ? t("bulk.needsOneProject") : undefined),
+    })),
+    ...(bulk.linkDocument
+      ? [
+          {
+            key: DOCUMENTS_RELATION,
+            label: t("entity.document.plural"),
+            icon: "bi bi-file-earmark",
+            disabledReason: noneEditable ?? (severalProjects ? t("bulk.documentsNeedOneProject") : undefined),
+          },
+        ]
+      : []),
+  ];
   const busy = actions.running || gathering;
   const close = () => setDialog(null);
 
@@ -155,6 +186,8 @@ function BulkActionBarContent({
   function pickRelation(key: string) {
     pickerRef.current?.hide();
     if (key === DOCUMENTS_RELATION) setDialog({ kind: "documents" });
+    const stratigraphyField = stratigraphyFields.find((field) => key === `${STRATIGRAPHY_RELATION}${field.id}`);
+    if (stratigraphyField) setDialog({ kind: "stratigraphy", field: stratigraphyField });
   }
 
   return (
@@ -174,7 +207,7 @@ function BulkActionBarContent({
           onClick={selection.clear}
         />
         <span className="bulk-action-bar-separator" aria-hidden="true" />
-        {(fields.length > 0 || bulk.linkDocument) && (
+        {(fields.length > 0 || relations.length > 0) && (
           <Button
             type="button"
             label={t("bulk.edit")}
@@ -218,12 +251,12 @@ function BulkActionBarContent({
       </OverlayPanel>
 
       <Dialog
-        visible={dialog?.kind === "field" || dialog?.kind === "documents"}
+        visible={dialog?.kind === "field" || dialog?.kind === "documents" || dialog?.kind === "stratigraphy"}
         onHide={() => !actions.running && close()}
         modal
         draggable={false}
         header={t("bulk.editTitle", {
-          label: dialog?.kind === "field" ? dialog.field.label : t("entity.document.plural"),
+          label: dialog?.kind === "field" || dialog?.kind === "stratigraphy" ? dialog.field.label : t("entity.document.plural"),
         })}
         className="bulk-dialog"
       >
@@ -232,6 +265,12 @@ function BulkActionBarContent({
             key={dialog.field.id}
             field={dialog.field}
             context={context}
+            state={bulkFieldState(
+              dialog.field,
+              editable.map((row) => rowRules?.stateFor(row, dialog.field.id)),
+              context.typeConceptId,
+            )}
+            fieldLabelOf={rowRules?.labelOf}
             editableCount={editable.length}
             skippedCount={skippedCount}
             running={actions.running}
@@ -253,6 +292,24 @@ function BulkActionBarContent({
             onCancel={close}
             onApply={(documentId, mode) => {
               void actions.applyDocument(target, documentId, mode);
+              close();
+            }}
+          />
+        )}
+        {dialog?.kind === "stratigraphy" && (
+          <BulkStratigraphyEditor
+            key={dialog.field.id}
+            field={dialog.field}
+            position={stratigraphyPositionOf(dialog.field)!}
+            projectId={context.projectId}
+            organizationId={organizationId}
+            typeConceptId={context.typeConceptId}
+            editableCount={editable.length}
+            skippedCount={skippedCount}
+            running={actions.running}
+            onCancel={close}
+            onApply={(relationship, mode) => {
+              void actions.applyStratigraphy(target, relationship, mode);
               close();
             }}
           />
