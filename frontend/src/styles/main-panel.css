@@ -4280,3 +4280,10 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .task-toast-count {
   color: var(--text-color-secondary, #6c757d);
 }
+
+/* A single reference picked in a bulk editor, shown as the chip a fiche field shows it as. */
+.bulk-field-editor-picked {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
