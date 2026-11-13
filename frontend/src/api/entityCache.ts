@@ -2,10 +2,29 @@ import type {QueryClient} from "@tanstack/react-query";
 import type {PagedResult} from "../entities/shared/types";
 import {queryKeys} from "./queryKeys";
 
+// A known change of one entity, for what holds rows outside the query cache (the tree view keeps its
+// own copy of the nodes, the branches opened since included).
+type PatchListener = (entityType: string, entityId: string | number, patch: Record<string, unknown>) => void;
+
+const patchListeners = new Set<PatchListener>();
+
+/**
+ * Hears every known change written by {@link patchCachedEntity}.
+ *
+ * @returns what stops hearing them
+ */
+export function onEntityPatched(listener: PatchListener): () => void {
+  patchListeners.add(listener);
+  return () => {
+    patchListeners.delete(listener);
+  };
+}
+
 /**
  * Writes a known change of one entity into every cached copy of it — the rows of its type's lists
- * and its detail — instead of refetching them. Ids are compared as strings: a detail opened from a
- * URL is keyed by a string id, a row carries the server's number.
+ * and its detail — instead of refetching them, and tells whoever holds a copy of their own. Ids are
+ * compared as strings: a detail opened from a URL is keyed by a string id, a row carries the
+ * server's number.
  */
 export function patchCachedEntity(
   queryClient: QueryClient,
@@ -23,4 +42,5 @@ export function patchCachedEntity(
     { queryKey: queryKeys.entityDetailsOf(entityType), predicate: ({ queryKey }) => isThis(queryKey[2]) },
     (entity) => entity && { ...entity, ...patch },
   );
+  patchListeners.forEach((listener) => listener(entityType, entityId, patch));
 }

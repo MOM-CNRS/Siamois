@@ -3,6 +3,7 @@ import {t} from "../../i18n";
 import type {TreeTableExpandedKeysType} from "primereact/treetable";
 import type {TreeNode as PrimeTreeNode} from "primereact/treenode";
 import {useQuery} from "@tanstack/react-query";
+import {onEntityPatched} from "../../api/entityCache";
 import {queryKeys} from "../../api/queryKeys";
 import type {EntityTypeConfig, ListParams, PagedResult,} from "../../entities/shared/types";
 import type {RowRecord} from "./useEntityListData";
@@ -80,6 +81,16 @@ function updateNode(
         children: updateNode(node.children as TreeNode[], path, update),
       };
     return node;
+  });
+}
+
+/**
+ * The nodes with the entity's row patched, wherever it shows (a row may show in several branches).
+ */
+function patchRows(nodes: TreeNode[], entityId: string | number, patch: Record<string, unknown>): TreeNode[] {
+  return nodes.map((node) => {
+    const own = String((node.data as RowRecord).id) === String(entityId) ? { ...node, data: { ...node.data, ...patch } } : node;
+    return own.children ? { ...own, children: patchRows(own.children as TreeNode[], entityId, patch) } : own;
   });
 }
 
@@ -219,6 +230,16 @@ export function useTreeRows({
       setChildrenError(null);
     }
   }, [query.data]);
+  // A known change of a row (its status set from the table…) written into the cache is written here
+  // too: the tree holds its own copy of the nodes, the branches opened since included.
+  useEffect(
+    () =>
+      onEntityPatched((patchedType, entityId, patch) => {
+        if (patchedType !== entityType) return;
+        setTree((latest) => (latest ? { ...latest, roots: patchRows(latest.roots, entityId, patch) } : latest));
+      }),
+    [entityType],
+  );
   useEffect(() => {
     openRef.current = new Set(
       Object.keys(tree?.expanded ?? {}).filter((id) => tree?.expanded[id]),

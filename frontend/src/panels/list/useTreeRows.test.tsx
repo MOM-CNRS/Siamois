@@ -3,6 +3,7 @@ import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import type {EntityTypeConfig, ListParams, PagedResult,} from "../../entities/shared/types";
+import {patchCachedEntity} from "../../api/entityCache";
 import {type TreeRow, useTreeRows} from "./useTreeRows";
 
 (
@@ -109,6 +110,19 @@ afterEach(() => {
 });
 
 describe("useTreeRows", () => {
+  it("follows a known change of a row, in an opened branch too (a status set from the table)", async () => {
+    listMock.mockImplementation(async (p) =>
+      p.scope ? page([row(2, { validationStatus: "INCOMPLETE" } as Partial<TreeRow>)]) : page([row(1, { hasChildren: true })]),
+    );
+    mount();
+    await flush();
+    await open("1");
+
+    act(() => patchCachedEntity(new QueryClient(), "tree-entity", "2", { validationStatus: "COMPLETE" }));
+
+    expect(latest.rows.find((r) => r.id === 2)).toMatchObject({ validationStatus: "COMPLETE" });
+  });
+
   it("asks for the roots with tree=true and flags the leaves", async () => {
     listMock.mockResolvedValue(
       page([row(1, { hasChildren: true }), row(2, { hasChildren: false })]),
