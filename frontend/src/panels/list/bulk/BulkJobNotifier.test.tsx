@@ -80,7 +80,7 @@ describe("BulkJobNotifier", () => {
     await flush();
 
     expect(taskToastSpy.close).toHaveBeenCalled();
-    expect(notifySpy.warn).toHaveBeenCalledWith("Suppression terminée : 2 entités supprimées, 1 en échec. Relations", 8000);
+    expect(notifySpy.warn).toHaveBeenCalledWith("Suppression terminée : 2 entités supprimées, 1 en échec : Relations", 8000);
     expect(bulkJobsSnapshot()).toEqual([]);
   });
 
@@ -107,6 +107,30 @@ describe("BulkJobNotifier", () => {
     await flush();
 
     expect(notifySpy.success).toHaveBeenCalledWith("Modification terminée : 2 entités modifiées", 8000);
+  });
+
+  it("says which kind of action changed nothing, and counts the other reasons", async () => {
+    const job = controllableJob();
+    act(() => {
+      void trackBulkJob({ id: "job-5", label: "bulk.taskDelete", successKey: "bulk.deleteDone" }, 3);
+    });
+
+    act(() =>
+      job.finish({
+        succeeded: [],
+        failed: [
+          { id: 1, status: 409, message: "Liée" },
+          { id: 2, status: 409, message: "Liée" },
+          { id: 3, status: 403, message: "Accès refusé" },
+        ],
+      }),
+    );
+    await flush();
+
+    expect(notifySpy.error).toHaveBeenCalledWith(
+      "Aucune entité supprimée, 3 en échec : Liée (et 1 autre motif)",
+      8000,
+    );
   });
 
   it("says a stopped job was stopped, with what it did until then", async () => {

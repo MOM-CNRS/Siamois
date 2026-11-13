@@ -4,7 +4,7 @@ import {ApiError} from "../../../api/client";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
 import {type BulkResult, cancelBulkJob} from "../../../entities/shared/bulkApi";
-import {t, tn} from "../../../i18n";
+import {type MessageKey, t, tn} from "../../../i18n";
 import {type Notify, type TaskToast, useNotify} from "../../../notify/NotifyProvider";
 import {
   acknowledgeBulkJob,
@@ -18,6 +18,13 @@ import {
 // How long the outcome of a bulk action stays: longer than a plain toast, the user may be elsewhere by then.
 const BULK_RESULT_LIFE_MS = 8000;
 
+// What a bulk action that changed nothing says, by kind of action.
+const NONE_DONE_KEYS: Record<BulkSuccessKey, MessageKey> = {
+  "bulk.editDone": "bulk.editNone",
+  "bulk.linksDone": "bulk.linksNone",
+  "bulk.deleteDone": "bulk.deleteNone",
+};
+
 // The notifiers mounted on the page (one per React root): the first one tells, the others wait their turn.
 const claims: symbol[] = [];
 const claimListeners = new Set<() => void>();
@@ -30,8 +37,17 @@ function emitClaims() {
 }
 
 /**
+ * Why the elements failed: the first reason given, and how many other distinct ones there are.
+ */
+export function failureReasons(result: BulkResult): string {
+  const reasons = [...new Set(result.failed.map((failure) => failure.message))];
+  if (reasons.length <= 1) return reasons[0] ?? "";
+  return tn("bulk.otherReasons", reasons.length - 1, { reason: reasons[0] });
+}
+
+/**
  * Tells the user what a finished bulk job did — what it was, and how many entities it changed — with
- * the failures counted and the first one named.
+ * the failures counted and their reasons named.
  */
 export function reportBulkResult(notify: Notify, result: BulkResult, successKey: BulkSuccessKey): void {
   const done = tn(successKey, result.succeeded.length);
@@ -41,8 +57,8 @@ export function reportBulkResult(notify: Notify, result: BulkResult, successKey:
     else notify.success(summary, BULK_RESULT_LIFE_MS);
     return;
   }
-  const params = { summary, failed: result.failed.length, first: result.failed[0].message };
-  if (result.succeeded.length === 0) notify.error(t("bulk.noneDone", params), BULK_RESULT_LIFE_MS);
+  const params = { summary, failed: result.failed.length, reasons: failureReasons(result) };
+  if (result.succeeded.length === 0) notify.error(t(NONE_DONE_KEYS[successKey], params), BULK_RESULT_LIFE_MS);
   else notify.warn(t("bulk.partial", params), BULK_RESULT_LIFE_MS);
 }
 

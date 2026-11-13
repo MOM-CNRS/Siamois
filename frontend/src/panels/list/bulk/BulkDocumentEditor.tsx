@@ -1,21 +1,16 @@
 import {useState} from "react";
 import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
-import {Button} from "primereact/button";
-import {SelectButton} from "primereact/selectbutton";
 import {listDocuments} from "../../../entities/document/api";
 import type {DocumentSummary} from "../../../entities/document/types";
-import {t, tn} from "../../../i18n";
 import type {BulkLinkMode} from "../../../entities/shared/bulkApi";
+import {t} from "../../../i18n";
+import {type BulkEditorCommonProps, BulkEditorFooter, BulkLinkModeButton} from "./BulkEditorParts";
 
-export interface BulkDocumentEditorProps {
+export interface BulkDocumentEditorProps extends BulkEditorCommonProps {
   organizationId?: number;
   // The selection's one project, whose documents are offered; none (places): the organization's.
   projectId?: string;
-  editableCount: number;
-  skippedCount: number;
-  running: boolean;
   onApply: (documentId: string | number, mode: BulkLinkMode) => void;
-  onCancel: () => void;
 }
 
 /**
@@ -60,17 +55,7 @@ export function BulkDocumentEditor({
 
   return (
     <div className="bulk-field-editor">
-      <SelectButton
-        value={mode}
-        options={[
-          { label: t("bulk.modeAdd"), value: "LINK" },
-          { label: t("bulk.modeRemove"), value: "UNLINK" },
-        ]}
-        allowEmpty={false}
-        disabled={running}
-        onChange={(e) => setMode(e.value as BulkLinkMode)}
-        aria-label={t("entity.document.plural")}
-      />
+      <BulkLinkModeButton mode={mode} onChange={setMode} disabled={running} ariaLabel={t("entity.document.plural")} />
       <small className="bulk-field-editor-hint">
         {t(mode === "LINK" ? "bulk.documentAddHint" : "bulk.documentRemoveHint")}
       </small>
@@ -89,22 +74,14 @@ export function BulkDocumentEditor({
           onChange={(e) => setQuery(e.value as string | DocumentSummary)}
         />
       </div>
-      {skippedCount > 0 && (
-        <small className="bulk-field-editor-skipped" role="note">
-          <i className="bi bi-info-circle" aria-hidden="true" /> {tn("bulk.skipped", skippedCount)}
-        </small>
-      )}
-      <div className="bulk-field-editor-actions">
-        <Button type="button" label={t("common.cancel")} text disabled={running} onClick={onCancel} />
-        <Button
-          type="button"
-          label={tn("bulk.apply", editableCount)}
-          icon="bi bi-check2-all"
-          loading={running}
-          disabled={running || picked?.id == null || editableCount === 0}
-          onClick={() => picked?.id != null && onApply(picked.id as string | number, mode)}
-        />
-      </div>
+      <BulkEditorFooter
+        editableCount={editableCount}
+        skippedCount={skippedCount}
+        running={running}
+        canApply={picked?.id != null}
+        onApply={() => picked?.id != null && onApply(picked.id as string | number, mode)}
+        onCancel={onCancel}
+      />
     </div>
   );
 }

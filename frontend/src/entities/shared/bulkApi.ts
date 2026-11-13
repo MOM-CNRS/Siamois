@@ -116,8 +116,9 @@ export async function followBulkJob(jobId: string, onProgress?: OnBulkProgress):
     const job = (await apiFetch<BulkJobBody>(`/api/v1/bulk/jobs/${encodeURIComponent(jobId)}`)).data;
     onProgress?.({ processed: job.processed, total: job.total });
     if (job.status === "FAILED") throw new Error(job.error ?? "");
-    if (job.status === "DONE") return { succeeded: job.succeeded, failed: job.failed };
-    if (job.status === "CANCELLED") return { succeeded: job.succeeded, failed: job.failed, cancelled: true };
+    if (job.status !== "RUNNING") {
+      return { succeeded: job.succeeded, failed: job.failed, ...(job.status === "CANCELLED" ? { cancelled: true } : {}) };
+    }
     await pause(delay);
     delay = Math.min(BULK_POLL_MAX_MS, Math.round(delay * BULK_POLL_GROWTH));
   }

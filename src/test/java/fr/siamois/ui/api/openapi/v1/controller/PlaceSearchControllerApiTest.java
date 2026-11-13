@@ -65,26 +65,6 @@ class PlaceSearchControllerApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // What a picker shows as soon as it opens, before anything is typed.
-    @Test
-    void autocomplete_emptyQuery_returnsFirstPageByName() throws Exception {
-        when(projectApiService.requireCaller()).thenReturn(
-                new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
-        SpatialUnitDTO su = new SpatialUnitDTO();
-        su.setId(5L);
-        su.setName("Abbaye");
-
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10")
-                        .param("q", "   "))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
-    }
-
     @Test
     void autocomplete_forbiddenOrganization_returns403() throws Exception {
         when(projectApiService.requireCaller()).thenReturn(
@@ -96,28 +76,6 @@ class PlaceSearchControllerApiTest {
                         .param("organizationId", "10")
                         .param("q", "a"))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void autocomplete_success_returnsMatches() throws Exception {
-        when(projectApiService.requireCaller()).thenReturn(
-                new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
-
-        SpatialUnitDTO su = new SpatialUnitDTO();
-        su.setId(77L);
-        su.setName("Rue des Lilas");
-        su.setInseeCode("LILAS");
-
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10")
-                        .param("q", "  lilas  "))
-                .andExpect(status().isOk())
-                .andExpect(header().string("X-Total-Count", "1"))
-                .andExpect(jsonPath("$.data[0].id").value(77))
-                .andExpect(jsonPath("$.data[0].name").value("Rue des Lilas"))
-                .andExpect(jsonPath("$.data[0].code").value("LILAS"));
-
-        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
     }
 
     @Test

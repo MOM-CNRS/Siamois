@@ -15,6 +15,7 @@ import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.dto.entity.vocabulary.ConceptLabelDTO;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceFromSuggestionRequest;
 import fr.siamois.ui.api.openapi.v1.response.place.PlaceCreatedResponse;
 import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceSuggestionItemApi;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -68,6 +70,14 @@ class PlaceSuggestionApiServiceTest {
         caller = new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of());
     }
 
+    private void ownPlaces(SpatialUnitDTO... places) {
+        lenient().when(spatialUnitService.findAllByInstitutionAndByName(anyLong(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(places)));
+        ConceptLabelDTO label = mock(ConceptLabelDTO.class);
+        lenient().when(label.getLabel()).thenReturn("Commune");
+        lenient().when(labelService.findLabelOf(any(ConceptDTO.class), any())).thenReturn(label);
+    }
+
     private static SpatialUnitDTO place(long id, String name, String code, long organization) {
         SpatialUnitDTO dto = new SpatialUnitDTO();
         dto.setId(id);
@@ -90,6 +100,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_listsOwnPlacesThenCommunes_andDropsCommunesAlreadyKnown() {
+        ownPlaces(place(5L, "Lyon", "69123", 10L));
         when(configResolver.forField(MAIN_LOCATION, null, null)).thenReturn(List.of(PlaceSourceSpec.of("INSEE")));
         when(insee.search("lyo", Map.of())).thenReturn(List.of(
                 new ExternalPlace("Lyon", "69123", null), new ExternalPlace("Lyonnais", "42000", null)));
@@ -109,7 +120,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_withoutConfiguredSources_neverCallsExternalServices() {
-        
+        ownPlaces();
         when(configResolver.forField(anyLong(), any(), any())).thenReturn(List.of());
 
         assertTrue(suggest("lyon", Map.of()).items().isEmpty());
@@ -120,7 +131,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_feedsASourceParameterFromThePlacePickedInTheOtherField() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(geoplat.search("rue", Map.of("citycode", "69123"))).thenReturn(List.of(new ExternalPlace("1 rue X, Lyon", null, new FullAddress())));
@@ -136,6 +147,7 @@ class PlaceSuggestionApiServiceTest {
     // The default: without the commune the addresses of the whole country are still suggested, with the hint.
     @Test
     void suggest_searchesWithoutTheFilterWhenTheFieldItReadsIsEmpty_andSaysSo() {
+        ownPlaces(place(5L, "Rue de la Paix", null, 10L));
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(geoplat.search("rue", Map.of())).thenReturn(List.of(new ExternalPlace("1 rue X", null, null)));
@@ -149,7 +161,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_searchesWithoutTheFilterWhenThePlacePickedHasNoSuchAttribute() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Un lieu sans code", null, 10L));
@@ -161,6 +173,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_leavesTheSourceOutOnlyWhenItIsConfiguredToSkip() {
+        ownPlaces(place(5L, "Rue de la Paix", null, 10L));
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.SKIP)));
 
@@ -173,7 +186,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_doesNotFilterByAPlaceOfAnotherOrganization() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Lyon", "69123", 99L));
@@ -185,7 +198,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_doesNotFilterByAPlaceThatIsGone() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null))
                 .thenReturn(List.of(geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(spatialUnitService.findById(7L)).thenThrow(new SpatialUnitNotFoundException("gone"));
@@ -197,6 +210,11 @@ class PlaceSuggestionApiServiceTest {
     // Many places of the organization must not crowd out the sources, nor hide that one needs a field filled.
     @Test
     void suggest_aFullListOfOwnPlacesStillGetsTheSourcesAndTheHint() {
+        SpatialUnitDTO[] many = new SpatialUnitDTO[20];
+        for (int i = 0; i < many.length; i++) {
+            many[i] = place(100L + i, "Lieu " + i, null, 10L);
+        }
+        ownPlaces(many);
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(
                 PlaceSourceSpec.of("INSEE"), geoplatBoundToMainLocation(PlaceSourceSpec.OnMissing.UNFILTERED)));
         when(insee.search("lyo", Map.of())).thenReturn(List.of(new ExternalPlace("Lyon", "69123", null)));
@@ -211,7 +229,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_ignoresAnUnknownSourceOfTheConfiguration() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(PlaceSourceSpec.of("NOPE")));
 
         assertTrue(suggest("rue", Map.of()).items().isEmpty());
@@ -221,6 +239,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_whenAnExternalServiceFails_keepsOwnPlaces() {
+        ownPlaces(place(5L, "Lyon", null, 10L));
         when(configResolver.forField(MAIN_LOCATION, null, null)).thenReturn(List.of(PlaceSourceSpec.of("INSEE")));
         when(insee.search(any(), any())).thenThrow(new IllegalStateException("down"));
 
@@ -327,7 +346,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_readsThePostcodeFromThePlacesOwnPostcodeField() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
         SpatialUnitDTO picked = place(7L, "Chartres", null, 10L);
         picked.setAddressPostcode("28000");
@@ -340,7 +359,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_fallsBackToThePostcodeOfThePlacesAddressObject() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
         SpatialUnitDTO picked = place(7L, "Lyon", null, 10L);
         FullAddress address = new FullAddress();
@@ -356,7 +375,7 @@ class PlaceSuggestionApiServiceTest {
 
     @Test
     void suggest_hasNoPostcodeForAPlaceWithNeitherPostcodeNorAddress() {
-        
+        ownPlaces();
         when(configResolver.forField(SPATIAL_CONTEXT, null, null)).thenReturn(List.of(geoplatPostcodeBoundToMainLocation()));
         when(spatialUnitService.findById(7L)).thenReturn(place(7L, "Nulle part", null, 10L));
         when(geoplat.search("rue", Map.of())).thenReturn(List.of());

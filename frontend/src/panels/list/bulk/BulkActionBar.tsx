@@ -12,6 +12,7 @@ import {t, tn} from "../../../i18n";
 import {useNotify} from "../../../notify/NotifyProvider";
 import type {RowRecord} from "../useEntityListData";
 import {BulkDocumentEditor} from "./BulkDocumentEditor";
+import type {BulkEditorCommonProps} from "./BulkEditorParts";
 import {BulkFieldEditor} from "./BulkFieldEditor";
 import {BulkStratigraphyEditor} from "./BulkStratigraphyEditor";
 import {stratigraphyPositionOf} from "../../../fields/stratigraphy";
@@ -133,6 +134,13 @@ function BulkActionBarContent({
       : []),
   ];
   const busy = actions.running || gathering;
+  // What every editor of the dialog gets.
+  const editorProps: BulkEditorCommonProps = {
+    editableCount: editable.length,
+    skippedCount,
+    running: actions.running,
+    onCancel: () => setDialog(null),
+  };
   const close = () => setDialog(null);
 
   /**
@@ -153,23 +161,28 @@ function BulkActionBarContent({
   }
 
   /**
-   * Gathers the selection, then opens the property picker under the « Modifier » button.
+   * Gathers the selection as the rows to act on, then opens what acts on them; nothing opens when it
+   * could not be read.
    */
-  async function openPicker(anchor: HTMLElement) {
+  async function gatherThen(open: () => void) {
     const rows = await gather();
     if (!rows) return;
     setTarget(rows);
-    pickerRef.current?.show(null, anchor);
+    open();
+  }
+
+  /**
+   * Gathers the selection, then opens the property picker under the « Modifier » button.
+   */
+  function openPicker(anchor: HTMLElement) {
+    return gatherThen(() => pickerRef.current?.show(null, anchor));
   }
 
   /**
    * Gathers the selection, then opens the deletion confirmation.
    */
-  async function openDelete() {
-    const rows = await gather();
-    if (!rows) return;
-    setTarget(rows);
-    setDialog({ kind: "delete" });
+  function openDelete() {
+    return gatherThen(() => setDialog({ kind: "delete" }));
   }
 
   /**
@@ -271,10 +284,7 @@ function BulkActionBarContent({
               context.typeConceptId,
             )}
             fieldLabelOf={rowRules?.labelOf}
-            editableCount={editable.length}
-            skippedCount={skippedCount}
-            running={actions.running}
-            onCancel={close}
+            {...editorProps}
             onApply={(answer) => {
               // The job runs in the background, its toast shows the progress: the dialog closes at once.
               void actions.applyAnswer(target, dialog.field.id, answer);
@@ -286,10 +296,7 @@ function BulkActionBarContent({
           <BulkDocumentEditor
             organizationId={organizationId}
             projectId={context.projectId}
-            editableCount={editable.length}
-            skippedCount={skippedCount}
-            running={actions.running}
-            onCancel={close}
+            {...editorProps}
             onApply={(documentId, mode) => {
               void actions.applyDocument(target, documentId, mode);
               close();
@@ -304,10 +311,7 @@ function BulkActionBarContent({
             projectId={context.projectId}
             organizationId={organizationId}
             typeConceptId={context.typeConceptId}
-            editableCount={editable.length}
-            skippedCount={skippedCount}
-            running={actions.running}
-            onCancel={close}
+            {...editorProps}
             onApply={(relationship, mode) => {
               void actions.applyStratigraphy(target, relationship, mode);
               close();
