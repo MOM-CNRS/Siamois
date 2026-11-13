@@ -208,8 +208,21 @@ public class BulkActionOpenApiService {
      */
     public BulkJobResource job(String jobId, PersonDTO caller) {
         return jobRegistry.find(jobId, ownerOf(caller))
-                .map(BulkJob::toResource)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tâche introuvable : " + jobId));
+    }
+
+    /**
+     * Asks to stop a job the caller started: it stops before its next element, the elements processed
+     * until then staying changed.
+     *
+     * @param jobId  the job's id
+     * @param caller the authenticated person
+     * @throws ResponseStatusException 404 when unknown, already ended, or started by someone else
+     */
+    public void cancel(String jobId, PersonDTO caller) {
+        if (!jobRegistry.cancel(jobId, ownerOf(caller))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aucune action en cours : " + jobId);
+        }
     }
 
     /**

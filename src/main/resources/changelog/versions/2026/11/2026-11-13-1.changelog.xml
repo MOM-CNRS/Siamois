@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    bulk_job: the bulk actions on a list's selection (delete, patch, links) run in the background. Their progress
+    and result are kept here, so that a restart doesn't lose them, every instance of the application can follow
+    them, and a cancellation asked on one instance reaches the one running the job.
+
+    - status: RUNNING, DONE, FAILED or CANCELLED;
+    - succeeded_count / failed_count: the progress, written as the job goes;
+    - succeeded / failed: the elements changed and those refused (with their reason), written once it has ended;
+    - updated_at: the last time the job wrote its progress; a RUNNING job silent for too long died with its instance;
+    - at most one RUNNING job per person (partial unique index).
+    -->
+
+    <changeSet id="2026-11-13-1-bulk-job" author="Julien Linget">
+        <createTable schemaName="public" tableName="bulk_job">
+            <column name="bulk_job_id" type="varchar(36)">
+                <constraints primaryKey="true" primaryKeyName="pk_bulk_job"/>
+            </column>
+            <column name="fk_person" type="bigint">
+                <constraints nullable="false" foreignKeyName="fk_bulk_job_person" references="public.person(person_id)"/>
+            </column>
+            <column name="status" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="succeeded_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="failed_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="succeeded" type="jsonb"/>
+            <column name="failed" type="jsonb"/>
+            <column name="error" type="text"/>
+            <column name="cancel_requested" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp(6) with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp(6) with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finished_at" type="timestamp(6) with time zone"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="2026-11-13-1-bulk-job-one-running-per-person" author="Julien Linget">
+        <sql>
+            CREATE UNIQUE INDEX uq_bulk_job_running_person ON public.bulk_job (fk_person) WHERE status = 'RUNNING';
+        </sql>
+        <rollback>
+            DROP INDEX public.uq_bulk_job_running_person;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="2026-11-13-1-bulk-job-finished-at-index" author="Julien Linget">
+        <createIndex schemaName="public" tableName="bulk_job" indexName="idx_bulk_job_finished_at">
+            <column name="finished_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

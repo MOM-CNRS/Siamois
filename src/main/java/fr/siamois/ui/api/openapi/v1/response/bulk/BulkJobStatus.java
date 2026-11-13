@@ -9,5 +9,7 @@ public enum BulkJobStatus {
     /** Every element was processed (each one succeeded or failed on its own). */
     DONE,
     /** The action stopped before the end, on an unexpected error. */
-    FAILED
+    FAILED,
+    /** Its owner stopped the action: the elements processed until then stay changed. */
+    CANCELLED
 }
