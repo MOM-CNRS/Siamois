@@ -53,6 +53,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 @Service
@@ -543,6 +544,8 @@ public class PlaceOpenApiService {
 
         SpatialUnitDTO copy = new SpatialUnitDTO(source);
         copy.setId(null);
+        // A copy is new: it comes first in the lists, which show the newest first.
+        copy.setCreationTime(OffsetDateTime.now());
         copy.setChildren(null);
         copy.setParents(source.getParents() == null ? null : new HashSet<>(source.getParents()));
         for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {

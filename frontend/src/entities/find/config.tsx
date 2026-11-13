@@ -32,7 +32,7 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
   countChipClassName: "specimen-count-chip",
   api: {
     delete: (id) => deleteEntity("finds", id),
-    bulk: createBulkApi("finds", { linksDocuments: true }),
+    bulk: createBulkApi("finds", { linksDocuments: true, duplicates: true }),
     siblings: (id) => fetchSiblings("finds", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("finds", id, via),
     get: getFind,

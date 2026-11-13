@@ -4255,6 +4255,12 @@ div#search-bar .sia-topbar-search-field .sia-search {
   color: var(--text-color-secondary, #6c757d);
 }
 
+/* What a bulk duplication does not copy: said before the user confirms. */
+.bulk-duplicate-warning {
+  margin: 0;
+  color: var(--orange-700, #c2410c);
+}
+
 .bulk-field-editor-actions {
   display: flex;
   justify-content: flex-end;

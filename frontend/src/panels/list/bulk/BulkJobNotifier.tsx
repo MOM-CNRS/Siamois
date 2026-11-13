@@ -23,6 +23,7 @@ const NONE_DONE_KEYS: Record<BulkSuccessKey, MessageKey> = {
   "bulk.editDone": "bulk.editNone",
   "bulk.linksDone": "bulk.linksNone",
   "bulk.deleteDone": "bulk.deleteNone",
+  "bulk.duplicateDone": "bulk.duplicateNone",
 };
 
 // The notifiers mounted on the page (one per React root): the first one tells, the others wait their turn.

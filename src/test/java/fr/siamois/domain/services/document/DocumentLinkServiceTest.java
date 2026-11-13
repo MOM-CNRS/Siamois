@@ -13,9 +13,13 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.jpa.domain.Specification;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -197,7 +201,7 @@ class DocumentLinkServiceTest {
         ru.setId(1L);
         when(entityManager.find(RecordingUnit.class, 1L)).thenReturn(ru);
         org.mockito.Mockito.doAnswer(invocation -> {
-            field.set(fresh, new java.util.HashSet<>());
+            field.set(fresh, new HashSet<>());
             return null;
         }).when(entityManager).refresh(fresh);
 
@@ -205,5 +209,27 @@ class DocumentLinkServiceTest {
 
         org.mockito.Mockito.verify(entityManager).flush();
         assertThat(fresh.getRecordingUnits()).containsExactly(ru);
+    }
+
+    /**
+     * Every document linked to the source is linked to the copy too.
+     */
+    @Test
+    void copyLinks_linksTheSourcesDocumentsToTheCopy() {
+        SpatialUnit place = new SpatialUnit();
+        place.setId(4L);
+        document.setRecordingUnits(new HashSet<>());
+        document.setFinds(new HashSet<>());
+        document.setPlaces(new HashSet<>());
+        document.setPhases(new HashSet<>());
+        document.setContainers(new HashSet<>());
+        when(documentRepository.findAll(ArgumentMatchers.<Specification<Document>>any()))
+                .thenReturn(List.of(document));
+        when(documentRepository.findById(9L)).thenReturn(Optional.of(document));
+        when(entityManager.find(SpatialUnit.class, 4L)).thenReturn(place);
+
+        service.copyLinks(DocumentLinkKind.PLACE, 3L, 4L);
+
+        assertThat(document.getPlaces()).containsExactly(place);
     }
 }

@@ -31,6 +31,8 @@ export interface BulkActions {
   applyDocument: (rows: RowRecord[], documentId: string | number, mode: BulkLinkMode) => Promise<void>;
   // Adds a stratigraphic relationship to (or removes it from) every one of the rows the caller may edit.
   applyStratigraphy: (rows: RowRecord[], relationship: BulkStratigraphy, mode: BulkLinkMode) => Promise<void>;
+  // Duplicates every one of the rows the caller may edit, with their relations but not their children.
+  duplicateRows: (rows: RowRecord[]) => Promise<void>;
   // Deletes every one of the rows the caller may delete.
   deleteRows: (rows: RowRecord[]) => Promise<void>;
 }
@@ -125,6 +127,16 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   }
 
   /**
+   * Duplicates every editable row, as the fiche's « Dupliquer » would (it asks for the right to edit):
+   * each copy keeps its element's relations, not its children.
+   */
+  async function duplicateRows(rows: RowRecord[]): Promise<void> {
+    const duplicate = bulk.duplicate;
+    if (!duplicate) return;
+    await run("bulk.taskDuplicate", "bulk.duplicateDone", () => duplicate(editableIds(rows)));
+  }
+
+  /**
    * Deletes every deletable row; every pane showing a deleted one lets go of it.
    */
   async function deleteRows(rows: RowRecord[]): Promise<void> {
@@ -142,5 +154,5 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
     onDeleted(deletedRows);
   }
 
-  return { running, applyAnswer, applyDocument, applyStratigraphy, deleteRows };
+  return { running, applyAnswer, applyDocument, applyStratigraphy, duplicateRows, deleteRows };
 }

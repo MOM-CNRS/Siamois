@@ -64,7 +64,7 @@ class BulkOperationsPatchTest {
         ObjectNode patch = objectMapper.createObjectNode();
         patch.putObject("answers");
 
-        new RecordingUnitBulkOperations(projectApiService, recordingUnitOpenApiService, stratigraphyWriteService, patchReader)
+        new RecordingUnitBulkOperations(projectApiService, recordingUnitOpenApiService, stratigraphyWriteService, null, null, patchReader)
                 .patch(CALLER, 5L, patch, "fr");
 
         verify(recordingUnitOpenApiService).applyPatchRecordingUnit(org.mockito.ArgumentMatchers.eq("5"),

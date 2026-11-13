@@ -1,11 +1,15 @@
 package fr.siamois.ui.api.openapi.v1.service.bulk;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentLinkService;
+import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.service.FindOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -15,9 +19,11 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
+public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkDuplicateTarget {
 
     private final FindOpenApiService findOpenApiService;
+    private final SpecimenService specimenService;
+    private final DocumentLinkService documentLinkService;
     private final BulkPatchReader patchReader;
 
     /**
@@ -52,5 +58,20 @@ public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLin
     public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         findOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
                 lang);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The copy keeps its source's parents, containers, phases and documents, in the same transaction.
+     */
+    @Override
+    @Transactional
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        long copyId = Long.parseLong(findOpenApiService
+                .duplicateFind(id, caller.person(), caller.accessibleInstitutionIds(), lang)
+                .getId());
+        specimenService.copyRelations(id, copyId);
+        documentLinkService.copyLinks(DocumentLinkKind.FIND, id, copyId);
     }
 }

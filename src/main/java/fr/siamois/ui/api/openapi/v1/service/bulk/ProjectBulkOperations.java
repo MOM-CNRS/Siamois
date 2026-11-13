@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class ProjectBulkOperations implements BulkEntityOperations {
+public class ProjectBulkOperations implements BulkEntityOperations, BulkDuplicateTarget {
 
     private final ProjectApiService projectApiService;
     private final BulkPatchReader patchReader;
@@ -42,5 +42,15 @@ public class ProjectBulkOperations implements BulkEntityOperations {
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String lang) {
         projectApiService.patchProject(caller, String.valueOf(id), patchReader.read(patch, ProjectPatchRequest.class), lang);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The copy keeps its source's places (main location and precise locations); its content is not copied.
+     */
+    @Override
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        projectApiService.duplicateProjectWithPlaces(caller, String.valueOf(id), lang);
     }
 }

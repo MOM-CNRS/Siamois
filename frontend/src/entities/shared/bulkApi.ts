@@ -50,6 +50,8 @@ export interface BulkApi {
   linkDocument?(ids: Ids, documentId: string | number, mode: BulkLinkMode): Promise<BulkJobRef[]>;
   // Adds the same stratigraphic relationship to each element, or removes it. Absent: no stratigraphy.
   linkStratigraphy?(ids: Ids, relationship: BulkStratigraphy, mode: BulkLinkMode): Promise<BulkJobRef[]>;
+  // Duplicates each element with its relations, not its children. Absent: no duplication.
+  duplicate?(ids: Ids): Promise<BulkJobRef[]>;
 }
 
 /** A stratigraphic relationship every element of a bulk action gets towards the same unit. */
@@ -66,6 +68,8 @@ export interface BulkApiOptions {
   linksDocuments?: boolean;
   // Its elements have stratigraphic relationships (recording units): its stratigraphy fields are among its relations.
   linksStratigraphy?: boolean;
+  // Its elements can be duplicated (the type registers `api.duplicate`): « Dupliquer » is among the bulk actions.
+  duplicates?: boolean;
 }
 
 // A bulk action as the server reports it (BulkJobResource): the lists only once it has ended.
@@ -168,6 +172,9 @@ export function createBulkApi(collectionPath: string, options: BulkApiOptions = 
           linkDocument: (ids: Ids, documentId: string | number, mode: BulkLinkMode) =>
             startJobs(ids, (chunk) => startJob(`${collectionPath}/documents`, { ids: chunk, documentId: Number(documentId), mode })),
         }
+      : {}),
+    ...(options.duplicates
+      ? { duplicate: (ids: Ids) => startJobs(ids, (chunk) => startJob(`${collectionPath}/duplicate`, { ids: chunk })) }
       : {}),
     ...(options.linksStratigraphy
       ? {

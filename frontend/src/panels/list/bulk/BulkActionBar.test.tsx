@@ -159,6 +159,29 @@ describe("BulkActionBar", () => {
     expect(selection.setRows).toHaveBeenCalledWith([rows[1], rows[2]]);
   });
 
+  it("offers no duplication for a type without bulk duplication", () => {
+    render(selectionOf(rows));
+
+    expect(findButton("Dupliquer")).toBeNull();
+  });
+
+  it("warns that the children are not duplicated, then duplicates the editable rows", async () => {
+    const bulkDuplicate = vi.fn<NonNullable<BulkApi["duplicate"]>>().mockResolvedValue([{ id: "job-3", total: 2 }]);
+    mockedTrack.mockResolvedValue({ succeeded: [1, 2], failed: [] });
+    render(selectionOf(rows), { ...config, api: { ...config.api, bulk: { ...bulk, duplicate: bulkDuplicate } } });
+
+    await click(button("Dupliquer"));
+
+    expect(document.querySelector(".bulk-duplicate-warning")?.textContent).toContain("enfants ne sont pas dupliqués");
+    expect(document.body.textContent).toContain("2 éléments seront dupliqués.");
+
+    const dialogButtons = [...document.querySelectorAll(".p-dialog button")];
+    await click(dialogButtons.find((b) => b.textContent?.trim() === "Dupliquer") as HTMLElement);
+
+    expect(bulkDuplicate).toHaveBeenCalledWith(["1", "2"]);
+    expect(mockedTrack).toHaveBeenCalledWith({ id: "job-3", label: "bulk.taskDuplicate", successKey: "bulk.duplicateDone" }, 2);
+  });
+
   it("acts on the whole result set under « select all », read back before the action", async () => {
     bulkDelete.mockResolvedValue([{ id: "job-2", total: 2 }]);
     mockedTrack.mockResolvedValue({ succeeded: [1, 2], failed: [] });

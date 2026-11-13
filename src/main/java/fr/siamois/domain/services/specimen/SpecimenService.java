@@ -884,5 +884,31 @@ public class SpecimenService implements ArkEntityService {
         return closure;
     }
 
+    /**
+     * Donne à une copie les relations de son mobilier source : ses parents, ses contenants et ses phases.
+     * Pas ses enfants : dupliquer un parent ne duplique pas la hiérarchie en dessous.
+     *
+     * @param sourceId le mobilier dupliqué
+     * @param copyId   sa copie
+     */
+    @Transactional
+    public void copyRelations(long sourceId, long copyId) {
+        Specimen source = requireSpecimenEntity(sourceId);
+        Specimen copy = requireSpecimenEntity(copyId);
+        source.getParents().forEach(parent -> {
+            parent.getChildren().add(copy);
+            copy.getParents().add(parent);
+        });
+        copy.getContainers().addAll(source.getContainers());
+        copy.getPhases().addAll(source.getPhases());
+        specimenRepository.save(copy);
+    }
 
+    /**
+     * The find with this id, or an error.
+     */
+    private Specimen requireSpecimenEntity(long id) {
+        return specimenRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + id));
+    }
 }

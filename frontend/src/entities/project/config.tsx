@@ -38,7 +38,7 @@ export const projectEntityConfig: EntityTypeConfig<
   deleteRequiresName: true,
   api: {
     delete: (id) => deleteEntity("projects", id),
-    bulk: createBulkApi("projects"),
+    bulk: createBulkApi("projects", { duplicates: true }),
     // fields=all so the detail response carries an `answers` map for the WHOLE field catalog, not
     // just the seven properties ProjectResource exposes flat — that map is what lets the fiche
     // render all 33 of ActionUnit.DETAILS_FORM's fields with real values (FicheTab.tsx). The list

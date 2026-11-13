@@ -2,10 +2,13 @@ package fr.siamois.ui.api.openapi.v1.service.bulk;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
+import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.domain.services.document.DocumentLinkService;
 import fr.siamois.ui.api.openapi.v1.service.PlaceOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -15,9 +18,10 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
+public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkDuplicateTarget {
 
     private final PlaceOpenApiService placeOpenApiService;
+    private final DocumentLinkService documentLinkService;
     private final BulkPatchReader patchReader;
 
     /**
@@ -50,5 +54,17 @@ public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLi
     @Override
     public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         placeOpenApiService.requireEditable(caller, id, lang);
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * The copy keeps its source's parents (as the unit duplication does) and documents, in the same transaction.
+     */
+    @Override
+    @Transactional
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        long copyId = placeOpenApiService.duplicatePlace(caller, id, lang).getId();
+        documentLinkService.copyLinks(DocumentLinkKind.PLACE, id, copyId);
     }
 }

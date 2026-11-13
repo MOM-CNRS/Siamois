@@ -2780,4 +2780,75 @@ class RecordingUnitServiceTest {
                     () -> spyService.duplicateStructure(root, Set.of(), 1));
         }
     }
+
+    @Nested
+    class CopyRelationsTests {
+
+        /**
+         * A recording unit of the project with this id.
+         */
+        private RecordingUnit unit(long id, ActionUnit project) {
+            RecordingUnit unit = new RecordingUnit();
+            unit.setId(id);
+            unit.setFullIdentifier("U" + id);
+            unit.setActionUnit(project);
+            return unit;
+        }
+
+        /**
+         * The copy gets the source's parents, phases and stratigraphic relationships, never its children.
+         */
+        @Test
+        void copyRelations_copiesParentsPhasesAndStratigraphy_notChildren() {
+            ActionUnit project = new ActionUnit();
+            project.setId(10L);
+            RecordingUnit source = unit(1L, project);
+            RecordingUnit copy = unit(2L, project);
+            RecordingUnit parent = unit(3L, project);
+            RecordingUnit child = unit(4L, project);
+            RecordingUnit older = unit(5L, project);
+            source.getParents().add(parent);
+            parent.getChildren().add(source);
+            source.getChildren().add(child);
+            Phase phase = new Phase();
+            phase.setId(7L);
+            source.getPhases().add(phase);
+            StratigraphicRelationship relationship = new StratigraphicRelationship();
+            relationship.setUnit1(older);
+            relationship.setUnit2(source);
+            relationship.setIsAsynchronous(true);
+            relationship.setUncertain(true);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(source));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.of(copy));
+            when(stratigraphicRelationshipRepository.findAllInvolvingRecordingUnitId(1L)).thenReturn(List.of(relationship));
+
+            recordingUnitService.copyRelations(1L, 2L);
+
+            assertThat(copy.getParents()).containsExactly(parent);
+            assertThat(parent.getChildren()).contains(source, copy);
+            assertThat(copy.getChildren()).isEmpty();
+            assertThat(copy.getPhases()).containsExactly(phase);
+            ArgumentCaptor<StratigraphicRelationship> saved = ArgumentCaptor.forClass(StratigraphicRelationship.class);
+            verify(stratigraphicRelationshipRepository).save(saved.capture());
+            assertThat(saved.getValue().getUnit1()).isSameAs(older);
+            assertThat(saved.getValue().getUnit2()).isSameAs(copy);
+            assertThat(saved.getValue().getId().getUnit2Id()).isEqualTo(2L);
+            assertThat(saved.getValue().getIsAsynchronous()).isTrue();
+            assertThat(saved.getValue().getUncertain()).isTrue();
+            verify(recordingUnitRepository).save(copy);
+        }
+
+        /**
+         * A copy that is not found is reported, nothing being copied.
+         */
+        @Test
+        void copyRelations_unknownCopy_throws() {
+            ActionUnit project = new ActionUnit();
+            project.setId(10L);
+            when(recordingUnitRepository.findById(1L)).thenReturn(Optional.of(unit(1L, project)));
+            when(recordingUnitRepository.findById(2L)).thenReturn(Optional.empty());
+
+            assertThrows(RecordingUnitNotFoundException.class, () -> recordingUnitService.copyRelations(1L, 2L));
+        }
+    }
 }

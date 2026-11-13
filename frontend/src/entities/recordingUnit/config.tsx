@@ -63,7 +63,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
   countChipClassName: "recording-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("recording-units", id),
-    bulk: createBulkApi("recording-units", { linksDocuments: true, linksStratigraphy: true }),
+    bulk: createBulkApi("recording-units", { linksDocuments: true, linksStratigraphy: true, duplicates: true }),
     siblings: (id) => fetchSiblings("recording-units", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("recording-units", id, via),
     get: getRecordingUnit,

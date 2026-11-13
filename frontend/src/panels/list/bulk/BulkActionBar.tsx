@@ -12,6 +12,7 @@ import {t, tn} from "../../../i18n";
 import {useNotify} from "../../../notify/NotifyProvider";
 import type {RowRecord} from "../useEntityListData";
 import {BulkDocumentEditor} from "./BulkDocumentEditor";
+import {BulkDuplicateDialog} from "./BulkDuplicateDialog";
 import type {BulkEditorCommonProps} from "./BulkEditorParts";
 import {BulkFieldEditor} from "./BulkFieldEditor";
 import {BulkStratigraphyEditor} from "./BulkStratigraphyEditor";
@@ -51,6 +52,7 @@ type OpenDialog =
   | { kind: "field"; field: FieldResource }
   | { kind: "documents" }
   | { kind: "stratigraphy"; field: FieldResource }
+  | { kind: "duplicate" }
   | { kind: "delete" }
   | null;
 
@@ -63,7 +65,7 @@ const STRATIGRAPHY_RELATION = "stratigraphy:";
 /**
  * The Notion-style bar laid over the top of a list while rows are ticked: how many are, a way to
  * untick them, and what can be done to all of them at once — edit one property or relation, the
- * linked documents included (« Modifier », then a click on it), or delete them. Each action only
+ * linked documents included (« Modifier », then a click on it), duplicate them, or delete them. Each action only
  * touches the rows the caller may change, and says how many it skips. Only for an entity type that
  * declares bulk endpoints (`config.api.bulk`).
  */
@@ -179,6 +181,13 @@ function BulkActionBarContent({
   }
 
   /**
+   * Gathers the selection, then opens the duplication confirmation.
+   */
+  function openDuplicate() {
+    return gatherThen(() => setDialog({ kind: "duplicate" }));
+  }
+
+  /**
    * Gathers the selection, then opens the deletion confirmation.
    */
   function openDelete() {
@@ -229,6 +238,17 @@ function BulkActionBarContent({
             size="small"
             disabled={busy}
             onClick={(e) => void openPicker(e.currentTarget)}
+          />
+        )}
+        {bulk.duplicate && (
+          <Button
+            type="button"
+            label={t("bulk.duplicate")}
+            icon="bi bi-copy"
+            text
+            size="small"
+            disabled={busy}
+            onClick={() => void openDuplicate()}
           />
         )}
         {config.api.delete && (
@@ -319,6 +339,18 @@ function BulkActionBarContent({
           />
         )}
       </Dialog>
+
+      <BulkDuplicateDialog
+        visible={dialog?.kind === "duplicate"}
+        duplicableCount={editable.length}
+        skippedCount={skippedCount}
+        busy={actions.running}
+        onConfirm={() => {
+          void actions.duplicateRows(target);
+          close();
+        }}
+        onHide={() => !actions.running && close()}
+      />
 
       <DeleteEntityDialog
         visible={dialog?.kind === "delete"}

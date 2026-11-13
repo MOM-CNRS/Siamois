@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.controller;
 import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDuplicateRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
@@ -78,6 +79,37 @@ public class BulkActionsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         return accepted(bulkActionOpenApiService.delete(collection, body, caller, acceptLanguage));
+    }
+
+    /**
+     * Duplicates many elements of a collection, each keeping its relations but not its children.
+     *
+     * @param collection     the collection's path segment
+     * @param body           the elements to duplicate
+     * @param acceptLanguage the request's language
+     * @return the job duplicating them, to poll
+     */
+    @PostMapping(value = "/{collection}/duplicate", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Dupliquer des éléments en lot",
+            description = "Duplique chaque élément comme sa duplication unitaire (mêmes droits, identifiant régénéré). "
+                    + "Chaque copie garde les relations de l'élément (parents, phases, stratigraphie, documents…), mais ses enfants "
+                    + "ne sont pas dupliqués. Les copies sont créées en commençant par le dernier élément, pour apparaître "
+                    + "en tête des listes dans l'ordre de la sélection."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Collection sans duplication"),
+            @ApiResponse(responseCode = "409", description = "Une action en lot de l'appelant est déjà en cours")
+    })
+    public ResponseEntity<BulkJobResponse> duplicate(
+            @Parameter(description = "Collection, ex. recording-units") @PathVariable("collection") String collection,
+            @RequestBody BulkDuplicateRequest body,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return accepted(bulkActionOpenApiService.duplicate(collection, body, caller, acceptLanguage));
     }
 
     /**
