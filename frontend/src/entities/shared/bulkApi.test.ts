@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {apiFetch} from "../../api/client";
-import {BULK_CHUNK_SIZE, BULK_POLL_FIRST_MS, BULK_POLL_MAX_MS, createBulkApi, followBulkJob} from "./bulkApi";
+import {BULK_CHUNK_SIZE, BULK_POLL_FIRST_MS, BULK_POLL_MAX_MS, cancelBulkJob, createBulkApi, followBulkJob} from "./bulkApi";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);
@@ -8,7 +8,7 @@ const mockedApiFetch = vi.mocked(apiFetch);
 /**
  * A job as the server reports it.
  */
-function job(status: "RUNNING" | "DONE" | "FAILED", processed: number, extra: Record<string, unknown> = {}) {
+function job(status: "RUNNING" | "DONE" | "FAILED" | "CANCELLED", processed: number, extra: Record<string, unknown> = {}) {
   return { data: { id: "job-1", status, total: 2, processed, succeeded: [], failed: [], ...extra } };
 }
 
@@ -127,5 +127,19 @@ describe("followBulkJob", () => {
     mockedApiFetch.mockResolvedValueOnce(job("FAILED", 1, { error: "Base indisponible" }));
 
     await expect(followBulkJob("job-1")).rejects.toThrow("Base indisponible");
+  });
+
+  it("resolves with what a stopped job did, flagged as stopped", async () => {
+    mockedApiFetch.mockResolvedValueOnce(job("CANCELLED", 1, { succeeded: [12] }));
+
+    await expect(followBulkJob("job-1")).resolves.toEqual({ succeeded: [12], failed: [], cancelled: true });
+  });
+
+  it("asks the server to stop a job", async () => {
+    mockedApiFetch.mockResolvedValueOnce(undefined);
+
+    await cancelBulkJob("job-1");
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/bulk/jobs/job-1/cancel", { method: "POST" });
   });
 });

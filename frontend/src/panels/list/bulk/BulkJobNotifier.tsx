@@ -3,7 +3,7 @@ import {useQueryClient} from "@tanstack/react-query";
 import {ApiError} from "../../../api/client";
 import {messageForError} from "../../../api/errors";
 import {queryKeys} from "../../../api/queryKeys";
-import type {BulkResult} from "../../../entities/shared/bulkApi";
+import {type BulkResult, cancelBulkJob} from "../../../entities/shared/bulkApi";
 import {t, tn} from "../../../i18n";
 import {type Notify, type TaskToast, useNotify} from "../../../notify/NotifyProvider";
 import {
@@ -34,9 +34,11 @@ function emitClaims() {
  * the failures counted and the first one named.
  */
 export function reportBulkResult(notify: Notify, result: BulkResult, successKey: BulkSuccessKey): void {
-  const summary = tn(successKey, result.succeeded.length);
+  const done = tn(successKey, result.succeeded.length);
+  const summary = result.cancelled ? t("bulk.stopped", { summary: done }) : done;
   if (result.failed.length === 0) {
-    notify.success(summary, BULK_RESULT_LIFE_MS);
+    if (result.cancelled) notify.warn(summary, BULK_RESULT_LIFE_MS);
+    else notify.success(summary, BULK_RESULT_LIFE_MS);
     return;
   }
   const params = { summary, failed: result.failed.length, first: result.failed[0].message };
@@ -110,7 +112,11 @@ export function BulkJobNotifier() {
         acknowledgeBulkJob(job.id);
         return;
       }
-      const shown = toast ?? notify.task(t(job.label));
+      const shown =
+        toast ??
+        notify.task(t(job.label), () => {
+          cancelBulkJob(job.id).catch((error: unknown) => notify.error(messageForError(error, t("bulk.failed"))));
+        });
       toasts.current.set(job.id, shown);
       shown.progress(job.progress.processed, job.progress.total);
     });

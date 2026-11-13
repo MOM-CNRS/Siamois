@@ -11,6 +11,8 @@ export interface BulkFailure {
 export interface BulkResult {
   succeeded: number[];
   failed: BulkFailure[];
+  // Its owner stopped it before the end: the elements processed until then stay changed.
+  cancelled?: boolean;
 }
 
 /** How far a bulk action running in the background has got. */
@@ -69,7 +71,7 @@ export interface BulkApiOptions {
 // A bulk action as the server reports it (BulkJobResource): the lists only once it has ended.
 interface BulkJob extends BulkResult {
   id: string;
-  status: "RUNNING" | "DONE" | "FAILED";
+  status: "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
   total: number;
   processed: number;
   error?: string | null;
@@ -115,9 +117,18 @@ export async function followBulkJob(jobId: string, onProgress?: OnBulkProgress):
     onProgress?.({ processed: job.processed, total: job.total });
     if (job.status === "FAILED") throw new Error(job.error ?? "");
     if (job.status === "DONE") return { succeeded: job.succeeded, failed: job.failed };
+    if (job.status === "CANCELLED") return { succeeded: job.succeeded, failed: job.failed, cancelled: true };
     await pause(delay);
     delay = Math.min(BULK_POLL_MAX_MS, Math.round(delay * BULK_POLL_GROWTH));
   }
+}
+
+/**
+ * POST /api/v1/bulk/jobs/{id}/cancel — asks to stop a job the caller started: it stops before its next
+ * element, wherever it runs.
+ */
+export async function cancelBulkJob(jobId: string): Promise<void> {
+  await apiFetch<unknown>(`/api/v1/bulk/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
 }
 
 /**

@@ -8,7 +8,7 @@ import {notifySpy, taskToastSpy} from "../../../test/notifySpy";
 import {BulkJobNotifier} from "./BulkJobNotifier";
 import {bulkJobsSnapshot, trackBulkJob} from "./bulkJobTracker";
 
-vi.mock("../../../entities/shared/bulkApi", () => ({ followBulkJob: vi.fn() }));
+vi.mock("../../../entities/shared/bulkApi", () => ({ followBulkJob: vi.fn(), cancelBulkJob: vi.fn() }));
 const mockedFollow = vi.mocked(followBulkJob);
 
 let container: HTMLDivElement;
@@ -71,7 +71,7 @@ describe("BulkJobNotifier", () => {
       void trackBulkJob({ id: "job-1", label: "bulk.taskDelete", successKey: "bulk.deleteDone" }, 3);
     });
 
-    expect(notifySpy.task).toHaveBeenCalledWith("Suppression en cours");
+    expect(notifySpy.task).toHaveBeenCalledWith("Suppression en cours", expect.any(Function));
 
     act(() => job.progress(2, 3));
     expect(taskToastSpy.progress).toHaveBeenLastCalledWith(2, 3);
@@ -107,5 +107,17 @@ describe("BulkJobNotifier", () => {
     await flush();
 
     expect(notifySpy.success).toHaveBeenCalledWith("Modification terminée : 2 entités modifiées", 8000);
+  });
+
+  it("says a stopped job was stopped, with what it did until then", async () => {
+    const job = controllableJob();
+    act(() => {
+      void trackBulkJob({ id: "job-4", label: "bulk.taskEdit", successKey: "bulk.editDone" }, 5);
+    });
+
+    act(() => job.finish({ succeeded: [1, 2], failed: [], cancelled: true }));
+    await flush();
+
+    expect(notifySpy.warn).toHaveBeenCalledWith("Modification terminée : 2 entités modifiées — action arrêtée avant la fin", 8000);
   });
 });

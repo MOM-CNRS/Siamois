@@ -1,4 +1,4 @@
-import {afterEach, beforeEach, describe, expect, it} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {createTaskProgressStore, TaskToastContent} from "./TaskToastContent";
@@ -28,5 +28,16 @@ describe("TaskToastContent", () => {
     act(() => store.set({ done: 120, total: 450 }));
 
     expect(container.textContent).toContain("120 / 450 (27 %)");
+  });
+
+  it("offers to stop the task, once", () => {
+    const onCancel = vi.fn();
+    act(() => root.render(<TaskToastContent label="Modification en cours" store={createTaskProgressStore()} onCancel={onCancel} />));
+
+    const stop = [...container.querySelectorAll("button")].find((b) => b.textContent?.includes("Arrêter"))!;
+    act(() => stop.click());
+
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(container.textContent).toContain("Arrêt demandé…");
   });
 });
