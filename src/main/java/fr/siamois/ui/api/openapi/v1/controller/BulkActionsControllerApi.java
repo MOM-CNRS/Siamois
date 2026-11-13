@@ -4,6 +4,7 @@ import fr.siamois.ui.api.openapi.v1.OpenApiTags;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
@@ -137,6 +138,34 @@ public class BulkActionsControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         return accepted(bulkActionOpenApiService.linkDocument(segment, body, caller, acceptLanguage));
+    }
+
+    /**
+     * Adds a stratigraphic relationship with the same unit to many elements, or removes it from each.
+     *
+     * @param segment the elements' collection path segment
+     * @param body    the elements, the other unit, the relationship and what to do
+     * @return the job changing their relationships, to poll
+     */
+    @PostMapping(value = "/{segment}/stratigraphy", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Ajouter ou retirer une relation stratigraphique en lot",
+            description = "mode LINK : ajoute à chaque UE la relation (position, type, incertitude) avec l'UE "
+                    + "relatedRecordingUnitId ; UNLINK : retire la relation entre chaque UE et celle-ci. Mêmes droits et "
+                    + "règles que POST / DELETE /api/v1/recording-units/{id}/stratigraphic-relationships, élément par élément."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux, UE ou position absente"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Collection sans relations stratigraphiques"),
+            @ApiResponse(responseCode = "500", description = "Erreur interne")
+    })
+    public ResponseEntity<BulkJobResponse> linkStratigraphy(
+            @Parameter(description = "Collection, ex. recording-units") @PathVariable("segment") String segment,
+            @RequestBody BulkStratigraphyRequest body) {
+        ProjectApiCaller caller = projectApiService.requireCaller();
+        return accepted(bulkActionOpenApiService.linkStratigraphy(segment, body, caller));
     }
 
     /**
