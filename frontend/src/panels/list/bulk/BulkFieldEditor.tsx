@@ -1,15 +1,15 @@
 import {useState} from "react";
-import {Button} from "primereact/button";
 import {SelectButton} from "primereact/selectbutton";
 import type {FieldEditContext} from "../../../fields/editContext";
 import {isEmptyValue} from "../../../fields/FieldLabel";
 import {getFieldRenderer} from "../../../fields/registry";
 import type {AnswerInputBody, FieldResource} from "../../../fields/types";
-import {t, tn} from "../../../i18n";
+import {t} from "../../../i18n";
+import {type BulkEditorCommonProps, BulkEditorFooter} from "./BulkEditorParts";
 import type {BulkFieldState} from "./bulkFieldState";
 import {bulkAnswerInput, type BulkEditMode, isMultiValued} from "./bulkSelection";
 
-export interface BulkFieldEditorProps {
+export interface BulkFieldEditorProps extends BulkEditorCommonProps {
   field: FieldResource;
   context: FieldEditContext;
   // What the fiche's editor of the field gets from the form's rules: the place sources (INSEE…) and
@@ -17,12 +17,7 @@ export interface BulkFieldEditorProps {
   state?: BulkFieldState;
   // Names another field in the picker's hints ("fill X to narrow the search").
   fieldLabelOf?: (fieldId: string) => string;
-  // The selected rows the caller may edit (written), and those they may not (skipped).
-  editableCount: number;
-  skippedCount: number;
-  running: boolean;
   onApply: (answer: AnswerInputBody) => void;
-  onCancel: () => void;
 }
 
 const MODE_HINTS: Record<BulkEditMode, "bulk.modeSetHint" | "bulk.modeAddHint" | "bulk.modeRemoveHint"> = {
@@ -96,22 +91,14 @@ export function BulkFieldEditor({
         />
       </div>
       {mode === "set" && isEmptyValue(value) && <small className="bulk-field-editor-hint">{t("bulk.emptyClears")}</small>}
-      {skippedCount > 0 && (
-        <small className="bulk-field-editor-skipped" role="note">
-          <i className="bi bi-info-circle" aria-hidden="true" /> {tn("bulk.skipped", skippedCount)}
-        </small>
-      )}
-      <div className="bulk-field-editor-actions">
-        <Button type="button" label={t("common.cancel")} text disabled={running} onClick={onCancel} />
-        <Button
-          type="button"
-          label={tn("bulk.apply", editableCount)}
-          icon="bi bi-check2-all"
-          loading={running}
-          disabled={running || nothingToChange || editableCount === 0}
-          onClick={() => onApply(bulkAnswerInput(field, mode, value))}
-        />
-      </div>
+      <BulkEditorFooter
+        editableCount={editableCount}
+        skippedCount={skippedCount}
+        running={running}
+        canApply={!nothingToChange}
+        onApply={() => onApply(bulkAnswerInput(field, mode, value))}
+        onCancel={onCancel}
+      />
     </div>
   );
 }

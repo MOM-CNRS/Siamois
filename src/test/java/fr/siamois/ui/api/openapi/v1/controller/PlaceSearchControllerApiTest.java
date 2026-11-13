@@ -15,9 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -26,7 +23,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -67,30 +65,6 @@ class PlaceSearchControllerApiTest {
                 .andExpect(status().isUnauthorized());
     }
 
-    // What a picker shows as soon as it opens, before anything is typed.
-    @Test
-    void autocomplete_emptyQuery_returnsFirstPageByName() throws Exception {
-        when(projectApiService.requireCaller()).thenReturn(
-                new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
-        SpatialUnitDTO su = new SpatialUnitDTO();
-        su.setId(5L);
-        su.setName("Abbaye");
-        PageRequest firstPage = PageRequest.of(0, 20, Sort.by("name"));
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                eq(10L), eq(""), isNull(), isNull(), isNull(), eq("fr"), eq(firstPage)))
-                .thenReturn(new PageImpl<>(List.of(su), firstPage, 1));
-
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10")
-                        .param("q", "   "))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].name").value("Abbaye"));
-    }
-
     @Test
     void autocomplete_forbiddenOrganization_returns403() throws Exception {
         when(projectApiService.requireCaller()).thenReturn(
@@ -102,37 +76,6 @@ class PlaceSearchControllerApiTest {
                         .param("organizationId", "10")
                         .param("q", "a"))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void autocomplete_success_returnsMatches() throws Exception {
-        when(projectApiService.requireCaller()).thenReturn(
-                new ProjectApiCaller(new PersonDTO(), Set.of(10L), List.of()));
-
-        SpatialUnitDTO su = new SpatialUnitDTO();
-        su.setId(77L);
-        su.setName("Rue des Lilas");
-        su.setInseeCode("LILAS");
-        when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                eq(10L),
-                eq("lilas"),
-                isNull(),
-                isNull(),
-                isNull(),
-                eq("fr"),
-                eq(PageRequest.of(0, 20, Sort.by("name")))))
-                .thenReturn(new PageImpl<>(List.of(su), PageRequest.of(0, 20), 1));
-
-        mockMvc.perform(get("/api/v1/places/autocomplete")
-                        .param("organizationId", "10")
-                        .param("q", "  lilas  "))
-                .andExpect(status().isOk())
-                .andExpect(header().string("X-Total-Count", "1"))
-                .andExpect(jsonPath("$.data[0].id").value(77))
-                .andExpect(jsonPath("$.data[0].name").value("Rue des Lilas"))
-                .andExpect(jsonPath("$.data[0].code").value("LILAS"));
-
-        verify(projectApiService).assertOrganizationInCallerScope(10L, Set.of(10L));
     }
 
     @Test

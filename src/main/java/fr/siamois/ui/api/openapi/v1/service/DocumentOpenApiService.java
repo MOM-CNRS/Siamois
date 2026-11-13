@@ -122,6 +122,24 @@ public class DocumentOpenApiService {
     @Transactional
     public DocumentResource patchDocument(long id, DocumentPatchRequest request, PersonDTO personDto,
                                     Set<Long> accessibleInstitutionIds, String lang) {
+        applyPatchDocument(id, request, personDto, accessibleInstitutionIds, lang);
+        return loadDocument(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Writes a PATCH of the document — rights, rules, identifier, answers and status, as {@link #patchDocument} —
+     * without building the document's resource afterwards: what a bulk action runs for each element, the
+     * response of which nobody reads.
+     *
+     * @param id                       the document's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchDocument(long id, DocumentPatchRequest request, PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds, String lang) {
         DocumentDTO document = requireAccessibleDocument(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = document.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -146,7 +164,6 @@ public class DocumentOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(Document.class, id, request.getValidationStatus(), personDto);
-        return loadDocument(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private DocumentResource toResourceWithPermissionsAndAnswers(DocumentDTO document, PersonDTO personDto, String lang) {

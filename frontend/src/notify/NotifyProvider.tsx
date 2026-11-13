@@ -17,8 +17,8 @@ export interface Notify {
   success: (message: string, life?: number) => void;
   warn: (message: string, life?: number) => void;
   info: (message: string, life?: number) => void;
-  // A toast that stays while a task runs, showing its progress.
-  task: (label: string) => TaskToast;
+  // A toast that stays while a task runs, showing its progress; `onCancel` adds a button that stops it.
+  task: (label: string, onCancel?: () => void) => TaskToast;
 }
 
 const NO_TASK_TOAST: TaskToast = { progress: () => {}, close: () => {} };
@@ -41,13 +41,13 @@ export function NotifyProvider({ children }: { children: ReactNode }) {
       success: (detail, life = 3000) => toast.current?.show({ severity: "success", detail, life }),
       warn: (detail, life = 6000) => toast.current?.show({ severity: "warn", detail, life }),
       info: (detail, life = 4000) => toast.current?.show({ severity: "info", detail, life }),
-      task: (label) => {
+      task: (label, onCancel) => {
         const store = createTaskProgressStore();
         const message: ToastMessage = {
           severity: "info",
           sticky: true,
           closable: false,
-          content: () => <TaskToastContent label={label} store={store} />,
+          content: () => <TaskToastContent label={label} store={store} onCancel={onCancel} />,
         };
         toast.current?.show(message);
         return {

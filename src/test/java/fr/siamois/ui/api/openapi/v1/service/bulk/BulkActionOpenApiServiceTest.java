@@ -29,12 +29,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -60,8 +64,23 @@ class BulkActionOpenApiServiceTest {
     /**
      * One collection with bulk operations, and the real failure translator.
      */
+    @Mock
+    private BulkJobStore store;
+    private BulkJobRegistry registry;
+
     @BeforeEach
     void setUp() {
+        // The store as a database would be: what a job wrote when it ended is what is read back.
+        Map<String, BulkJobResource> ended = new HashMap<>();
+        lenient().doAnswer(invocation -> {
+            BulkJobResource snapshot = invocation.getArgument(0);
+            ended.put(snapshot.id(), snapshot);
+            return null;
+        }).when(store).saveEnd(any(), any());
+        lenient().when(store.find(anyString(), anyLong(), any()))
+                .thenAnswer(invocation -> Optional.ofNullable(ended.get(invocation.<String>getArgument(0)))
+                        .filter(snapshot -> invocation.<Long>getArgument(1) == 7L));
+        registry = new BulkJobRegistry(store);
         recordingUnits = mock(BulkEntityOperations.class);
         when(recordingUnits.collection()).thenReturn("recording-units");
         finds = mock(BulkDocumentLinkTarget.class);
@@ -71,7 +90,7 @@ class BulkActionOpenApiServiceTest {
         // Called directly (no Spring proxy), the runner processes the job synchronously: the job is done on return.
         service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), List.of(stratigraphy),
                 documentLinksOpenApiService,
-                new BulkJobRegistry(), new BulkAsyncRunner(new BulkFailureTranslator()));
+                registry, new BulkAsyncRunner(new BulkFailureTranslator(), registry));
     }
 
     /**
@@ -93,16 +112,26 @@ class BulkActionOpenApiServiceTest {
     }
 
     /**
-     * Deletes each element once, in order, and lists them all as deleted.
+     * Deletes each element once, in order, each knowing the whole selection, and lists them all as deleted.
      */
     @Test
-    void deleteActsOnEachDistinctId() {
+    void deleteActsOnEachDistinctIdWithTheSelection() {
         BulkJobResource result = service.delete("recording-units", deleteRequest(3L, 4L, 3L), CALLER, LANG);
 
         assertThat(result.succeeded()).containsExactly(3L, 4L);
         assertThat(result.failed()).isEmpty();
-        verify(recordingUnits).delete(CALLER, 3L, LANG);
-        verify(recordingUnits).delete(CALLER, 4L, LANG);
+        verify(recordingUnits).delete(CALLER, 3L, Set.of(3L, 4L), LANG);
+        verify(recordingUnits).delete(CALLER, 4L, Set.of(3L, 4L), LANG);
+    }
+
+    /**
+     * The elements get the request's primary language, not its raw Accept-Language header.
+     */
+    @Test
+    void deletePassesThePrimaryLanguage() {
+        service.delete("recording-units", deleteRequest(3L), CALLER, "en-GB,en;q=0.9");
+
+        verify(recordingUnits).delete(CALLER, 3L, Set.of(3L), "en");
     }
 
     /**
@@ -111,7 +140,7 @@ class BulkActionOpenApiServiceTest {
     @Test
     void deleteReportsAFailureWithoutStoppingTheOthers() {
         lenient().doThrow(new ResponseStatusException(HttpStatus.CONFLICT, "L'UE a des relations"))
-                .when(recordingUnits).delete(CALLER, 4L, LANG);
+                .when(recordingUnits).delete(CALLER, 4L, Set.of(3L, 4L, 5L), LANG);
 
         BulkJobResource result = service.delete("recording-units", deleteRequest(3L, 4L, 5L), CALLER, LANG);
 
@@ -132,7 +161,7 @@ class BulkActionOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.delete("recording-units", tooMany, CALLER, LANG))
                 .isInstanceOf(ResponseStatusException.class);
-        verify(recordingUnits, never()).delete(any(), anyLong(), any());
+        verify(recordingUnits, never()).delete(any(), anyLong(), any(), any());
     }
 
     /**
@@ -293,11 +322,14 @@ class BulkActionOpenApiServiceTest {
     void someoneElsesJobIsNotFound() {
         String jobId = service.delete("recording-units", deleteRequest(3L), CALLER, LANG).id();
 
-        assertThatThrownBy(() -> service.job(jobId, SOMEONE_ELSE.person()))
+        PersonDTO someoneElse = SOMEONE_ELSE.person();
+        PersonDTO caller = CALLER.person();
+
+        assertThatThrownBy(() -> service.job(jobId, someoneElse))
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
-        assertThatThrownBy(() -> service.job("unknown", CALLER.person()))
+        assertThatThrownBy(() -> service.job("unknown", caller))
                 .isInstanceOf(ResponseStatusException.class);
     }
 
@@ -351,5 +383,22 @@ class BulkActionOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class);
         assertThatThrownBy(() -> service.linkStratigraphy("finds", request, CALLER))
                 .isInstanceOf(ResponseStatusException.class);
+    }
+
+    /**
+     * A stop asked while a job runs reaches it; one asked for an unknown job is not found.
+     */
+    @Test
+    void cancelAsksToStopTheJobOrIsNotFound() {
+        when(store.requestCancel("job-1", 7L)).thenReturn(true);
+
+        PersonDTO person = CALLER.person();
+
+        service.cancel("job-1", person);
+
+        assertThatThrownBy(() -> service.cancel("unknown", person))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

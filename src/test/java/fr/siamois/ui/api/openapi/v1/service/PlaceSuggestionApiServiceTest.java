@@ -71,8 +71,8 @@ class PlaceSuggestionApiServiceTest {
     }
 
     private void ownPlaces(SpatialUnitDTO... places) {
-        lenient().when(spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
-                anyLong(), any(), any(), any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of(places)));
+        lenient().when(spatialUnitService.findAllByInstitutionAndByName(anyLong(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(places)));
         ConceptLabelDTO label = mock(ConceptLabelDTO.class);
         lenient().when(label.getLabel()).thenReturn("Commune");
         lenient().when(labelService.findLabelOf(any(ConceptDTO.class), any())).thenReturn(label);

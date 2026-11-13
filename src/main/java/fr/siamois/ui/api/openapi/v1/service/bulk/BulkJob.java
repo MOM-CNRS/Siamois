@@ -4,16 +4,15 @@ import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobStatus;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.LongConsumer;
 
 /**
- * A bulk action running in the background: written by its worker thread, element by element, and read
- * by the requests that poll its progress — every access is synchronized.
+ * A bulk action running in the background on this instance: written by its worker thread, element by
+ * element, and read by the requests that poll its progress — every access is synchronized. Its progress
+ * and result are also kept in the database (BulkJobStore) for the other instances and after a restart.
  */
 public final class BulkJob {
 
@@ -24,7 +23,7 @@ public final class BulkJob {
     private final List<BulkFailureResource> failed = new ArrayList<>();
     private BulkJobStatus status = BulkJobStatus.RUNNING;
     private String error;
-    private Instant finishedAt;
+    private boolean cancelRequested;
 
     /**
      * A job of {@code total} elements, started by the person {@code ownerId}.
@@ -44,6 +43,24 @@ public final class BulkJob {
      */
     public String id() {
         return id;
+    }
+
+    /**
+     * The person who started the job.
+     *
+     * @return their id
+     */
+    long ownerId() {
+        return ownerId;
+    }
+
+    /**
+     * How many elements the job acts on.
+     *
+     * @return its total
+     */
+    int total() {
+        return total;
     }
 
     /**
@@ -77,25 +94,43 @@ public final class BulkJob {
     }
 
     /**
-     * Every element was processed.
-     *
-     * @param now when it ended
+     * The owner asked to stop the job: it stops before its next element.
      */
-    synchronized void complete(Instant now) {
-        status = BulkJobStatus.DONE;
-        finishedAt = now;
+    synchronized void requestCancel() {
+        cancelRequested = true;
     }
 
     /**
-     * The job stopped before the end.
+     * Whether the job must stop before its next element.
+     *
+     * @return true once a stop was asked
+     */
+    synchronized boolean cancelRequested() {
+        return cancelRequested;
+    }
+
+    /**
+     * Every element was processed.
+     */
+    synchronized void complete() {
+        status = BulkJobStatus.DONE;
+    }
+
+    /**
+     * The job stopped, as its owner asked, before the end.
+     */
+    synchronized void cancel() {
+        status = BulkJobStatus.CANCELLED;
+    }
+
+    /**
+     * The job stopped before the end, on an unexpected error.
      *
      * @param reason why
-     * @param now    when it stopped
      */
-    synchronized void fail(String reason, Instant now) {
+    synchronized void fail(String reason) {
         status = BulkJobStatus.FAILED;
         error = reason;
-        finishedAt = now;
     }
 
     /**
@@ -109,14 +144,12 @@ public final class BulkJob {
     }
 
     /**
-     * Whether the job ended more than {@code ttl} ago: its result is no longer kept.
+     * Whether the job is still running.
      *
-     * @param now the current time
-     * @param ttl how long a result is kept
-     * @return true once the result may be forgotten
+     * @return true until it has ended
      */
-    synchronized boolean expired(Instant now, Duration ttl) {
-        return finishedAt != null && finishedAt.plus(ttl).isBefore(now);
+    synchronized boolean running() {
+        return !status.ended();
     }
 
     /**
@@ -126,11 +159,26 @@ public final class BulkJob {
      * @return the snapshot
      */
     synchronized BulkJobResource toResource() {
-        boolean ended = status != BulkJobStatus.RUNNING;
+        return snapshot(status.ended());
+    }
+
+    /**
+     * A snapshot with the lists whatever the status: what is written to the database once it has ended.
+     *
+     * @return the full snapshot
+     */
+    synchronized BulkJobResource toFullResource() {
+        return snapshot(true);
+    }
+
+    /**
+     * The job's counts and, when asked, its lists (the caller holds the lock).
+     */
+    private BulkJobResource snapshot(boolean withLists) {
         return new BulkJobResource(id, status, total, succeeded.size() + failed.size(),
                 succeeded.size(), failed.size(),
-                ended ? List.copyOf(succeeded) : List.of(),
-                ended ? List.copyOf(failed) : List.of(),
+                withLists ? List.copyOf(succeeded) : List.of(),
+                withLists ? List.copyOf(failed) : List.of(),
                 error);
     }
 }

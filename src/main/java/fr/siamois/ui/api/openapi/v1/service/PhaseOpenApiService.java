@@ -107,6 +107,24 @@ public class PhaseOpenApiService {
     @Transactional
     public PhaseResource patchPhase(long id, PhasePatchRequest request, PersonDTO personDto,
                                     Set<Long> accessibleInstitutionIds, String lang) {
+        applyPatchPhase(id, request, personDto, accessibleInstitutionIds, lang);
+        return loadPhase(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Writes a PATCH of the phase — rights, rules, identifier, answers and status, as {@link #patchPhase} —
+     * without building the phase's resource afterwards: what a bulk action runs for each element, the
+     * response of which nobody reads.
+     *
+     * @param id                       the phase's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchPhase(long id, PhasePatchRequest request, PersonDTO personDto,
+                                    Set<Long> accessibleInstitutionIds, String lang) {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = phase.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -136,7 +154,6 @@ public class PhaseOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.phase.Phase.class, id, request.getValidationStatus(), personDto);
-        return loadPhase(id, personDto, accessibleInstitutionIds, lang);
     }
 
     /** Whether {@code answers} write the form's field bound to the phase's recording units. */
@@ -180,9 +197,7 @@ public class PhaseOpenApiService {
     public void requireEditable(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(phase.getActionUnit().getCreatedByInstitution(), personDto, lang);
-        if (!canEdit(phase, userInfo)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(canEdit(phase, userInfo));
     }
 
     /**

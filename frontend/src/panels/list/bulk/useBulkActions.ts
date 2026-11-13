@@ -38,6 +38,13 @@ export interface BulkActions {
 const NOTHING_DONE: BulkResult = { succeeded: [], failed: [] };
 
 /**
+ * The ids of the rows the caller may edit: those an edit action is sent for.
+ */
+function editableIds(rows: RowRecord[]): (string | number)[] {
+  return idsOf(editableRows(rows));
+}
+
+/**
  * Adds up the results of the jobs of one action.
  */
 function merge(results: BulkResult[]): BulkResult {
@@ -96,7 +103,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyAnswer(rows: RowRecord[], fieldId: string, answer: AnswerInputBody): Promise<void> {
     const answers = { [fieldId]: answer };
     const patch = config.api.patchBody ? config.api.patchBody(answers) : { answers };
-    await run("bulk.taskEdit", "bulk.editDone", () => bulk.patch(idsOf(editableRows(rows)), patch));
+    await run("bulk.taskEdit", "bulk.editDone", () => bulk.patch(editableIds(rows), patch));
   }
 
   /**
@@ -105,7 +112,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyDocument(rows: RowRecord[], documentId: string | number, mode: BulkLinkMode): Promise<void> {
     const linkDocument = bulk.linkDocument;
     if (!linkDocument) return;
-    await run("bulk.taskLinks", "bulk.linksDone", () => linkDocument(idsOf(editableRows(rows)), documentId, mode));
+    await run("bulk.taskLinks", "bulk.linksDone", () => linkDocument(editableIds(rows), documentId, mode));
   }
 
   /**
@@ -114,7 +121,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
   async function applyStratigraphy(rows: RowRecord[], relationship: BulkStratigraphy, mode: BulkLinkMode): Promise<void> {
     const linkStratigraphy = bulk.linkStratigraphy;
     if (!linkStratigraphy) return;
-    await run("bulk.taskLinks", "bulk.linksDone", () => linkStratigraphy(idsOf(editableRows(rows)), relationship, mode));
+    await run("bulk.taskLinks", "bulk.linksDone", () => linkStratigraphy(editableIds(rows), relationship, mode));
   }
 
   /**

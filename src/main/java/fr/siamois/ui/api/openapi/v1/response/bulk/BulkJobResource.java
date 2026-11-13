@@ -20,7 +20,7 @@ import java.util.List;
 @Schema(description = "Action en lot exécutée en arrière-plan : avancement et bilan élément par élément")
 public record BulkJobResource(
         @Schema(description = "Identifiant de la tâche, à interroger sur GET /api/v1/bulk/jobs/{id}") String id,
-        @Schema(description = "RUNNING, DONE ou FAILED") BulkJobStatus status,
+        @Schema(description = "RUNNING, DONE, FAILED ou CANCELLED") BulkJobStatus status,
         @Schema(description = "Nombre d'éléments à traiter") int total,
         @Schema(description = "Nombre d'éléments déjà traités") int processed,
         @Schema(description = "Nombre d'éléments traités avec succès") int succeededCount,

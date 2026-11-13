@@ -66,6 +66,7 @@ public class BulkActionsControllerApi {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "409", description = "Une action en lot de l'appelant est déjà en cours"),
             @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "404", description = "Collection inconnue"),
@@ -97,6 +98,7 @@ public class BulkActionsControllerApi {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "409", description = "Une action en lot de l'appelant est déjà en cours"),
             @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux, patch absent ou portant un identifiant"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "404", description = "Collection inconnue"),
@@ -127,6 +129,7 @@ public class BulkActionsControllerApi {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "409", description = "Une action en lot de l'appelant est déjà en cours"),
             @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux, documentId absent"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "404", description = "Collection inconnue"),
@@ -156,6 +159,7 @@ public class BulkActionsControllerApi {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),
+            @ApiResponse(responseCode = "409", description = "Une action en lot de l'appelant est déjà en cours"),
             @ApiResponse(responseCode = "400", description = "ids vide ou trop nombreux, UE ou position absente"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
             @ApiResponse(responseCode = "404", description = "Collection sans relations stratigraphiques"),
@@ -190,6 +194,28 @@ public class BulkActionsControllerApi {
     public ResponseEntity<BulkJobResponse> job(@PathVariable("jobId") String jobId) {
         // Polled often: only who asks is needed, not their organizations.
         return ResponseEntity.ok(new BulkJobResponse(bulkActionOpenApiService.job(jobId, projectApiService.requirePerson())));
+    }
+
+    /**
+     * Asks to stop a bulk action the caller started.
+     *
+     * @param jobId the job's id
+     * @return 204 once the stop is asked
+     */
+    @PostMapping("/jobs/{jobId}/cancel")
+    @Operation(
+            summary = "Arrêter une action en lot",
+            description = "L'action s'arrête avant l'élément suivant (status CANCELLED) ; les éléments déjà traités restent "
+                    + "modifiés et figurent dans le bilan."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "Arrêt demandé"),
+            @ApiResponse(responseCode = "401", description = "Non authentifié"),
+            @ApiResponse(responseCode = "404", description = "Tâche inconnue, terminée ou démarrée par quelqu'un d'autre")
+    })
+    public ResponseEntity<Void> cancel(@PathVariable("jobId") String jobId) {
+        bulkActionOpenApiService.cancel(jobId, projectApiService.requirePerson());
+        return ResponseEntity.noContent().build();
     }
 
     /**

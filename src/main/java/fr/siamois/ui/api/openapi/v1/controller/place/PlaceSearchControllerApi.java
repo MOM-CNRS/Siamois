@@ -91,13 +91,9 @@ public class PlaceSearchControllerApi {
         }
 
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByNameContainingAndByTypesAndByGlobalContaining(
+        Page<SpatialUnitDTO> page = spatialUnitService.findAllByInstitutionAndByName(
                 organizationId,
                 query,
-                null,
-                null,
-                null,
-                lang,
                 PageRequest.of(0, safeLimit, Sort.by("name")));
 
         List<PlaceAutocompleteItemApi> items = page.getContent().stream()

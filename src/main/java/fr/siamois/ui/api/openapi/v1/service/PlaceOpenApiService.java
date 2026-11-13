@@ -482,10 +482,23 @@ public class PlaceOpenApiService {
 
     @Transactional
     public void deletePlace(ProjectApiCaller caller, long placeId, String lang) {
+        deletePlace(caller, placeId, Set.of(), lang);
+    }
+
+    /**
+     * Supprime un lieu supprimé en même temps que d'autres : ses liens avec ceux-ci ne bloquent pas.
+     *
+     * @param caller    l'appelant authentifié
+     * @param placeId   le lieu à supprimer
+     * @param alongside les lieux supprimés avec lui
+     * @param lang      la langue de la requête
+     */
+    @Transactional
+    public void deletePlace(ProjectApiCaller caller, long placeId, Set<Long> alongside, String lang) {
         SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
         requirePlaceWritePermission(caller, dto, lang, "Suppression de lieu non autorisée");
         try {
-            spatialUnitService.deleteIfUnused(placeId);
+            spatialUnitService.deleteIfUnused(placeId, alongside);
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         } catch (SpatialUnitNotFoundException e) {

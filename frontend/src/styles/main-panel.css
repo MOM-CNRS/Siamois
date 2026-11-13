@@ -4277,6 +4277,13 @@ div#search-bar .sia-topbar-search-field .sia-search {
   height: 0.4rem;
 }
 
+.task-toast-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .task-toast-count {
   color: var(--text-color-secondary, #6c757d);
 }

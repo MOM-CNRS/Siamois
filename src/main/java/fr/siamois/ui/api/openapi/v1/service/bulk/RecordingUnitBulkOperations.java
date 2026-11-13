@@ -10,6 +10,8 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 /**
  * Bulk operations on recording units: each element goes through the same service call as the unit
  * DELETE / PATCH /api/v1/recording-units/{id}.
@@ -35,26 +37,26 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDo
      * {@inheritDoc}
      */
     @Override
-    public void delete(ProjectApiCaller caller, long id, String acceptLanguage) {
-        projectApiService.deleteRecordingUnit(caller, id, acceptLanguage);
+    public void delete(ProjectApiCaller caller, long id, Set<Long> selection, String lang) {
+        projectApiService.deleteRecordingUnit(caller, id, selection, lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        recordingUnitOpenApiService.patchRecordingUnit(String.valueOf(id), patchReader.read(patch, RecordingUnitPatchRequest.class),
-                caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+    public void patch(ProjectApiCaller caller, long id, JsonNode patch, String lang) {
+        recordingUnitOpenApiService.applyPatchRecordingUnit(String.valueOf(id), patchReader.read(patch, RecordingUnitPatchRequest.class),
+                caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void requireEditable(ProjectApiCaller caller, long id, String acceptLanguage) {
+    public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         recordingUnitOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
-                ProjectApiService.primaryAcceptLanguage(acceptLanguage));
+                lang);
     }
 
     /**

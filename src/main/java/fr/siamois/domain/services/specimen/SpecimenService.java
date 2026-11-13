@@ -39,6 +39,7 @@ import fr.siamois.mapper.SpecimenMapper;
 import fr.siamois.mapper.SpecimenSummaryMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.context.ExecutionContextHolder;
+import fr.siamois.utils.HierarchyUtils;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -727,14 +728,16 @@ public class SpecimenService implements ArkEntityService {
     }
 
     /**
-     * Supprime un mobilier (spécimen) qui n'a aucune relation avec une autre entité.
-     * Supprime l'ARK associé.
+     * Supprime un mobilier supprimé en même temps que d'autres : ses liens hiérarchiques avec ceux-ci
+     * ne bloquent pas et sont retirés avec lui ; toute autre relation bloque.
      *
+     * @param specimenId le mobilier à supprimer
+     * @param alongside  les mobiliers supprimés avec lui
      * @throws IllegalArgumentException si le spécimen n'existe pas
      * @throws IllegalStateException si la suppression est interdite (contenu bloquant)
      */
     @Transactional
-    public void deleteSpecimenById(long specimenId) {
+    public void deleteSpecimenById(long specimenId, Set<Long> alongside) {
         Specimen specimen = specimenRepository.findById(specimenId)
                 .orElseThrow(() -> new IllegalArgumentException("Mobilier introuvable: " + specimenId));
 
@@ -750,7 +753,8 @@ public class SpecimenService implements ArkEntityService {
             throw new ForbiddenOperationException("You are not allowed to delete this specimen");
         }
 
-        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPECIMEN, specimenId, "le mobilier");
+        entityLinkGuard.requireNoLinks(EntityLinkGuard.Kind.SPECIMEN, specimenId, "le mobilier", alongside);
+        HierarchyUtils.detachFrom(specimen, Specimen::getParents, Specimen::getChildren, Specimen::getId, alongside);
 
         if (specimen.getAuthors() != null) {
             specimen.getAuthors().clear();

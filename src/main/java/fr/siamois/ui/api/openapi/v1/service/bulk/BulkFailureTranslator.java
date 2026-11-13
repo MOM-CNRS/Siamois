@@ -26,6 +26,7 @@ import java.util.UUID;
 @Component
 public class BulkFailureTranslator {
 
+    private static final String GENERIC_MESSAGE = "Erreur";
     private static final String FORBIDDEN_MESSAGE = "Accès refusé";
     private static final String CONFLICT_MESSAGE = "Conflit avec l'état actuel de l'élément";
     private static final String INTERNAL_MESSAGE = "Erreur interne";
@@ -39,7 +40,7 @@ public class BulkFailureTranslator {
      */
     public BulkFailureResource translate(long id, RuntimeException error) {
         if (error instanceof ResponseStatusException statusError) {
-            return new BulkFailureResource(id, statusError.getStatusCode().value(), reasonOf(statusError));
+            return new BulkFailureResource(id, statusError.getStatusCode().value(), orFallback(statusError.getReason(), GENERIC_MESSAGE));
         }
         if (isForbidden(error)) {
             return new BulkFailureResource(id, HttpStatus.FORBIDDEN.value(), FORBIDDEN_MESSAGE);
@@ -48,17 +49,9 @@ public class BulkFailureTranslator {
             return new BulkFailureResource(id, HttpStatus.NOT_FOUND.value(), error.getMessage());
         }
         if (isConflict(error)) {
-            return new BulkFailureResource(id, HttpStatus.CONFLICT.value(), messageOr(error, CONFLICT_MESSAGE));
+            return new BulkFailureResource(id, HttpStatus.CONFLICT.value(), orFallback(error.getMessage(), CONFLICT_MESSAGE));
         }
         return unexpected(id, error);
-    }
-
-    /**
-     * The reason a ResponseStatusException carries, or a generic one.
-     */
-    private static String reasonOf(ResponseStatusException error) {
-        String reason = error.getReason();
-        return reason == null || reason.isBlank() ? "Erreur" : reason;
     }
 
     /**
@@ -87,10 +80,9 @@ public class BulkFailureTranslator {
     }
 
     /**
-     * The error's own message, or the fallback when it has none.
+     * The message an error carries, or the fallback when it has none.
      */
-    private static String messageOr(RuntimeException error, String fallback) {
-        String message = error.getMessage();
+    private static String orFallback(String message, String fallback) {
         return message == null || message.isBlank() ? fallback : message;
     }
 

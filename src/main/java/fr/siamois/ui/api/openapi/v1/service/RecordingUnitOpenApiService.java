@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -1146,6 +1147,27 @@ public class RecordingUnitOpenApiService {
                                                     PersonDTO personDto,
                                                     Set<Long> accessibleInstitutionIds,
                                                     String lang) {
+        applyPatchRecordingUnit(recordingUnitKey, request, personDto, accessibleInstitutionIds, lang);
+        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
+    }
+
+    /**
+     * Writes a PATCH of the recording unit — rights, revision, rules, identifier, answers, geometry and
+     * status, as {@link #patchRecordingUnit} — without building the unit's detail afterwards: what a bulk
+     * action runs for each element, the response of which nobody reads.
+     *
+     * @param recordingUnitKey         the unit's key (numeric id or full identifier)
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchRecordingUnit(String recordingUnitKey,
+                                                    RecordingUnitPatchRequest request,
+                                                    PersonDTO personDto,
+                                                    Set<Long> accessibleInstitutionIds,
+                                                    String lang) {
         RecordingUnitService.AccessibleRecordingUnit bundle =
                 recordingUnitService.findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null);
         RecordingUnitDTO dto = bundle.dto();
@@ -1173,7 +1195,6 @@ public class RecordingUnitOpenApiService {
         // content save: it writes the DTO's (old) status back onto the entity, so it comes after.
         validationOpenApiService.apply(RecordingUnit.class, dto.getId(), request.getValidationStatus(), personDto);
 
-        return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }
 
     /**
@@ -1191,9 +1212,7 @@ public class RecordingUnitOpenApiService {
         RecordingUnitDTO dto = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
                 recordingUnitId, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto));
     }
 
     /** 400 when the unit has no organization: the caller's context is read in it. */

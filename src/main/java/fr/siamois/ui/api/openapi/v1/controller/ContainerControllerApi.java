@@ -22,6 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Set;
+
 @RestController
 @RequestMapping("/api/v1/containers")
 @Tag(name = OpenApiTags.PROJECT, description = "Endpoints des contenants")
@@ -139,7 +141,7 @@ public class ContainerControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        containerOpenApiService.deleteContainer(id, caller.person(), caller.accessibleInstitutionIds(), lang);
+        containerOpenApiService.deleteContainer(id, Set.of(), caller.person(), caller.accessibleInstitutionIds(), lang);
         return ResponseEntity.noContent().build();
     }
 }

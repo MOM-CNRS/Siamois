@@ -101,6 +101,24 @@ public class ContainerOpenApiService {
     @Transactional
     public ContainerResource patchContainer(long id, ContainerPatchRequest request, PersonDTO personDto,
                                             Set<Long> accessibleInstitutionIds, String lang) {
+        applyPatchContainer(id, request, personDto, accessibleInstitutionIds, lang);
+        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Writes a PATCH of the container — rights, rules, identifier, answers and status, as {@link #patchContainer} —
+     * without building the container's resource afterwards: what a bulk action runs for each element, the
+     * response of which nobody reads.
+     *
+     * @param id                       the container's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchContainer(long id, ContainerPatchRequest request, PersonDTO personDto,
+                                            Set<Long> accessibleInstitutionIds, String lang) {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = container.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -121,7 +139,6 @@ public class ContainerOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidationStatus(), personDto);
-        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private ContainerResource toResourceWithPermissionsAndAnswers(ContainerDTO container, PersonDTO personDto, String lang) {
@@ -158,9 +175,7 @@ public class ContainerOpenApiService {
     public void requireEditable(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(container.getActionUnit().getCreatedByInstitution(), personDto, lang);
-        if (!canEdit(container, userInfo)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(canEdit(container, userInfo));
     }
 
     /**
@@ -201,10 +216,17 @@ public class ContainerOpenApiService {
     }
 
     /**
-     * Supprime le contenant sans relation avec une autre entité (409 sinon). Droit d'édition requis sur le projet.
+     * Supprime un contenant supprimé en même temps que d'autres : ses liens avec ceux-ci ne bloquent pas.
+     *
+     * @param id                       le contenant à supprimer
+     * @param alongside                les contenants supprimés avec lui
+     * @param personDto                l'appelant
+     * @param accessibleInstitutionIds les organisations de l'appelant
+     * @param lang                     la langue de la requête
      */
     @Transactional
-    public void deleteContainer(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+    public void deleteContainer(long id, Set<Long> alongside, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
+                                String lang) {
         ContainerDTO dto = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = dto.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -212,7 +234,7 @@ public class ContainerOpenApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression non autorisée");
         }
         try {
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> containerService.deleteById(id));
+            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> containerService.deleteById(id, alongside));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }

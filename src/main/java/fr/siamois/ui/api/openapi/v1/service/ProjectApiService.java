@@ -1624,6 +1624,20 @@ public class ProjectApiService {
      */
     @Transactional
     public void deleteRecordingUnit(ProjectApiCaller caller, long recordingUnitId, String acceptLanguage) {
+        deleteRecordingUnit(caller, recordingUnitId, Set.of(), acceptLanguage);
+    }
+
+    /**
+     * Supprime une UE supprimée en même temps que d'autres : ses liens avec celles-ci ne bloquent pas.
+     *
+     * @param caller          l'appelant authentifié
+     * @param recordingUnitId l'UE à supprimer
+     * @param alongside       les UE supprimées avec elle
+     * @param acceptLanguage  la langue de la requête
+     */
+    @Transactional
+    public void deleteRecordingUnit(ProjectApiCaller caller, long recordingUnitId, Set<Long> alongside,
+                                    String acceptLanguage) {
         RecordingUnitDTO dto = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
                 recordingUnitId, caller.accessibleInstitutionIds());
         InstitutionDTO inst = dto.getCreatedByInstitution();
@@ -1637,7 +1651,7 @@ public class ProjectApiService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Suppression de l'unité non autorisée");
         }
         try {
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> recordingUnitService.deleteRecordingUnitById(recordingUnitId));
+            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> recordingUnitService.deleteRecordingUnitById(recordingUnitId, alongside));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         }

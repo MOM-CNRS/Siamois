@@ -97,19 +97,9 @@ public class RecordingUnitStratigraphyWriteService {
         RecordingUnit other = accessibleUnit(relatedRecordingUnitId, accessibleInstitutionIds);
         StratigraphicRelationship relationship = find(owner, other)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, NOT_FOUND));
-        detachFromUnits(relationship);
+        relationship.detachFromUnits();
         relationshipRepository.delete(relationship);
         entityManager.flush();
-    }
-
-    /**
-     * Takes the relationship out of the collections of both its units. Those collections cascade
-     * every operation to the relationship: as long as a managed unit still holds it, the flush
-     * persists it again and the deletion is silently cancelled.
-     */
-    private static void detachFromUnits(StratigraphicRelationship relationship) {
-        relationship.getUnit1().removeRelationshipAsUnit1(relationship);
-        relationship.getUnit2().removeRelationshipAsUnit2(relationship);
     }
 
     /** The request's position, once the request is known to be complete and well-formed. */

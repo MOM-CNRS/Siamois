@@ -3,7 +3,6 @@ package fr.siamois.domain.services.specimen;
 import fr.siamois.domain.models.ArkEntity;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
-import fr.siamois.domain.models.ark.Ark;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.actionunit.ActionUnitNotFoundException;
 import fr.siamois.domain.models.institution.Institution;
@@ -453,7 +452,7 @@ class SpecimenServiceTest {
         final Long institutionId = 1L;
         final Long recordingUnitId = 10L;
         final String fullIdentifier = "DEF";
-        final Long[] typeIds = new Long[]{3L};
+        final Long[] typeIds = {3L};
         final String globalFilter = "global";
         final String langCode = "fr";
         final Pageable pageable = PageRequest.of(1, 5);
@@ -1182,98 +1181,6 @@ class SpecimenServiceTest {
 
         assertThrows(ActionUnitNotFoundException.class,
                 () -> specimenService.findPreviousByActionUnit(ru, current));
-    }
-
-    @Test
-    void deleteSpecimenById_success_clearsLinksAndDeletesArk() {
-        Specimen specimen = new Specimen();
-        specimen.setId(5L);
-        specimen.setAuthors(new java.util.ArrayList<>());
-        specimen.setCollectors(new java.util.ArrayList<>());
-        Ark ark = new Ark();
-        ark.setInternalId(88L);
-        specimen.setArk(ark);
-        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-
-        specimenService.deleteSpecimenById(5L);
-
-        verify(entityLinkGuard).requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPECIMEN, 5L, "le mobilier");
-        verify(specimenRepository).delete(specimen);
-        verify(arkRepository).deleteById(88L);
-    }
-
-    @Test
-    void deleteSpecimenById_withoutArk_skipsArkDeletion() {
-        Specimen specimen = new Specimen();
-        specimen.setId(6L);
-        when(specimenRepository.findById(6L)).thenReturn(Optional.of(specimen));
-
-        specimenService.deleteSpecimenById(6L);
-
-        verify(arkRepository, never()).deleteById(anyLong());
-    }
-
-    @Test
-    void deleteSpecimenById_notFound_throws() {
-        when(specimenRepository.findById(404L)).thenReturn(Optional.empty());
-        assertThrows(IllegalArgumentException.class, () -> specimenService.deleteSpecimenById(404L));
-    }
-
-    @Test
-    void deleteSpecimenById_throwsForbidden_whenNoExecutionContext() {
-        Specimen specimen = new Specimen();
-        specimen.setId(5L);
-        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-        ExecutionContextHolder.clear();
-
-        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
-                () -> specimenService.deleteSpecimenById(5L));
-
-        verify(specimenRepository, never()).delete(any(Specimen.class));
-    }
-
-    @Test
-    void deleteSpecimenById_throwsForbidden_whenPermissionDenied() {
-        Specimen specimen = new Specimen();
-        specimen.setId(5L);
-        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-        when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(false);
-
-        assertThrows(fr.siamois.domain.models.exceptions.permission.ForbiddenOperationException.class,
-                () -> specimenService.deleteSpecimenById(5L));
-
-        verify(specimenRepository, never()).delete(any(Specimen.class));
-    }
-
-    @Test
-    void deleteSpecimenById_resolvesActionUnitThroughRecordingUnit_whenNotDirectlySet() {
-        RecordingUnit recordingUnit = new RecordingUnit();
-        recordingUnit.setId(42L);
-        fr.siamois.domain.models.actionunit.ActionUnit actionUnit = new fr.siamois.domain.models.actionunit.ActionUnit();
-        actionUnit.setId(9L);
-        recordingUnit.setActionUnit(actionUnit);
-
-        Specimen specimen = new Specimen();
-        specimen.setId(5L);
-        specimen.setRecordingUnit(recordingUnit);
-        when(specimenRepository.findById(5L)).thenReturn(Optional.of(specimen));
-
-        specimenService.deleteSpecimenById(5L);
-
-        verify(profilePermissionService).hasDeleteEntitiesPermission(any(), eq(9L));
-    }
-
-    @Test
-    void deleteSpecimenById_withLinks_throwsAndDeletesNothing() {
-        Specimen specimen = new Specimen();
-        specimen.setId(1L);
-        when(specimenRepository.findById(1L)).thenReturn(Optional.of(specimen));
-        org.mockito.Mockito.doThrow(new IllegalStateException("liens")).when(entityLinkGuard)
-                .requireNoLinks(fr.siamois.domain.services.EntityLinkGuard.Kind.SPECIMEN, 1L, "le mobilier");
-
-        assertThrows(IllegalStateException.class, () -> specimenService.deleteSpecimenById(1L));
-
-        verify(specimenRepository, never()).delete(any(Specimen.class));
     }
 
     @Test

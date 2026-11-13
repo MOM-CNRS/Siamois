@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -115,9 +116,7 @@ public class FindOpenApiService {
         SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
         UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
         RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
-        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
+        OpenApiServiceUtils.requireEditRight(profilePermissionService.hasRecordingUnitWritePermission(userInfo, ru));
     }
 
     /**
@@ -197,6 +196,29 @@ public class FindOpenApiService {
                                   PersonDTO personDto,
                                   Set<Long> accessibleInstitutionIds,
                                   String lang) {
+        applyPatchFind(specimenId, request, personDto, accessibleInstitutionIds, lang);
+        SpecimenDTO fresh = requireAccessibleFind(specimenId, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(requireOrganization(fresh), personDto, lang);
+        return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
+    }
+
+    /**
+     * Writes a PATCH of the find — rights, rules, identifier, geometry, answers and status, as
+     * {@link #patchFind} — without building the find's resource afterwards: what a bulk action runs for
+     * each element, the response of which nobody reads.
+     *
+     * @param specimenId               the find's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchFind(long specimenId,
+                                  FindPatchRequest request,
+                                  PersonDTO personDto,
+                                  Set<Long> accessibleInstitutionIds,
+                                  String lang) {
         SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
         InstitutionDTO institution = requireOrganization(dto);
         RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
@@ -216,7 +238,7 @@ public class FindOpenApiService {
         validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (answers.isEmpty() && !identifierChange && !request.isGeomPresent() && !statusChange) {
-            return findOpenApiMapper.toResource(dto);
+            return;
         }
 
         if (identifierChange) {
@@ -231,8 +253,6 @@ public class FindOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(Specimen.class, specimenId, request.getValidationStatus(), personDto);
-        SpecimenDTO fresh = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds).orElse(dto);
-        return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
     }
 
     private void writeAnswers(SpecimenDTO dto, RecordingUnitDTO ru, Map<String, Object> answers, UserInfo userInfo) {
@@ -302,6 +322,24 @@ public class FindOpenApiService {
                            PersonDTO personDto,
                            Set<Long> accessibleInstitutionIds,
                            String lang) {
+        deleteFind(specimenId, Set.of(), personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Supprime un mobilier supprimé en même temps que d'autres : ses liens avec ceux-ci ne bloquent pas.
+     *
+     * @param specimenId               le mobilier à supprimer
+     * @param alongside                les mobiliers supprimés avec lui
+     * @param personDto                l'appelant
+     * @param accessibleInstitutionIds les organisations de l'appelant
+     * @param lang                     la langue de la requête
+     */
+    @Transactional
+    public void deleteFind(long specimenId,
+                           Set<Long> alongside,
+                           PersonDTO personDto,
+                           Set<Long> accessibleInstitutionIds,
+                           String lang) {
         SpecimenDTO dto = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
 
@@ -313,8 +351,8 @@ public class FindOpenApiService {
         if (ruSum == null || ruSum.getId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobilier sans unité d'enregistrement");
         }
-        RecordingUnitDTO ru = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
-                ruSum.getId(), accessibleInstitutionIds);
+
+        recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(ruSum.getId(), accessibleInstitutionIds);
 
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
         if (!profilePermissionService.hasDeleteEntitiesPermission(userInfo,
@@ -324,7 +362,7 @@ public class FindOpenApiService {
 
         try {
             // The domain check reads the execution context, which a token-authenticated call has no session for.
-            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> specimenService.deleteSpecimenById(specimenId));
+            OpenApiExecutionContext.runWithUserInfo(userInfo, () -> specimenService.deleteSpecimenById(specimenId, alongside));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
         } catch (IllegalArgumentException e) {

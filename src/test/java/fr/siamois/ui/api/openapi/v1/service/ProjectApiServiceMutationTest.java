@@ -119,7 +119,7 @@ class ProjectApiServiceMutationTest {
                 conceptMapper,
                 recordingUnitOpenApiService, phaseService, containerService, studyService,
                 bookmarkService, historyAuditService, mock(fr.siamois.ui.api.openapi.v1.service.ValidationOpenApiService.class),
-                org.mockito.Mockito.mock(fr.siamois.domain.services.person.PersonService.class));
+                mock(fr.siamois.domain.services.person.PersonService.class));
 
         personDto = new PersonDTO();
         personDto.setId(1L);
@@ -1114,7 +1114,7 @@ class ProjectApiServiceMutationTest {
         dto.setCreatedByInstitution(institution);
         when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(5L, SCOPE)).thenReturn(dto);
         when(profilePermissionService.hasDeleteEntitiesPermission(any(), any())).thenReturn(true);
-        doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L);
+        doThrow(new IllegalStateException("has children")).when(recordingUnitService).deleteRecordingUnitById(5L, java.util.Set.of());
 
         assertThatThrownBy(() -> service.deleteRecordingUnit(caller, 5L, "fr"))
                 .isInstanceOf(ResponseStatusException.class)
@@ -1513,7 +1513,7 @@ class ProjectApiServiceMutationTest {
 
         service.deleteRecordingUnit(caller, 5L, "fr");
 
-        verify(recordingUnitService).deleteRecordingUnitById(5L);
+        verify(recordingUnitService).deleteRecordingUnitById(5L, java.util.Set.of());
     }
 
     private ProjectCreateRequest validCreateRequest() {
