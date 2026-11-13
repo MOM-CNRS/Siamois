@@ -197,6 +197,29 @@ public class FindOpenApiService {
                                   PersonDTO personDto,
                                   Set<Long> accessibleInstitutionIds,
                                   String lang) {
+        applyPatchFind(specimenId, request, personDto, accessibleInstitutionIds, lang);
+        SpecimenDTO fresh = requireAccessibleFind(specimenId, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(requireOrganization(fresh), personDto, lang);
+        return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
+    }
+
+    /**
+     * Writes a PATCH of the find — rights, rules, identifier, geometry, answers and status, as
+     * {@link #patchFind} — without building the find's resource afterwards: what a bulk action runs for
+     * each element, the response of which nobody reads.
+     *
+     * @param specimenId               the find's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchFind(long specimenId,
+                                  FindPatchRequest request,
+                                  PersonDTO personDto,
+                                  Set<Long> accessibleInstitutionIds,
+                                  String lang) {
         SpecimenDTO dto = requireAccessibleFind(specimenId, accessibleInstitutionIds);
         InstitutionDTO institution = requireOrganization(dto);
         RecordingUnitDTO ru = requireParentRecordingUnit(dto, accessibleInstitutionIds);
@@ -216,7 +239,7 @@ public class FindOpenApiService {
         validationOpenApiService.requireAllowed(dto.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
 
         if (answers.isEmpty() && !identifierChange && !request.isGeomPresent() && !statusChange) {
-            return findOpenApiMapper.toResource(dto);
+            return;
         }
 
         if (identifierChange) {
@@ -231,8 +254,6 @@ public class FindOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(Specimen.class, specimenId, request.getValidationStatus(), personDto);
-        SpecimenDTO fresh = specimenService.findAccessibleById(specimenId, accessibleInstitutionIds).orElse(dto);
-        return withPermissionsAndUri(findOpenApiMapper.toResource(fresh), userInfo, fresh);
     }
 
     private void writeAnswers(SpecimenDTO dto, RecordingUnitDTO ru, Map<String, Object> answers, UserInfo userInfo) {

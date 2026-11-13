@@ -40,7 +40,7 @@ public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLin
      */
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        findOpenApiService.patchFind(id, patchReader.read(patch, FindPatchRequest.class),
+        findOpenApiService.applyPatchFind(id, patchReader.read(patch, FindPatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 

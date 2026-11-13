@@ -101,6 +101,24 @@ public class ContainerOpenApiService {
     @Transactional
     public ContainerResource patchContainer(long id, ContainerPatchRequest request, PersonDTO personDto,
                                             Set<Long> accessibleInstitutionIds, String lang) {
+        applyPatchContainer(id, request, personDto, accessibleInstitutionIds, lang);
+        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Writes a PATCH of the container — rights, rules, identifier, answers and status, as {@link #patchContainer} —
+     * without building the container's resource afterwards: what a bulk action runs for each element, the
+     * response of which nobody reads.
+     *
+     * @param id                       the container's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchContainer(long id, ContainerPatchRequest request, PersonDTO personDto,
+                                            Set<Long> accessibleInstitutionIds, String lang) {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = container.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -121,7 +139,6 @@ public class ContainerOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.container.Container.class, id, request.getValidationStatus(), personDto);
-        return loadContainer(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private ContainerResource toResourceWithPermissionsAndAnswers(ContainerDTO container, PersonDTO personDto, String lang) {

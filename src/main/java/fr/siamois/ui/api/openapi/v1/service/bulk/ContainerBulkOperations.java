@@ -40,7 +40,7 @@ public class ContainerBulkOperations implements BulkEntityOperations, BulkDocume
      */
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        containerOpenApiService.patchContainer(id, patchReader.read(patch, ContainerPatchRequest.class),
+        containerOpenApiService.applyPatchContainer(id, patchReader.read(patch, ContainerPatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 

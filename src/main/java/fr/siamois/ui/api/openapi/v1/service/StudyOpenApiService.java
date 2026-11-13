@@ -93,6 +93,24 @@ public class StudyOpenApiService {
     @Transactional
     public StudyResource patchStudy(long id, StudyPatchRequest request, PersonDTO personDto,
                                             Set<Long> accessibleInstitutionIds, String lang) {
+        applyPatchStudy(id, request, personDto, accessibleInstitutionIds, lang);
+        return loadStudy(id, personDto, accessibleInstitutionIds, lang);
+    }
+
+    /**
+     * Writes a PATCH of the study — rights, rules, identifier, answers and status, as {@link #patchStudy} —
+     * without building the study's resource afterwards: what a bulk action runs for each element, the
+     * response of which nobody reads.
+     *
+     * @param id                       the study's id
+     * @param request                  the PATCH body
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional
+    public void applyPatchStudy(long id, StudyPatchRequest request, PersonDTO personDto,
+                                            Set<Long> accessibleInstitutionIds, String lang) {
         StudyDTO study = requireAccessibleStudy(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = study.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
@@ -116,7 +134,6 @@ public class StudyOpenApiService {
         }
         // After the save: save() writes the DTO's (old) status back onto the entity.
         validationOpenApiService.apply(fr.siamois.domain.models.study.Study.class, id, request.getValidationStatus(), personDto);
-        return loadStudy(id, personDto, accessibleInstitutionIds, lang);
     }
 
     private StudyResource toResourceWithPermissionsAndAnswers(StudyDTO study, PersonDTO personDto, String lang) {

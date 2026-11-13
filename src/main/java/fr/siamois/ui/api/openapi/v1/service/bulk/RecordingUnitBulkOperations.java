@@ -44,7 +44,7 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDo
      */
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        recordingUnitOpenApiService.patchRecordingUnit(String.valueOf(id), patchReader.read(patch, RecordingUnitPatchRequest.class),
+        recordingUnitOpenApiService.applyPatchRecordingUnit(String.valueOf(id), patchReader.read(patch, RecordingUnitPatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 

@@ -40,7 +40,7 @@ public class PhaseBulkOperations implements BulkEntityOperations, BulkDocumentLi
      */
     @Override
     public void patch(ProjectApiCaller caller, long id, JsonNode patch, String acceptLanguage) {
-        phaseOpenApiService.patchPhase(id, patchReader.read(patch, PhasePatchRequest.class),
+        phaseOpenApiService.applyPatchPhase(id, patchReader.read(patch, PhasePatchRequest.class),
                 caller.person(), caller.accessibleInstitutionIds(), ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 

@@ -50,7 +50,7 @@ public class DocumentBulkOperations implements BulkEntityOperations {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Seuls answers et validationStatus sont modifiables en lot sur des documents");
         }
-        documentOpenApiService.patchDocument(id, request, caller.person(), caller.accessibleInstitutionIds(),
+        documentOpenApiService.applyPatchDocument(id, request, caller.person(), caller.accessibleInstitutionIds(),
                 ProjectApiService.primaryAcceptLanguage(acceptLanguage));
     }
 }
