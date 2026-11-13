@@ -4237,6 +4237,13 @@ div#search-bar .sia-topbar-search-field .sia-search {
   width: min(30rem, 94vw);
 }
 
+/* The editors' popups that stay inside them (the date picker's panel is appended to itself) must not be
+   cut by the dialog's scrolling box: the bulk editor is short, it needs no scroll of its own. */
+.bulk-dialog.p-dialog,
+.bulk-dialog .p-dialog-content {
+  overflow: visible;
+}
+
 .bulk-field-editor {
   display: flex;
   flex-direction: column;
@@ -4252,4 +4259,24 @@ div#search-bar .sia-topbar-search-field .sia-search {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+/* A task running in the background (NotifyProvider.task): its toast, kept up with its progress. */
+.task-toast {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.task-toast-label {
+  font-weight: 600;
+}
+
+.task-toast-bar.p-progressbar {
+  height: 0.4rem;
+}
+
+.task-toast-count {
+  color: var(--text-color-secondary, #6c757d);
 }

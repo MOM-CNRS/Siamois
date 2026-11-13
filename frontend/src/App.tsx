@@ -1,4 +1,5 @@
 import {useHideChromeOnScroll} from "./mobileChrome";
+import {BulkJobNotifier} from "./panels/list/bulk/BulkJobNotifier";
 import {useEffect, useMemo} from "react";
 import {QueryClientProvider} from "@tanstack/react-query";
 import {NotifyProvider} from "./notify/NotifyProvider";
@@ -328,6 +329,8 @@ export function App({ options }: { options: MountOptions }) {
     <QueryClientProvider client={queryClient}>
       <ContextPublisher view={view} organizationId={options.organizationId} />
       <NotifyProvider>
+      {/* The bulk actions running in the background: their progress and outcome, whatever the page. */}
+      <BulkJobNotifier />
       {/* FlowBean.isWriteMode, for every panel below — see panels/pane/writeMode.tsx for why this is a
           context and why it needs no change subscription. */}
       <WriteModeProvider value={options.writeMode === true}>

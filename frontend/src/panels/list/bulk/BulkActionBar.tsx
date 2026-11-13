@@ -236,7 +236,11 @@ function BulkActionBarContent({
             skippedCount={skippedCount}
             running={actions.running}
             onCancel={close}
-            onApply={(answer) => void actions.applyAnswer(target, dialog.field.id, answer).then(close)}
+            onApply={(answer) => {
+              // The job runs in the background, its toast shows the progress: the dialog closes at once.
+              void actions.applyAnswer(target, dialog.field.id, answer);
+              close();
+            }}
           />
         )}
         {dialog?.kind === "documents" && (
@@ -247,7 +251,10 @@ function BulkActionBarContent({
             skippedCount={skippedCount}
             running={actions.running}
             onCancel={close}
-            onApply={(documentId, mode) => void actions.applyDocument(target, documentId, mode).then(close)}
+            onApply={(documentId, mode) => {
+              void actions.applyDocument(target, documentId, mode);
+              close();
+            }}
           />
         )}
       </Dialog>
@@ -258,7 +265,10 @@ function BulkActionBarContent({
         confirmName={config.deleteRequiresName ? t("bulk.deleteWord") : undefined}
         confirmPrompt={t("bulk.deleteType", { name: t("bulk.deleteWord") })}
         busy={actions.running}
-        onConfirm={() => void actions.deleteRows(target).then(close)}
+        onConfirm={() => {
+          void actions.deleteRows(target);
+          close();
+        }}
         onHide={() => !actions.running && close()}
       />
     </div>

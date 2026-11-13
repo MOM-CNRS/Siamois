@@ -2,11 +2,12 @@ package fr.siamois.ui.api.openapi.v1.service.bulk;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.domain.services.document.DocumentLinkKind;
+import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
-import fr.siamois.ui.api.openapi.v1.response.bulk.BulkResultResource;
+import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
 import fr.siamois.ui.api.openapi.v1.service.DocumentLinksOpenApiService;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,10 @@ import java.util.stream.Collectors;
  * The bulk actions on a list's selection: delete, patch (a field, a relation added or removed) and
  * link or unlink a document, on many elements of one collection in one request.
  *
+ * <p>The request is checked at once (collection, ids, patch, document: 400/404 before anything starts);
+ * the elements are then processed in the background (BulkAsyncRunner) and the caller gets a job to
+ * poll for progress and, once done, the result.</p>
+ *
  * <p>Deliberately NOT transactional: each element goes through its collection's unit operation, in
  * that operation's own transaction, with its own rights and rules. An element that is refused (a
  * relation still holding it, no right to edit it…) is reported in the result and leaves the others
@@ -33,14 +38,15 @@ import java.util.stream.Collectors;
 public class BulkActionOpenApiService {
 
     /** The most elements one bulk request may act on. */
-    public static final int MAX_IDS = 1000;
+    public static final int MAX_IDS = 10_000;
 
     private static final String IDENTIFIER_PROPERTY = "identifier";
 
     private final Map<String, BulkEntityOperations> operationsByCollection;
     private final Map<String, BulkDocumentLinkTarget> documentTargetsByCollection;
     private final DocumentLinksOpenApiService documentLinksOpenApiService;
-    private final BulkFailureTranslator failureTranslator;
+    private final BulkJobRegistry jobRegistry;
+    private final BulkAsyncRunner runner;
 
     /**
      * Indexes every collection's operations by its path segment.
@@ -48,18 +54,21 @@ public class BulkActionOpenApiService {
      * @param operations                  one per collection that supports bulk actions
      * @param documentTargets             one per collection documents can be linked to in bulk
      * @param documentLinksOpenApiService the document links' unit service
-     * @param failureTranslator           how an element's failure is reported
+     * @param jobRegistry                 the jobs running or recently ended
+     * @param runner                      what processes a job's elements in the background
      */
     public BulkActionOpenApiService(List<BulkEntityOperations> operations,
                                     List<BulkDocumentLinkTarget> documentTargets,
                                     DocumentLinksOpenApiService documentLinksOpenApiService,
-                                    BulkFailureTranslator failureTranslator) {
+                                    BulkJobRegistry jobRegistry,
+                                    BulkAsyncRunner runner) {
         this.operationsByCollection = operations.stream()
                 .collect(Collectors.toMap(BulkEntityOperations::collection, Function.identity()));
         this.documentTargetsByCollection = documentTargets.stream()
                 .collect(Collectors.toMap(BulkDocumentLinkTarget::collection, Function.identity()));
         this.documentLinksOpenApiService = documentLinksOpenApiService;
-        this.failureTranslator = failureTranslator;
+        this.jobRegistry = jobRegistry;
+        this.runner = runner;
     }
 
     /**
@@ -69,12 +78,12 @@ public class BulkActionOpenApiService {
      * @param request        the elements to delete
      * @param caller         the authenticated caller
      * @param acceptLanguage the request's Accept-Language header
-     * @return which elements were deleted, and why the others were not
+     * @return the job deleting them, to poll
      */
-    public BulkResultResource delete(String collection, BulkDeleteRequest request, ProjectApiCaller caller,
+    public BulkJobResource delete(String collection, BulkDeleteRequest request, ProjectApiCaller caller,
                                      String acceptLanguage) {
         BulkEntityOperations operations = operationsOf(collection);
-        return forEach(idsOf(request.getIds()), id -> operations.delete(caller, id, acceptLanguage));
+        return startJob(caller, idsOf(request.getIds()), id -> operations.delete(caller, id, acceptLanguage));
     }
 
     /**
@@ -84,13 +93,13 @@ public class BulkActionOpenApiService {
      * @param request        the elements and the update
      * @param caller         the authenticated caller
      * @param acceptLanguage the request's Accept-Language header
-     * @return which elements were updated, and why the others were not
+     * @return the job updating them, to poll
      */
-    public BulkResultResource patch(String collection, BulkPatchRequest request, ProjectApiCaller caller,
+    public BulkJobResource patch(String collection, BulkPatchRequest request, ProjectApiCaller caller,
                                     String acceptLanguage) {
         BulkEntityOperations operations = operationsOf(collection);
         JsonNode patch = requireBulkPatch(request.getPatch());
-        return forEach(idsOf(request.getIds()), id -> operations.patch(caller, id, patch, acceptLanguage));
+        return startJob(caller, idsOf(request.getIds()), id -> operations.patch(caller, id, patch, acceptLanguage));
     }
 
     /**
@@ -101,9 +110,9 @@ public class BulkActionOpenApiService {
      * @param request        the elements, the document and what to do
      * @param caller         the authenticated caller
      * @param acceptLanguage the request's Accept-Language header
-     * @return which elements were changed, and why the others were not
+     * @return the job changing their links, to poll
      */
-    public BulkResultResource linkDocument(String segment, BulkDocumentLinkRequest request, ProjectApiCaller caller,
+    public BulkJobResource linkDocument(String segment, BulkDocumentLinkRequest request, ProjectApiCaller caller,
                                            String acceptLanguage) {
         BulkDocumentLinkTarget target = documentTargetOf(segment);
         DocumentLinkKind kind = DocumentLinkKind.ofPathSegment(segment)
@@ -111,7 +120,7 @@ public class BulkActionOpenApiService {
         long documentId = requireDocumentId(request.getDocumentId());
         BulkLinkMode mode = Objects.requireNonNullElse(request.getMode(), BulkLinkMode.LINK);
         LongConsumer link = documentLinkAction(mode, kind, documentId, caller);
-        return forEach(idsOf(request.getIds()), id -> {
+        return startJob(caller, idsOf(request.getIds()), id -> {
             target.requireEditable(caller, id, acceptLanguage);
             link.accept(id);
         });
@@ -129,12 +138,36 @@ public class BulkActionOpenApiService {
     }
 
     /**
-     * Runs the action on each id, one after the other, collecting each success and each failure.
+     * A job the caller started: its progress and, once done, its result.
+     *
+     * @param jobId  the job's id
+     * @param caller the authenticated person
+     * @return the job's current state
+     * @throws ResponseStatusException 404 when unknown, forgotten, or started by someone else
      */
-    private BulkResultResource forEach(List<Long> ids, LongConsumer action) {
-        BulkResultBuilder result = new BulkResultBuilder(failureTranslator);
-        ids.forEach(id -> result.attempt(id, action));
-        return result.build();
+    public BulkJobResource job(String jobId, PersonDTO caller) {
+        return jobRegistry.find(jobId, ownerOf(caller))
+                .map(BulkJob::toResource)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tâche introuvable : " + jobId));
+    }
+
+    /**
+     * Registers a job for the caller and hands its elements to the background runner.
+     */
+    private BulkJobResource startJob(ProjectApiCaller caller, List<Long> ids, LongConsumer action) {
+        BulkJob job = jobRegistry.start(ownerOf(caller.person()), ids.size());
+        runner.run(job, ids, action);
+        return job.toResource();
+    }
+
+    /**
+     * The person a job belongs to: the caller.
+     */
+    private static long ownerOf(PersonDTO person) {
+        if (person == null || person.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentification requise");
+        }
+        return person.getId();
     }
 
     /**

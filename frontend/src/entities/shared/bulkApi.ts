@@ -13,36 +13,68 @@ export interface BulkResult {
   failed: BulkFailure[];
 }
 
+/** How far a bulk action running in the background has got. */
+export interface BulkProgress {
+  processed: number;
+  total: number;
+}
+
+/** Hears the progress of a bulk action while the server processes it. */
+export type OnBulkProgress = (progress: BulkProgress) => void;
+
+/** A bulk action the server started: what to follow it by. */
+export interface BulkJobRef {
+  id: string;
+  total: number;
+}
+
 /** Whether a bulk document action links the document to every element, or removes that link. */
 export type BulkLinkMode = "LINK" | "UNLINK";
 
 type Ids = readonly (string | number)[];
 
 /**
- * The bulk actions an entity type offers on a list's selection (EntityTypeConfig.api.bulk) — each
- * one request to the server's bulk endpoints (BulkActionsControllerApi).
+ * The bulk actions an entity type offers on a list's selection (EntityTypeConfig.api.bulk). Each one
+ * starts one job (several for a selection past {@link BULK_CHUNK_SIZE}) on the server's bulk endpoints
+ * (BulkActionsControllerApi), which processes the elements in the background: follow it with
+ * {@link followBulkJob}.
  */
 export interface BulkApi {
   // Deletes each element as its unit DELETE would.
-  delete(ids: Ids): Promise<BulkResult>;
+  delete(ids: Ids): Promise<BulkJobRef[]>;
   // Applies the same unit PATCH body to each element.
-  patch(ids: Ids, patch: unknown): Promise<BulkResult>;
+  patch(ids: Ids, patch: unknown): Promise<BulkJobRef[]>;
   // Links a document to each element, or unlinks it. Absent: documents can't be linked to this type.
-  linkDocument?(ids: Ids, documentId: string | number, mode: BulkLinkMode): Promise<BulkResult>;
+  linkDocument?(ids: Ids, documentId: string | number, mode: BulkLinkMode): Promise<BulkJobRef[]>;
 }
 
 export interface BulkApiOptions {
-  // Documents can be linked to this type (it has a Documents tab): the selection bar offers « Documents ».
+  // Documents can be linked to this type (it has a Documents tab): « Documents » is among its relations.
   linksDocuments?: boolean;
 }
 
-interface BulkResultBody {
-  data: BulkResult;
+// A bulk action as the server reports it (BulkJobResource): the lists only once it has ended.
+interface BulkJob extends BulkResult {
+  id: string;
+  status: "RUNNING" | "DONE" | "FAILED";
+  total: number;
+  processed: number;
+  error?: string | null;
+}
+
+interface BulkJobBody {
+  data: BulkJob;
 }
 
 // The most elements one bulk request may carry (BulkActionOpenApiService.MAX_IDS): a larger selection
-// goes in several requests.
-export const BULK_CHUNK_SIZE = 1000;
+// goes in several jobs.
+export const BULK_CHUNK_SIZE = 10_000;
+
+// How long to wait before asking a running job for its progress: short at first (a small action is
+// done at once), then longer and longer up to the maximum, so a long action costs few requests.
+export const BULK_POLL_FIRST_MS = 500;
+export const BULK_POLL_MAX_MS = 3000;
+const BULK_POLL_GROWTH = 1.5;
 
 /**
  * The numeric ids the bulk endpoints take.
@@ -52,25 +84,47 @@ function numericIds(ids: Ids): number[] {
 }
 
 /**
- * POSTs a bulk request and unwraps its result.
+ * Waits `ms` milliseconds.
  */
-async function postBulk(path: string, body: unknown): Promise<BulkResult> {
-  return (await apiFetch<BulkResultBody>(`/api/v1/bulk/${path}`, { method: "POST", body })).data;
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
- * Sends the ids in requests of at most {@link BULK_CHUNK_SIZE}, one after the other, and adds up
- * their results.
+ * Follows a job until the server has processed every element, reporting its progress on the way
+ * (asking less and less often), and resolves with what it did; rejects when the job stopped on an
+ * error, or can't be read (forgotten, someone else's: 404).
  */
-async function inChunks(ids: Ids, send: (chunk: number[]) => Promise<BulkResult>): Promise<BulkResult> {
-  const all = numericIds(ids);
-  const total: BulkResult = { succeeded: [], failed: [] };
-  for (let start = 0; start < all.length; start += BULK_CHUNK_SIZE) {
-    const result = await send(all.slice(start, start + BULK_CHUNK_SIZE));
-    total.succeeded.push(...result.succeeded);
-    total.failed.push(...result.failed);
+export async function followBulkJob(jobId: string, onProgress?: OnBulkProgress): Promise<BulkResult> {
+  let delay = BULK_POLL_FIRST_MS;
+  for (;;) {
+    const job = (await apiFetch<BulkJobBody>(`/api/v1/bulk/jobs/${encodeURIComponent(jobId)}`)).data;
+    onProgress?.({ processed: job.processed, total: job.total });
+    if (job.status === "FAILED") throw new Error(job.error ?? "");
+    if (job.status === "DONE") return { succeeded: job.succeeded, failed: job.failed };
+    await pause(delay);
+    delay = Math.min(BULK_POLL_MAX_MS, Math.round(delay * BULK_POLL_GROWTH));
   }
-  return total;
+}
+
+/**
+ * Starts the jobs of a selection: one per {@link BULK_CHUNK_SIZE} ids, one after the other.
+ */
+async function startJobs(ids: Ids, start: (chunk: number[]) => Promise<BulkJob>): Promise<BulkJobRef[]> {
+  const all = numericIds(ids);
+  const refs: BulkJobRef[] = [];
+  for (let offset = 0; offset < all.length; offset += BULK_CHUNK_SIZE) {
+    const job = await start(all.slice(offset, offset + BULK_CHUNK_SIZE));
+    refs.push({ id: job.id, total: job.total });
+  }
+  return refs;
+}
+
+/**
+ * POSTs a bulk request: the server checks it, then answers 202 with the job it started.
+ */
+async function startJob(path: string, body: unknown): Promise<BulkJob> {
+  return (await apiFetch<BulkJobBody>(`/api/v1/bulk/${path}`, { method: "POST", body })).data;
 }
 
 /**
@@ -79,15 +133,13 @@ async function inChunks(ids: Ids, send: (chunk: number[]) => Promise<BulkResult>
  */
 export function createBulkApi(collectionPath: string, options: BulkApiOptions = {}): BulkApi {
   const api: BulkApi = {
-    delete: (ids) => inChunks(ids, (chunk) => postBulk(`${collectionPath}/delete`, { ids: chunk })),
-    patch: (ids, patch) => inChunks(ids, (chunk) => postBulk(`${collectionPath}/patch`, { ids: chunk, patch })),
+    delete: (ids) => startJobs(ids, (chunk) => startJob(`${collectionPath}/delete`, { ids: chunk })),
+    patch: (ids, patch) => startJobs(ids, (chunk) => startJob(`${collectionPath}/patch`, { ids: chunk, patch })),
   };
   if (!options.linksDocuments) return api;
   return {
     ...api,
     linkDocument: (ids, documentId, mode) =>
-      inChunks(ids, (chunk) =>
-        postBulk(`${collectionPath}/documents`, { ids: chunk, documentId: Number(documentId), mode }),
-      ),
+      startJobs(ids, (chunk) => startJob(`${collectionPath}/documents`, { ids: chunk, documentId: Number(documentId), mode })),
   };
 }
