@@ -4,8 +4,8 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 
 /**
  * A collection whose elements can be duplicated in bulk: each one goes through the same service call
- * (rights, rules, regenerated identifier) as its unit POST /{collection}/{id}/duplicate. The copy is the
- * element alone: its hierarchy (parents, children) and its relationships are not duplicated.
+ * (rights, rules, regenerated identifier) as its unit POST /{collection}/{id}/duplicate, then keeps its
+ * source's relations. Its children are never duplicated: duplicating a parent copies the parent alone.
  */
 public interface BulkDuplicateTarget extends BulkCollectionTarget {
 

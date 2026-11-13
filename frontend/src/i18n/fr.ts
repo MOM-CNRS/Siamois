@@ -490,7 +490,7 @@ export const fr = {
   "bulk.duplicateTitle": "Dupliquer la sélection",
   "bulk.duplicateConfirm_one": "{count} élément sera dupliqué.",
   "bulk.duplicateConfirm_other": "{count} éléments seront dupliqués.",
-  "bulk.duplicateNoHierarchy": "La duplication copie chaque élément seul : sa hiérarchie (parents, enfants) et ses relations ne sont pas dupliquées.",
+  "bulk.duplicateNoHierarchy": "Chaque copie garde les relations de l'élément (parents, phases, stratigraphie, documents…), mais ses enfants ne sont pas dupliqués.",
   "bulk.duplicateSubmit": "Dupliquer",
   "bulk.taskDuplicate": "Duplication en cours",
   "bulk.duplicateDone_one": "Duplication terminée : {count} entité dupliquée",

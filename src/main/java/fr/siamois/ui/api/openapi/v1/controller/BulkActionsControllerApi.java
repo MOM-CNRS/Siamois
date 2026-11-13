@@ -82,7 +82,7 @@ public class BulkActionsControllerApi {
     }
 
     /**
-     * Duplicates many elements of a collection, each copied alone.
+     * Duplicates many elements of a collection, each keeping its relations but not its children.
      *
      * @param collection     the collection's path segment
      * @param body           the elements to duplicate
@@ -93,7 +93,9 @@ public class BulkActionsControllerApi {
     @Operation(
             summary = "Dupliquer des éléments en lot",
             description = "Duplique chaque élément comme sa duplication unitaire (mêmes droits, identifiant régénéré). "
-                    + "Chaque copie est l'élément seul : sa hiérarchie (parents, enfants) et ses relations ne sont pas dupliquées."
+                    + "Chaque copie garde les relations de l'élément (parents, phases, stratigraphie, documents…), mais ses enfants "
+                    + "ne sont pas dupliqués. Les copies sont créées en commençant par le dernier élément, pour apparaître "
+                    + "en tête des listes dans l'ordre de la sélection."
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "202", description = "Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id}"),

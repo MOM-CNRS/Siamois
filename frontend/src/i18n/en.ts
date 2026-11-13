@@ -490,7 +490,7 @@ export const en: Record<MessageKey, string> = {
   "bulk.duplicateTitle": "Duplicate the selection",
   "bulk.duplicateConfirm_one": "{count} item will be duplicated.",
   "bulk.duplicateConfirm_other": "{count} items will be duplicated.",
-  "bulk.duplicateNoHierarchy": "Each item is copied on its own: its hierarchy (parents, children) and its relations are not duplicated.",
+  "bulk.duplicateNoHierarchy": "Each copy keeps the item's relations (parents, phases, stratigraphy, documents…), but its children are not duplicated.",
   "bulk.duplicateSubmit": "Duplicate",
   "bulk.taskDuplicate": "Duplicating",
   "bulk.duplicateDone_one": "Duplication done: {count} item duplicated",

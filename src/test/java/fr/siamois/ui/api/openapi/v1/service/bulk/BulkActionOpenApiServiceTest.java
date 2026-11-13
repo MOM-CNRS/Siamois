@@ -12,6 +12,7 @@ import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkFailureResource;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.response.bulk.BulkJobResource;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -442,5 +444,19 @@ class BulkActionOpenApiServiceTest {
         assertThatThrownBy(() -> service.duplicate("recording-units", request, CALLER, LANG))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * The elements are copied last first, so that their copies, newest first in the lists, come in the
+     * order of the selection.
+     */
+    @Test
+    void duplicateCopiesTheLastElementFirst() {
+        service.duplicate("places", duplicateRequest(3L, 4L, 5L), CALLER, LANG);
+
+        InOrder order = inOrder(duplicates);
+        order.verify(duplicates).duplicate(CALLER, 5L, LANG);
+        order.verify(duplicates).duplicate(CALLER, 4L, LANG);
+        order.verify(duplicates).duplicate(CALLER, 3L, LANG);
     }
 }

@@ -165,14 +165,14 @@ describe("BulkActionBar", () => {
     expect(findButton("Dupliquer")).toBeNull();
   });
 
-  it("warns that the hierarchy is not duplicated, then duplicates the editable rows", async () => {
+  it("warns that the children are not duplicated, then duplicates the editable rows", async () => {
     const bulkDuplicate = vi.fn<NonNullable<BulkApi["duplicate"]>>().mockResolvedValue([{ id: "job-3", total: 2 }]);
     mockedTrack.mockResolvedValue({ succeeded: [1, 2], failed: [] });
     render(selectionOf(rows), { ...config, api: { ...config.api, bulk: { ...bulk, duplicate: bulkDuplicate } } });
 
     await click(button("Dupliquer"));
 
-    expect(document.querySelector(".bulk-duplicate-warning")?.textContent).toContain("hiérarchie");
+    expect(document.querySelector(".bulk-duplicate-warning")?.textContent).toContain("enfants ne sont pas dupliqués");
     expect(document.body.textContent).toContain("2 éléments seront dupliqués.");
 
     const dialogButtons = [...document.querySelectorAll(".p-dialog button")];

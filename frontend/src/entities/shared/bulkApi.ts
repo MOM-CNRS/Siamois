@@ -50,7 +50,7 @@ export interface BulkApi {
   linkDocument?(ids: Ids, documentId: string | number, mode: BulkLinkMode): Promise<BulkJobRef[]>;
   // Adds the same stratigraphic relationship to each element, or removes it. Absent: no stratigraphy.
   linkStratigraphy?(ids: Ids, relationship: BulkStratigraphy, mode: BulkLinkMode): Promise<BulkJobRef[]>;
-  // Duplicates each element alone, as its unit duplication would (no hierarchy, no relations). Absent: no duplication.
+  // Duplicates each element with its relations, not its children. Absent: no duplication.
   duplicate?(ids: Ids): Promise<BulkJobRef[]>;
 }
 

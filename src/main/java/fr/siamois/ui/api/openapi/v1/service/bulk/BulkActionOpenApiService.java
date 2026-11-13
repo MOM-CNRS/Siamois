@@ -105,8 +105,10 @@ public class BulkActionOpenApiService {
     }
 
     /**
-     * Duplicates each element, as its unit duplication would: the copy is the element alone — its
-     * hierarchy (parents, children) and its relationships are not duplicated.
+     * Duplicates each element, keeping its relations but not its children (see each
+     * {@link BulkDuplicateTarget}). The elements are copied last first: the lists showing the newest
+     * first, the copies come at their top in the order the elements were selected, as a unit
+     * duplication's copy comes first.
      *
      * @param collection     the collection's path segment
      * @param request        the elements to duplicate
@@ -118,7 +120,7 @@ public class BulkActionOpenApiService {
                                      String acceptLanguage) {
         BulkDuplicateTarget target = targetOf(duplicateTargetsByCollection, collection);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
-        return startJob(caller, idsOf(request.getIds()), id -> target.duplicate(caller, id, lang));
+        return startJob(caller, idsOf(request.getIds()).reversed(), id -> target.duplicate(caller, id, lang));
     }
 
     /**

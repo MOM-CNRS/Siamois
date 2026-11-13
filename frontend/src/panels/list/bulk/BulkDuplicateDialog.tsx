@@ -14,7 +14,7 @@ export interface BulkDuplicateDialogProps {
 
 /**
  * The confirmation of a bulk duplication: how many elements will be copied, and the warning that each
- * one is copied alone — its hierarchy (parents, children) and its relations are not duplicated.
+ * copy keeps its element's relations but not its children.
  */
 export function BulkDuplicateDialog({ visible, duplicableCount, skippedCount, busy, onConfirm, onHide }: BulkDuplicateDialogProps) {
   return (

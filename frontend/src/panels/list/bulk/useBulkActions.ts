@@ -31,7 +31,7 @@ export interface BulkActions {
   applyDocument: (rows: RowRecord[], documentId: string | number, mode: BulkLinkMode) => Promise<void>;
   // Adds a stratigraphic relationship to (or removes it from) every one of the rows the caller may edit.
   applyStratigraphy: (rows: RowRecord[], relationship: BulkStratigraphy, mode: BulkLinkMode) => Promise<void>;
-  // Duplicates, each alone, every one of the rows the caller may edit.
+  // Duplicates every one of the rows the caller may edit, with their relations but not their children.
   duplicateRows: (rows: RowRecord[]) => Promise<void>;
   // Deletes every one of the rows the caller may delete.
   deleteRows: (rows: RowRecord[]) => Promise<void>;
@@ -128,7 +128,7 @@ export function useBulkActions({ entityType, config, bulk, organizationId, onDel
 
   /**
    * Duplicates every editable row, as the fiche's « Dupliquer » would (it asks for the right to edit):
-   * each copy is the element alone, its hierarchy and relations are not duplicated.
+   * each copy keeps its element's relations, not its children.
    */
   async function duplicateRows(rows: RowRecord[]): Promise<void> {
     const duplicate = bulk.duplicate;
