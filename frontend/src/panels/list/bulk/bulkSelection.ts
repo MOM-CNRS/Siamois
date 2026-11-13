@@ -77,6 +77,15 @@ export function bulkEditableFields(catalog: FieldCatalog | undefined): FieldReso
 }
 
 /**
+ * The stratigraphy fields of the list's catalog (anterior, posterior, synchronous units), in the
+ * catalog's order: no answers to patch, but relationships a bulk action adds or removes.
+ */
+export function bulkStratigraphyFields(catalog: FieldCatalog | undefined): FieldResource[] {
+  if (!catalog) return [];
+  return Object.values(catalog.fields).filter((field) => stratigraphyPositionOf(field) != null);
+}
+
+/**
  * The selected rows the caller may edit (`_permissions.canEdit`): a bulk edit skips the others.
  */
 export function editableRows(rows: readonly RowRecord[]): RowRecord[] {
