@@ -12,13 +12,13 @@ import java.util.function.Consumer;
  * The identifier part of a PATCH, or of a creation whose form let the user edit the suggested one: the
  * same rules for every entity (free text, never blank, unique in its project).
  */
-final class IdentifierPatch {
+public final class IdentifierPatch {
 
     private IdentifierPatch() {
     }
 
     /** @return the trimmed requested identifier, or {@code null} when the request leaves it alone. */
-    static String requested(String raw) {
+    public static String requested(String raw) {
         if (raw == null) {
             return null;
         }
@@ -30,12 +30,12 @@ final class IdentifierPatch {
     }
 
     /** @return {@code true} when a requested identifier differs from the current one. */
-    static boolean changes(String requested, String current) {
+    public static boolean changes(String requested, String current) {
         return requested != null && !requested.equals(current);
     }
 
     /** Rejects an identifier already used in the project. */
-    static void requireFree(boolean alreadyExists) {
+    public static void requireFree(boolean alreadyExists) {
         if (alreadyExists) {
             throw new IdentifierConflictException();
         }

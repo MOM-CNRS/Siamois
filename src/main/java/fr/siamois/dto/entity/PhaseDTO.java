@@ -11,7 +11,7 @@ import java.util.Set;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class PhaseDTO extends AbstractEntityDTO {
+public class PhaseDTO extends AbstractEntityDTO implements ProjectIdentifiedDTO {
 
     private String identifier;
     private Integer generatedNumber;

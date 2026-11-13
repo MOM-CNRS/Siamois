@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchChanges;
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchRights;
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.container.Container;
@@ -101,23 +104,11 @@ public class ContainerOpenApiService {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = container.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = canEdit(container, userInfo);
-        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
-        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, container.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(container.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
-        validationOpenApiService.requireAllowed(container.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
-
-        if (identifierChange) {
-            container.setIdentifier(newIdentifier);
-            IdentifierPatch.requireFree(containerService.identifierAlreadyExistInAction(container));
-        }
-        if (answersChange || identifierChange || !statusChange) {
+        FormPatchRights rights = new FormPatchRights(canEdit(container, userInfo),
+                profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId()));
+        FormPatchChanges changes = OpenApiServiceUtils.applyFormPatch(container, request, rights, validationOpenApiService,
+                () -> containerService.identifierAlreadyExistInAction(container));
+        if (changes.writesContent()) {
             Long projectId = container.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the container-types catalog lays out (system + additional fields).

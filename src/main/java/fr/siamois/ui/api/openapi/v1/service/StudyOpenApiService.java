@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchChanges;
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchRights;
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -93,26 +96,14 @@ public class StudyOpenApiService {
         StudyDTO study = requireAccessibleStudy(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = study.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, study.getActionUnit().getId(),
+        FormPatchRights rights = new FormPatchRights(profilePermissionService.hasProjectPermission(userInfo, study.getActionUnit().getId(),
                 PermissionConstants.INSTANCE_EDIT_STUDIES,
                 PermissionConstants.ORGANIZATION_EDIT_STUDIES,
-                PermissionConstants.PROJECT_EDIT_STUDIES);
-        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, study.getActionUnit().getId());
-        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, study.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(study.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
-        validationOpenApiService.requireAllowed(study.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
-
-        if (identifierChange) {
-            study.setIdentifier(newIdentifier);
-            IdentifierPatch.requireFree(studyService.identifierAlreadyExistInAction(study));
-        }
-        if (answersChange || identifierChange || !statusChange) {
+                PermissionConstants.PROJECT_EDIT_STUDIES),
+                profilePermissionService.hasValidatePermission(userInfo, study.getActionUnit().getId()));
+        FormPatchChanges changes = OpenApiServiceUtils.applyFormPatch(study, request, rights, validationOpenApiService,
+                () -> studyService.identifierAlreadyExistInAction(study));
+        if (changes.writesContent()) {
             Long projectId = study.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the study-types catalog lays out (system + additional fields).

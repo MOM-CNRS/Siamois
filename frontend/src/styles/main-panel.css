@@ -4212,12 +4212,12 @@ div#search-bar .sia-topbar-search-field .sia-search {
   cursor: pointer;
 }
 
-.bulk-field-picker-item:hover:not(:disabled),
+.bulk-field-picker-item:hover:not(.bulk-field-picker-item-blocked),
 .bulk-field-picker-item:focus-visible {
   background: var(--surface-100, #f5f5f5);
 }
 
-.bulk-field-picker-item:disabled {
+.bulk-field-picker-item-blocked {
   opacity: 0.5;
   cursor: not-allowed;
 }

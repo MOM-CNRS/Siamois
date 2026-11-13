@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchChanges;
+import fr.siamois.ui.api.openapi.v1.service.utils.FormPatchRights;
+import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -107,30 +110,18 @@ public class PhaseOpenApiService {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = phase.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = canEdit(phase, userInfo);
-        boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId());
-        boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
-        String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
-        boolean identifierChange = IdentifierPatch.changes(newIdentifier, phase.getIdentifier());
-        boolean statusChange = ValidationOpenApiService.changes(phase.getValidationStatus(), request.getValidationStatus());
-        // A validator may change the status alone without the edit right; anything else needs it.
-        if ((answersChange || identifierChange || !statusChange) && !canEdit) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
-        validationOpenApiService.requireAllowed(phase.getValidationStatus(), request.getValidationStatus(), canEdit, canValidate);
-
-        if (identifierChange) {
-            phase.setIdentifier(newIdentifier);
-            IdentifierPatch.requireFree(phaseService.identifierAlreadyExistInAction(phase));
-        }
-        if (answersChange || identifierChange || !statusChange) {
+        FormPatchRights rights = new FormPatchRights(canEdit(phase, userInfo),
+                profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId()));
+        FormPatchChanges changes = OpenApiServiceUtils.applyFormPatch(phase, request, rights, validationOpenApiService,
+                () -> phaseService.identifierAlreadyExistInAction(phase));
+        if (changes.writesContent()) {
             Long projectId = phase.getActionUnit().getId();
             OpenApiExecutionContext.callWithUserInfo(userInfo, () -> {
                 // The same effective form the phase-types catalog lays out (system + additional fields).
                 FormUiDto form = effectiveFormResolver.resolveEffectiveForm(projectId,
                         ConfigurableTable.PHASE, phase.getType() != null ? phase.getType().getId() : null);
                 // Loaded only when the patch writes them: left null, the phase's links stay untouched on save.
-                boolean recordingUnitsChange = answersChange && writesRecordingUnits(form, request.getAnswers());
+                boolean recordingUnitsChange = changes.answersChange() && writesRecordingUnits(form, request.getAnswers());
                 if (recordingUnitsChange) {
                     phase.setRecordingUnits(phaseService.findRecordingUnits(id));
                 }

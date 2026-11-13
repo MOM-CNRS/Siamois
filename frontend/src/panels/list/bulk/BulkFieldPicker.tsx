@@ -2,6 +2,7 @@ import {useState} from "react";
 import {InputText} from "primereact/inputtext";
 import type {FieldResource} from "../../../fields/types";
 import {t} from "../../../i18n";
+import {useNotify} from "../../../notify/NotifyProvider";
 import {isRelationField} from "./bulkSelection";
 
 /**
@@ -12,14 +13,14 @@ export interface BulkRelationEntry {
   key: string;
   label: string;
   icon: string;
-  // Set: listed, but greyed out with this as its tooltip.
+  // Set: listed greyed out; a click on it shows this as a warning.
   disabledReason?: string;
 }
 
 export interface BulkFieldPickerProps {
   fields: FieldResource[];
   // A field the selection can't take in bulk (a project-scoped relation across several projects):
-  // listed, but greyed out with the reason as its tooltip.
+  // listed greyed out, and a click on it shows the reason as a warning.
   disabledReason: (field: FieldResource) => string | undefined;
   onPick: (field: FieldResource) => void;
   // The relations besides the catalog's fields, and what clicking one does.
@@ -50,6 +51,7 @@ function matches(label: string, query: string): boolean {
  * filtered by what is typed. Clicking one opens its bulk editor.
  */
 export function BulkFieldPicker({ fields, disabledReason, onPick, extraRelations = [], onPickRelation }: BulkFieldPickerProps) {
+  const notify = useNotify();
   const [query, setQuery] = useState("");
   const fieldItem = (field: FieldResource): PickerItem => ({
     key: `field:${field.id}`,
@@ -98,13 +100,15 @@ export function BulkFieldPicker({ fields, disabledReason, onPick, extraRelations
         >
           <div className="bulk-field-picker-group-label">{group.label}</div>
           {group.items.map((item) => (
+            // A greyed line stays clickable: the click says why it can't be edited (a disabled button
+            // would swallow it, and its tooltip doesn't show everywhere).
             <button
               key={item.key}
               type="button"
-              className="bulk-field-picker-item"
-              disabled={item.disabledReason != null}
+              className={`bulk-field-picker-item${item.disabledReason ? " bulk-field-picker-item-blocked" : ""}`}
+              aria-disabled={item.disabledReason != null}
               title={item.disabledReason ?? item.label}
-              onClick={item.pick}
+              onClick={() => (item.disabledReason ? notify.warn(item.disabledReason) : item.pick())}
             >
               <i className={item.icon} aria-hidden="true" />
               <span className="bulk-field-picker-item-label">{item.label}</span>

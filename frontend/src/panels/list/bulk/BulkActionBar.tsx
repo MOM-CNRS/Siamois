@@ -87,6 +87,8 @@ function BulkActionBarContent({
   const deletable = deletableRows(target);
   const skippedCount = target.length - editable.length;
   const fields = config.api.patchAnswers ? bulkEditableFields(catalog) : [];
+  // Not one selected row the caller may edit: every property says so, rather than a misleading reason.
+  const noneEditable = target.length > 0 && editable.length === 0 ? t("bulk.noneEditable") : undefined;
   const context = bulkEditContext(editable, entityType, organizationId);
   const relations: BulkRelationEntry[] = bulk.linkDocument
     ? [
@@ -95,7 +97,7 @@ function BulkActionBarContent({
           label: t("entity.document.plural"),
           icon: "bi bi-file-earmark",
           // A document is linked only inside its project: the selection must not span several.
-          disabledReason: spansSeveralProjects(editable, entityType) ? t("bulk.documentsNeedOneProject") : undefined,
+          disabledReason: noneEditable ?? (spansSeveralProjects(editable, entityType) ? t("bulk.documentsNeedOneProject") : undefined),
         },
       ]
     : [];
@@ -206,7 +208,9 @@ function BulkActionBarContent({
       <OverlayPanel ref={pickerRef} className="bulk-field-picker-overlay">
         <BulkFieldPicker
           fields={fields}
-          disabledReason={(field) => (canBulkEdit(field, editable, entityType) ? undefined : t("bulk.needsOneProject"))}
+          disabledReason={(field) =>
+            noneEditable ?? (canBulkEdit(field, editable, entityType) ? undefined : t("bulk.needsOneProject"))
+          }
           onPick={pickField}
           extraRelations={relations}
           onPickRelation={pickRelation}
