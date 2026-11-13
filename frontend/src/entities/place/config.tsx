@@ -1,11 +1,12 @@
 import type {EntityRef, EntityTypeConfig} from "../shared/types";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import {relationTab} from "../../panels/detail/relationTab";
 import {documentsTab} from "../document/documentsTab";
 import {bookmarkChrome} from "../shared/chrome";
 import {fetchSiblings} from "../shared/siblingsApi";
 import {fetchBreadcrumbs} from "../shared/breadcrumbsApi";
-import {duplicatePlace, getPlace, listPlaces, patchPlaceAnswers} from "./api";
+import {duplicatePlace, getPlace, listPlaces, patchPlaceAnswers, placePatchBody} from "./api";
 import {loadPlaceCatalog} from "./catalog";
 import {placeColumns} from "./columns";
 import {PlaceCreateForm} from "./CreateForm";
@@ -38,11 +39,13 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   countChipClassName: "spatial-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("places", id),
+    bulk: createBulkApi("places", { linksDocuments: true }),
     siblings: (id) => fetchSiblings("places", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("places", id, via),
     get: getPlace,
     list: listPlaces,
     patchAnswers: (id, answers) => patchPlaceAnswers(id, answers),
+    patchBody: placePatchBody,
     duplicate: duplicatePlace,
   },
   list: {

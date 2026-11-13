@@ -100,6 +100,7 @@ import java.util.*;
 import org.mockito.InOrder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -267,6 +268,36 @@ class RecordingUnitOpenApiServiceTest {
         assertThat(data.getPermissions().canEdit()).isFalse();
         assertThat(data.getPermissions().canDelete()).isFalse();
         verifyNoInteractions(formService, conversionService, effectiveFormResolver, fieldConfigurationService, conceptMapper);
+    }
+
+    /**
+     * Without the write right, the unit is not editable (bulk actions): 403.
+     */
+    @Test
+    void requireEditable_withoutWriteRight_throws403() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(1026L, SCOPE)).thenReturn(ruDto);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.requireEditable(1026L, personDto, SCOPE, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    /**
+     * With the write right, the unit is editable.
+     */
+    @Test
+    void requireEditable_withWriteRight_passes() {
+        InstitutionDTO inst = new InstitutionDTO();
+        inst.setId(10L);
+        ruDto.setCreatedByInstitution(inst);
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(1026L, SCOPE)).thenReturn(ruDto);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(UserInfo.class), same(ruDto))).thenReturn(true);
+
+        assertThatCode(() -> service.requireEditable(1026L, personDto, SCOPE, "fr")).doesNotThrowAnyException();
     }
 
     @Test

@@ -30,6 +30,18 @@ export async function patchPlaceAnswers(
   id: string | number,
   answers: Record<string, AnswerInputBody>,
 ): Promise<PlaceDetail> {
+  const response = await apiFetch<PlaceResponseBody>(`/api/v1/places/${id}`, {
+    method: "PATCH",
+    body: placePatchBody(answers),
+  });
+  return response.data;
+}
+
+/**
+ * The flat PlacePatchRequest the field-id-keyed answers stand for: what a place's PATCH, unit or
+ * bulk, sends.
+ */
+export function placePatchBody(answers: Record<string, AnswerInputBody>): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   for (const [fieldId, input] of Object.entries(answers)) {
     const value = input.value;
@@ -76,11 +88,7 @@ export async function patchPlaceAnswers(
         throw new Error(`Champ ${fieldId} non modifiable sur un lieu`);
     }
   }
-  const response = await apiFetch<PlaceResponseBody>(`/api/v1/places/${id}`, {
-    method: "PATCH",
-    body,
-  });
-  return response.data;
+  return body;
 }
 
 // SpatialUnit's own field ids (SpatialUnit.NAME_FIELD/.SPATIAL_UNIT_TYPE_FIELD/.PLACE_NUMBER_FIELD

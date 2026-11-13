@@ -388,6 +388,23 @@ class PlaceOpenApiServiceTest {
                         .isEqualTo(HttpStatus.CONFLICT.value()));
     }
 
+    /**
+     * A caller who may not manage places is refused (403) before any link changes (bulk actions).
+     */
+    @Test
+    void requireEditable_withoutWritePermission_throws403() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.requireEditable(caller, 5L, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.FORBIDDEN.value()));
+    }
+
     @Test
     void deletePlace_success() {
         SpatialUnitDTO existing = new SpatialUnitDTO();

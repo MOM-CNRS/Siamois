@@ -1,5 +1,6 @@
 import type {EntityTypeConfig} from "../shared/types";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import {loadTypeCatalog} from "../shared/typeCatalog";
 import {relationTab} from "../../panels/detail/relationTab";
 import {documentsTab} from "../document/documentsTab";
@@ -32,6 +33,7 @@ export const phaseEntityConfig: EntityTypeConfig<PhaseSummary, PhaseDetail> = {
   countChipClassName: "recording-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("phases", id),
+    bulk: createBulkApi("phases", { linksDocuments: true }),
     siblings: (id) => fetchSiblings("phases", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("phases", id, via),
     get: getPhase,

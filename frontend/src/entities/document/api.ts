@@ -42,6 +42,9 @@ export function fetchDocumentThumbnail(id: string | number, width: number): Prom
   return apiBlob(`/api/v1/documents/${id}/file?w=${width}`);
 }
 
+// The REST segments of the entities a document can be linked to: their own collection paths.
+export type DocumentLinkSegment = "recording-units" | "finds" | "places" | "phases" | "containers";
+
 // A document's link to an entity — a recording unit, a find, a place, a phase or a container —
 // under the entity's own REST segment. Both are idempotent.
 export function linkDocument(segment: string, entityId: string | number, documentId: string | number): Promise<unknown> {

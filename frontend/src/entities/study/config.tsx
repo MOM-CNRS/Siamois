@@ -1,5 +1,6 @@
 import type {EntityTypeConfig} from "../shared/types";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import {loadTypeCatalog} from "../shared/typeCatalog";
 import {bookmarkChrome} from "../shared/chrome";
 import {fetchSiblings} from "../shared/siblingsApi";
@@ -30,6 +31,7 @@ export const studyEntityConfig: EntityTypeConfig<StudySummary, StudyDetail> = {
   countChipClassName: "study-count-chip",
   api: {
     delete: (id) => deleteEntity("studies", id),
+    bulk: createBulkApi("studies"),
     siblings: (id) => fetchSiblings("studies", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("studies", id, via),
     get: getStudy,

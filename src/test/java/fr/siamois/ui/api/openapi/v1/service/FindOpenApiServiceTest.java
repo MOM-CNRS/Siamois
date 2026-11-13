@@ -56,6 +56,7 @@ import java.time.OffsetDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -706,6 +707,34 @@ class FindOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(ex -> ((ResponseStatusException) ex).getReason())
                 .isEqualTo("Mobilier sans unité d'enregistrement");
+    }
+
+    /**
+     * Without the parent recording unit's write right, the find is not editable (bulk actions).
+     */
+    @Test
+    void requireEditable_withoutWritePermission_throws403() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.requireEditable(7L, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    /**
+     * With the parent recording unit's write right, the find is editable.
+     */
+    @Test
+    void requireEditable_withWritePermission_passes() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), any(RecordingUnitDTO.class))).thenReturn(true);
+
+        assertThatCode(() -> service.requireEditable(7L, personDto, SCOPE, LANG)).doesNotThrowAnyException();
     }
 
     @Test

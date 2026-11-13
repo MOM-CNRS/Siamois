@@ -1176,6 +1176,26 @@ public class RecordingUnitOpenApiService {
         return resolveMobileDetail(recordingUnitKey, personDto, accessibleInstitutionIds, null, lang);
     }
 
+    /**
+     * Fails with 403 unless the caller may edit the recording unit: the same right its PATCH requires
+     * for a content change. What a bulk action checks before changing an element's relations.
+     *
+     * @param recordingUnitId          the unit's numeric id
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(long recordingUnitId, PersonDTO personDto, Set<Long> accessibleInstitutionIds,
+                                String lang) {
+        RecordingUnitDTO dto = recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(
+                recordingUnitId, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(requireOrganization(dto), personDto, lang);
+        if (!profilePermissionService.hasRecordingUnitWritePermission(userInfo, dto)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
+    }
+
     /** 400 when the unit has no organization: the caller's context is read in it. */
     private static InstitutionDTO requireOrganization(RecordingUnitDTO dto) {
         InstitutionDTO institution = dto.getCreatedByInstitution();

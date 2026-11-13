@@ -101,10 +101,7 @@ public class ContainerOpenApiService {
         ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = container.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, container.getActionUnit().getId(),
-                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
-                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        boolean canEdit = canEdit(container, userInfo);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, container.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
@@ -138,10 +135,7 @@ public class ContainerOpenApiService {
 
     private ContainerResource toResourceWithPermissionsAndAnswers(ContainerDTO container, PersonDTO personDto, String lang) {
         UserInfo userInfo = new UserInfo(container.getActionUnit().getCreatedByInstitution(), personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, container.getActionUnit().getId(),
-                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
-                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
-                PermissionConstants.PROJECT_EDIT_CONTAINERS);
+        boolean canEdit = canEdit(container, userInfo);
 
         ContainerListProjectionService.ContainerListProjection projection = containerListProjectionService.buildOne(container, lang);
         ContainerResource resource = containerOpenApiMapper.toResource(container, lang, projection.resolvedLabels());
@@ -158,6 +152,34 @@ public class ContainerOpenApiService {
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, container.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
+    }
+
+    /**
+     * Fails with 403 unless the caller may edit the container: the same right its PATCH requires for a
+     * content change. What a bulk action checks before changing an element's relations.
+     *
+     * @param id                       the container's id
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        ContainerDTO container = requireAccessibleContainer(id, personDto, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(container.getActionUnit().getCreatedByInstitution(), personDto, lang);
+        if (!canEdit(container, userInfo)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
+    }
+
+    /**
+     * Whether the caller may edit the container's content.
+     */
+    private boolean canEdit(ContainerDTO container, UserInfo userInfo) {
+        return profilePermissionService.hasProjectPermission(userInfo, container.getActionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_CONTAINERS,
+                PermissionConstants.ORGANIZATION_EDIT_CONTAINERS,
+                PermissionConstants.PROJECT_EDIT_CONTAINERS);
     }
 
     /** The container, if the caller can see it — 404 otherwise, whether it doesn't exist or is out of scope. */

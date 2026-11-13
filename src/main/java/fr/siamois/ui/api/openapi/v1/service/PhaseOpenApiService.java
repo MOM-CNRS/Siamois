@@ -107,10 +107,7 @@ public class PhaseOpenApiService {
         PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
         InstitutionDTO institution = phase.getActionUnit().getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, phase.getActionUnit().getId(),
-                PermissionConstants.INSTANCE_EDIT_PHASES,
-                PermissionConstants.ORGANIZATION_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_PHASES);
+        boolean canEdit = canEdit(phase, userInfo);
         boolean canValidate = profilePermissionService.hasValidatePermission(userInfo, phase.getActionUnit().getId());
         boolean answersChange = request.getAnswers() != null && !request.getAnswers().isEmpty();
         String newIdentifier = IdentifierPatch.requested(request.getIdentifier());
@@ -160,10 +157,7 @@ public class PhaseOpenApiService {
 
     private PhaseResource toResourceWithPermissionsAndAnswers(PhaseDTO phase, PersonDTO personDto, String lang) {
         UserInfo userInfo = new UserInfo(phase.getActionUnit().getCreatedByInstitution(), personDto, lang);
-        boolean canEdit = profilePermissionService.hasProjectPermission(userInfo, phase.getActionUnit().getId(),
-                PermissionConstants.INSTANCE_EDIT_PHASES,
-                PermissionConstants.ORGANIZATION_EDIT_PHASES,
-                PermissionConstants.PROJECT_EDIT_PHASES);
+        boolean canEdit = canEdit(phase, userInfo);
 
         PhaseListProjectionService.PhaseListProjection projection = phaseListProjectionService.buildOne(phase, lang);
         PhaseResource resource = phaseOpenApiMapper.toResource(phase, lang, projection.resolvedLabels());
@@ -180,6 +174,34 @@ public class PhaseOpenApiService {
                 .withDelete(profilePermissionService.hasDeleteEntitiesPermission(userInfo, phase.getActionUnit().getId())));
         resourceBookmarkService.markBookmarked(userInfo, resource);
         return resource;
+    }
+
+    /**
+     * Fails with 403 unless the caller may edit the phase: the same right its PATCH requires for a
+     * content change. What a bulk action checks before changing an element's relations.
+     *
+     * @param id                       the phase's id
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the caller's organizations
+     * @param lang                     the request's language
+     */
+    @Transactional(readOnly = true)
+    public void requireEditable(long id, PersonDTO personDto, Set<Long> accessibleInstitutionIds, String lang) {
+        PhaseDTO phase = requireAccessiblePhase(id, personDto, accessibleInstitutionIds);
+        UserInfo userInfo = new UserInfo(phase.getActionUnit().getCreatedByInstitution(), personDto, lang);
+        if (!canEdit(phase, userInfo)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
+        }
+    }
+
+    /**
+     * Whether the caller may edit the phase's content.
+     */
+    private boolean canEdit(PhaseDTO phase, UserInfo userInfo) {
+        return profilePermissionService.hasProjectPermission(userInfo, phase.getActionUnit().getId(),
+                PermissionConstants.INSTANCE_EDIT_PHASES,
+                PermissionConstants.ORGANIZATION_EDIT_PHASES,
+                PermissionConstants.PROJECT_EDIT_PHASES);
     }
 
     /**

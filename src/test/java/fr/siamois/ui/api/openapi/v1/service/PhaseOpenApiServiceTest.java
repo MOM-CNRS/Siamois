@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -424,6 +425,38 @@ class PhaseOpenApiServiceTest {
         assertThatThrownBy(() -> service.patchPhase(5L, request, personDto, scope, "fr"))
                 .isInstanceOf(IdentifierConflictException.class);
         verify(phaseService, never()).save(any());
+    }
+
+    // --- requireEditable (bulk actions) ---
+
+    /**
+     * A caller without the edit right is refused (403).
+     */
+    @Test
+    void requireEditable_notEditor_throws403() {
+        PhaseDTO target = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(false);
+
+        Set<Long> scope = Set.of(10L);
+        assertThatThrownBy(() -> service.requireEditable(5L, personDto, scope, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    /**
+     * A caller with the edit right passes.
+     */
+    @Test
+    void requireEditable_editor_passes() {
+        PhaseDTO target = phaseOn(projectWithInstitution());
+        when(phaseService.findById(5L)).thenReturn(target);
+        when(profilePermissionService.canViewProject(personDto, institution, 7L)).thenReturn(true);
+        when(profilePermissionService.hasProjectPermission(any(UserInfo.class), eq(7L), any(), any(), any())).thenReturn(true);
+
+        Set<Long> scope = Set.of(10L);
+        assertThatCode(() -> service.requireEditable(5L, personDto, scope, "fr")).doesNotThrowAnyException();
     }
 
     // --- deletePhase ---

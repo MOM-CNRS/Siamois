@@ -38,6 +38,7 @@ import {useFicheTabsActions} from "./detail/ficheTabsContext";
 import {listPath} from "../navigation/paths";
 import {ListSearchOverlayBox} from "./list/ListSearchOverlay";
 import {ListToolbar} from "./list/ListToolbar";
+import {BulkActionBar} from "./list/bulk/BulkActionBar";
 import {type RowRecord, useEntityListData} from "./list/useEntityListData";
 import {useListColumns} from "./list/useListColumns";
 import {defaultOpenMode, listPrefsKey, loadListPrefs, type OpenMode, saveListPrefs} from "./list/listPreferences";
@@ -477,6 +478,17 @@ function EntityListPanelBody({
               )}
             </>
           }
+        />
+      )}
+      {/* Laid over the top of the table while rows are ticked (only to someone who may write). */}
+      {writeMode && !volatile && (
+        <BulkActionBar
+          entityType={entityType}
+          config={config}
+          organizationId={organizationId}
+          catalog={catalog}
+          selectedRows={selectedRows}
+          onSelectionChange={setSelectedRows}
         />
       )}
       {showCards ? (

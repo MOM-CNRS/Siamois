@@ -1,5 +1,6 @@
 import {relationTab} from "../../panels/detail/relationTab";
 import {deleteEntity} from "../shared/deleteApi";
+import {createBulkApi} from "../shared/bulkApi";
 import type {EntityTypeConfig} from "../shared/types";
 import {duplicateProject, getProject, getProjectSiblings, listProjects, patchProject,} from "./api";
 import {projectColumns} from "./columns";
@@ -37,6 +38,7 @@ export const projectEntityConfig: EntityTypeConfig<
   deleteRequiresName: true,
   api: {
     delete: (id) => deleteEntity("projects", id),
+    bulk: createBulkApi("projects"),
     // fields=all so the detail response carries an `answers` map for the WHOLE field catalog, not
     // just the seven properties ProjectResource exposes flat — that map is what lets the fiche
     // render all 33 of ActionUnit.DETAILS_FORM's fields with real values (FicheTab.tsx). The list
