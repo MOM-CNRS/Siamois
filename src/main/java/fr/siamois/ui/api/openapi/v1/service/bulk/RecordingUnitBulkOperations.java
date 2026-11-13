@@ -18,7 +18,7 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkStratigraphyTarget {
+public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkStratigraphyTarget, BulkDuplicateTarget {
 
     private final ProjectApiService projectApiService;
     private final RecordingUnitOpenApiService recordingUnitOpenApiService;
@@ -73,5 +73,13 @@ public class RecordingUnitBulkOperations implements BulkEntityOperations, BulkDo
     @Override
     public void removeStratigraphy(ProjectApiCaller caller, long id, long relatedId) {
         stratigraphyWriteService.remove(String.valueOf(id), relatedId, caller.person(), caller.accessibleInstitutionIds());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        recordingUnitOpenApiService.duplicateRecordingUnit(String.valueOf(id), caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 }

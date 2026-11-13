@@ -39,7 +39,7 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
   countChipClassName: "spatial-unit-count-chip",
   api: {
     delete: (id) => deleteEntity("places", id),
-    bulk: createBulkApi("places", { linksDocuments: true }),
+    bulk: createBulkApi("places", { linksDocuments: true, duplicates: true }),
     siblings: (id) => fetchSiblings("places", id),
     breadcrumbs: (id, via) => fetchBreadcrumbs("places", id, via),
     get: getPlace,

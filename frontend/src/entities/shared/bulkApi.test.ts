@@ -66,6 +66,21 @@ describe("createBulkApi", () => {
     });
   });
 
+  it("starts a duplicate job for a type whose elements can be duplicated", async () => {
+    mockedApiFetch.mockResolvedValueOnce(job("RUNNING", 0));
+
+    await createBulkApi("places", { duplicates: true }).duplicate!(["12", 13]);
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/bulk/places/duplicate", {
+      method: "POST",
+      body: { ids: [12, 13] },
+    });
+  });
+
+  it("offers no duplication for a type without it", () => {
+    expect(createBulkApi("studies").duplicate).toBeUndefined();
+  });
+
   it("offers no stratigraphy for a type without it", () => {
     expect(createBulkApi("finds", { linksDocuments: true }).linkStratigraphy).toBeUndefined();
   });

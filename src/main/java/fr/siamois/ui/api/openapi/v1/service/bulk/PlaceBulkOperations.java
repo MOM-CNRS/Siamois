@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
+public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkDuplicateTarget {
 
     private final PlaceOpenApiService placeOpenApiService;
     private final BulkPatchReader patchReader;
@@ -50,5 +50,13 @@ public class PlaceBulkOperations implements BulkEntityOperations, BulkDocumentLi
     @Override
     public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         placeOpenApiService.requireEditable(caller, id, lang);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        placeOpenApiService.duplicatePlace(caller, id, lang);
     }
 }

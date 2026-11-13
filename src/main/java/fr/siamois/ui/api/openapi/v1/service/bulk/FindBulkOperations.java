@@ -15,7 +15,7 @@ import java.util.Set;
  */
 @Component
 @RequiredArgsConstructor
-public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget {
+public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLinkTarget, BulkDuplicateTarget {
 
     private final FindOpenApiService findOpenApiService;
     private final BulkPatchReader patchReader;
@@ -52,5 +52,13 @@ public class FindBulkOperations implements BulkEntityOperations, BulkDocumentLin
     public void requireEditable(ProjectApiCaller caller, long id, String lang) {
         findOpenApiService.requireEditable(id, caller.person(), caller.accessibleInstitutionIds(),
                 lang);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void duplicate(ProjectApiCaller caller, long id, String lang) {
+        findOpenApiService.duplicateFind(id, caller.person(), caller.accessibleInstitutionIds(), lang);
     }
 }

@@ -6,7 +6,7 @@ import type {MessageKey} from "../../../i18n";
 const STORAGE_KEY = "siamois.bulkJobs";
 
 /** What a finished bulk job is reported as, with how many entities it changed. */
-export type BulkSuccessKey = "bulk.editDone" | "bulk.linksDone" | "bulk.deleteDone";
+export type BulkSuccessKey = "bulk.editDone" | "bulk.linksDone" | "bulk.deleteDone" | "bulk.duplicateDone";
 
 /** A bulk job to follow: what it is called while it runs, and how its success is told. */
 export interface BulkJobEntry {

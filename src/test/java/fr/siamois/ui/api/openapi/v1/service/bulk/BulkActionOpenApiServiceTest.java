@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDuplicateRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
@@ -58,6 +59,7 @@ class BulkActionOpenApiServiceTest {
     private BulkEntityOperations recordingUnits;
     private BulkDocumentLinkTarget finds;
     private BulkStratigraphyTarget stratigraphy;
+    private BulkDuplicateTarget duplicates;
     private BulkActionOpenApiService service;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -87,8 +89,11 @@ class BulkActionOpenApiServiceTest {
         when(finds.collection()).thenReturn("finds");
         stratigraphy = mock(BulkStratigraphyTarget.class);
         when(stratigraphy.collection()).thenReturn("recording-units");
+        duplicates = mock(BulkDuplicateTarget.class);
+        when(duplicates.collection()).thenReturn("places");
         // Called directly (no Spring proxy), the runner processes the job synchronously: the job is done on return.
         service = new BulkActionOpenApiService(List.of(recordingUnits), List.of(finds), List.of(stratigraphy),
+                List.of(duplicates),
                 documentLinksOpenApiService,
                 registry, new BulkAsyncRunner(new BulkFailureTranslator(), registry));
     }
@@ -400,5 +405,42 @@ class BulkActionOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * A duplicate request for these ids.
+     */
+    private static BulkDuplicateRequest duplicateRequest(Long... ids) {
+        BulkDuplicateRequest request = new BulkDuplicateRequest();
+        request.setIds(new ArrayList<>(Arrays.asList(ids)));
+        return request;
+    }
+
+    /**
+     * Duplicates each distinct element once, with the primary language, and reports a refused one
+     * without stopping the others.
+     */
+    @Test
+    void duplicateCopiesEachElementAndReportsFailures() {
+        lenient().doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Interdit"))
+                .when(duplicates).duplicate(CALLER, 5L, "en");
+
+        BulkJobResource result = service.duplicate("places", duplicateRequest(3L, 5L, 3L), CALLER, "en-GB,en;q=0.9");
+
+        assertThat(result.succeeded()).containsExactly(3L);
+        assertThat(result.failed()).containsExactly(new BulkFailureResource(5L, 403, "Interdit"));
+        verify(duplicates).duplicate(CALLER, 3L, "en");
+    }
+
+    /**
+     * A collection without bulk duplication is not found.
+     */
+    @Test
+    void duplicateRefusesACollectionWithoutDuplication() {
+        BulkDuplicateRequest request = duplicateRequest(3L);
+
+        assertThatThrownBy(() -> service.duplicate("recording-units", request, CALLER, LANG))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
 }

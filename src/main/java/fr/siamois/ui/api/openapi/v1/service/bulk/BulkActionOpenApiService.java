@@ -5,6 +5,7 @@ import fr.siamois.domain.services.document.DocumentLinkKind;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDeleteRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDocumentLinkRequest;
+import fr.siamois.ui.api.openapi.v1.request.bulk.BulkDuplicateRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkLinkMode;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.bulk.BulkStratigraphyRequest;
@@ -52,6 +53,7 @@ public class BulkActionOpenApiService {
     private final Map<String, BulkEntityOperations> operationsByCollection;
     private final Map<String, BulkDocumentLinkTarget> documentTargetsByCollection;
     private final Map<String, BulkStratigraphyTarget> stratigraphyTargetsByCollection;
+    private final Map<String, BulkDuplicateTarget> duplicateTargetsByCollection;
     private final DocumentLinksOpenApiService documentLinksOpenApiService;
     private final BulkJobRegistry jobRegistry;
     private final BulkAsyncRunner runner;
@@ -62,6 +64,7 @@ public class BulkActionOpenApiService {
      * @param operations                  one per collection that supports bulk actions
      * @param documentTargets             one per collection documents can be linked to in bulk
      * @param stratigraphyTargets         one per collection whose elements take stratigraphic relationships in bulk
+     * @param duplicateTargets            one per collection whose elements can be duplicated in bulk
      * @param documentLinksOpenApiService the document links' unit service
      * @param jobRegistry                 the jobs running or recently ended
      * @param runner                      what processes a job's elements in the background
@@ -69,12 +72,14 @@ public class BulkActionOpenApiService {
     public BulkActionOpenApiService(List<BulkEntityOperations> operations,
                                     List<BulkDocumentLinkTarget> documentTargets,
                                     List<BulkStratigraphyTarget> stratigraphyTargets,
+                                    List<BulkDuplicateTarget> duplicateTargets,
                                     DocumentLinksOpenApiService documentLinksOpenApiService,
                                     BulkJobRegistry jobRegistry,
                                     BulkAsyncRunner runner) {
         this.operationsByCollection = byCollection(operations);
         this.documentTargetsByCollection = byCollection(documentTargets);
         this.stratigraphyTargetsByCollection = byCollection(stratigraphyTargets);
+        this.duplicateTargetsByCollection = byCollection(duplicateTargets);
         this.documentLinksOpenApiService = documentLinksOpenApiService;
         this.jobRegistry = jobRegistry;
         this.runner = runner;
@@ -97,6 +102,23 @@ public class BulkActionOpenApiService {
         Set<Long> selection = Set.copyOf(ids);
         String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
         return startJob(caller, ids, id -> operations.delete(caller, id, selection, lang));
+    }
+
+    /**
+     * Duplicates each element, as its unit duplication would: the copy is the element alone — its
+     * hierarchy (parents, children) and its relationships are not duplicated.
+     *
+     * @param collection     the collection's path segment
+     * @param request        the elements to duplicate
+     * @param caller         the authenticated caller
+     * @param acceptLanguage the request's Accept-Language header
+     * @return the job duplicating them, to poll
+     */
+    public BulkJobResource duplicate(String collection, BulkDuplicateRequest request, ProjectApiCaller caller,
+                                     String acceptLanguage) {
+        BulkDuplicateTarget target = targetOf(duplicateTargetsByCollection, collection);
+        String lang = ProjectApiService.primaryAcceptLanguage(acceptLanguage);
+        return startJob(caller, idsOf(request.getIds()), id -> target.duplicate(caller, id, lang));
     }
 
     /**
