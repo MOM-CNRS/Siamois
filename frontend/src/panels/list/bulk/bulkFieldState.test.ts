@@ -51,4 +51,8 @@ describe("bulkFieldState", () => {
 
     expect(bulkFieldState(typed, [], "9").optionsContext).toEqual({ kind: "RELATED_TO_TYPE", relatedTo: "9" });
   });
+
+  it("searches no place source when the rows' forms give the field none, as on their fiche", () => {
+    expect(bulkFieldState(insee, [state({})], undefined).placeContext).toBeUndefined();
+  });
 });

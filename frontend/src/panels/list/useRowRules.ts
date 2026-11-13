@@ -76,9 +76,25 @@ export function useRowRules<TRow extends RowTypeRef & { id?: string | number }>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fields, shownKey, ruleFields, rows, typeRules]);
 
+  /**
+   * The state of a field on a row as its fiche would evaluate it — the rules of the row's own (project,
+   * type) form, else the catalog's — even for a field the list doesn't show (a bulk editor's field).
+   */
+  const stateFor = (row: TRow, fieldId: string): FieldState | undefined => {
+    const precomputed = row.id != null ? statesByRow.get(row.id)?.get(fieldId) : undefined;
+    const field = fields?.[fieldId];
+    if (precomputed || !field) return precomputed;
+    // The row's own form, once loaded, is the fiche's: its rules as they are (none included).
+    const rules = typeRules?.hasForm(row) ? (typeRules.rulesOf(row, fieldId) ?? null) : field.rules;
+    return evaluateForm([{ fieldId, rules }], (id) => valueOfField(row, fields, id), {
+      typeConceptId: typeIdOf((row as { type?: Parameters<typeof typeIdOf>[0] }).type),
+    }).get(fieldId);
+  };
+
   return {
     stateOf: (row: TRow, fieldId: string): FieldState | undefined =>
       row.id != null ? statesByRow.get(row.id)?.get(fieldId) : undefined,
+    stateFor,
     labelOf: (fieldId: string) => fields?.[fieldId]?.label ?? fieldId,
   };
 }

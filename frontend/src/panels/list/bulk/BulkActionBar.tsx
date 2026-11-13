@@ -39,7 +39,8 @@ export interface BulkActionBarProps {
   // The list's rules (useRowRules): a field's state on a row, and the fields' labels — what gives a
   // bulk editor the same sources and options as the fiche's.
   rowRules?: {
-    stateOf: (row: RowRecord, fieldId: string) => FieldState | undefined;
+    // The field's state on a row as the row's fiche evaluates it (its own type's form), shown or not.
+    stateFor: (row: RowRecord, fieldId: string) => FieldState | undefined;
     labelOf: (fieldId: string) => string;
   };
 }
@@ -266,7 +267,7 @@ function BulkActionBarContent({
             context={context}
             state={bulkFieldState(
               dialog.field,
-              editable.map((row) => rowRules?.stateOf(row, dialog.field.id)),
+              editable.map((row) => rowRules?.stateFor(row, dialog.field.id)),
               context.typeConceptId,
             )}
             fieldLabelOf={rowRules?.labelOf}

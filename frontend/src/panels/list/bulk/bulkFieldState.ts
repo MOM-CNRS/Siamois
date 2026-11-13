@@ -19,12 +19,13 @@ function shared<T>(values: readonly T[]): T | null {
 }
 
 /**
- * The place context of the selection: the sources apply whatever the rows; a place a source reads
- * from another field is given only when every row has the same one there.
+ * The place context of the selection: the sources the rows' forms give the field (the field's own when
+ * no row says); a place a source reads from another field is given only when every row has the same one.
  */
 function sharedPlaceContext(field: FieldResource, states: readonly FieldState[]): PlaceContext | undefined {
   const contexts = states.map((state) => state.placeContext).filter((context): context is PlaceContext => context != null);
-  if (contexts.length === 0) return placeContextOf(field.rules?.placeSources, () => undefined);
+  // No row's form says: the field's own sources. Rows whose forms give it none: none, as on their fiche.
+  if (contexts.length === 0) return states.length === 0 ? placeContextOf(field.rules?.placeSources, () => undefined) : undefined;
   const deps: Record<string, string | null> = {};
   for (const fieldId of new Set(contexts.flatMap((context) => Object.keys(context.deps)))) {
     deps[fieldId] = contexts.length === states.length ? shared(contexts.map((context) => context.deps[fieldId])) : null;
