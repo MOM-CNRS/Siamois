@@ -10,7 +10,6 @@ import fr.siamois.ui.api.openapi.v1.request.find.FindPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.phase.PhasePatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlacePatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.project.ProjectPatchRequest;
-import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitPatchRequest;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
 import fr.siamois.ui.api.openapi.v1.request.study.StudyPatchRequest;
 import fr.siamois.ui.api.openapi.v1.service.ContainerOpenApiService;
@@ -44,16 +43,16 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * Each collection's bulk operations hand each element to its unit service call, with the caller's
- * person, institutions and primary language.
+ * person, institutions and language.
  */
 @ExtendWith(MockitoExtension.class)
 class BulkOperationsTest {
 
     private static final String LANG = "fr";
-    private static final String ACCEPT = "fr-FR,fr;q=0.9";
     private static final PersonDTO PERSON = new PersonDTO();
     private static final Set<Long> INSTITUTIONS = Set.of(1L);
     private static final ProjectApiCaller CALLER = new ProjectApiCaller(PERSON, INSTITUTIONS, List.of());
+    private static final Set<Long> SELECTION = Set.of(5L, 6L);
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final BulkPatchReader patchReader = new BulkPatchReader(objectMapper);
@@ -121,19 +120,19 @@ class BulkOperationsTest {
     }
 
     /**
-     * Containers: deleted, patched, checked editable.
+     * Containers: deleted with the selection, patched, checked editable.
      */
     @Test
     void containerOperationsCallTheContainerService() {
         ContainerBulkOperations operations = new ContainerBulkOperations(containerOpenApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
-        operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, answersPatch(), LANG);
+        operations.requireEditable(CALLER, 5L, LANG);
 
         assertThat(operations.collection()).isEqualTo("containers");
-        verify(containerOpenApiService).deleteContainer(5L, PERSON, INSTITUTIONS, LANG);
-        verify(containerOpenApiService).patchContainer(eq(5L), any(ContainerPatchRequest.class),
+        verify(containerOpenApiService).deleteContainer(5L, SELECTION, PERSON, INSTITUTIONS, LANG);
+        verify(containerOpenApiService).applyPatchContainer(eq(5L), any(ContainerPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
         verify(containerOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
     }
@@ -146,12 +145,12 @@ class BulkOperationsTest {
         DocumentBulkOperations operations = new DocumentBulkOperations(documentOpenApiService,
                 documentContentOpenApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, answersPatch(), LANG);
 
         assertThat(operations.collection()).isEqualTo("documents");
         verify(documentContentOpenApiService).deleteAccessibleDocument(5L, CALLER);
-        verify(documentOpenApiService).patchDocument(eq(5L), any(DocumentPatchRequest.class),
+        verify(documentOpenApiService).applyPatchDocument(eq(5L), any(DocumentPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
     }
 
@@ -172,19 +171,19 @@ class BulkOperationsTest {
     }
 
     /**
-     * Finds: deleted, patched, checked editable.
+     * Finds: deleted with the selection, patched, checked editable.
      */
     @Test
     void findOperationsCallTheFindService() {
         FindBulkOperations operations = new FindBulkOperations(findOpenApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
-        operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, answersPatch(), LANG);
+        operations.requireEditable(CALLER, 5L, LANG);
 
         assertThat(operations.collection()).isEqualTo("finds");
-        verify(findOpenApiService).deleteFind(5L, PERSON, INSTITUTIONS, LANG);
-        verify(findOpenApiService).patchFind(eq(5L), any(FindPatchRequest.class),
+        verify(findOpenApiService).deleteFind(5L, SELECTION, PERSON, INSTITUTIONS, LANG);
+        verify(findOpenApiService).applyPatchFind(eq(5L), any(FindPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
         verify(findOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
     }
@@ -196,18 +195,16 @@ class BulkOperationsTest {
     void phaseOperationsCallThePhaseService() {
         PhaseBulkOperations operations = new PhaseBulkOperations(phaseOpenApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
-        operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.requireEditable(CALLER, 5L, LANG);
 
         assertThat(operations.collection()).isEqualTo("phases");
         verify(phaseOpenApiService).deletePhase(5L, PERSON, INSTITUTIONS, LANG);
-        verify(phaseOpenApiService).patchPhase(eq(5L), any(PhasePatchRequest.class), eq(PERSON), eq(INSTITUTIONS), eq(LANG));
         verify(phaseOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
     }
 
     /**
-     * Places: deleted, patched, checked editable.
+     * Places: deleted with the selection, patched, checked editable.
      */
     @Test
     void placeOperationsCallThePlaceService() {
@@ -216,12 +213,12 @@ class BulkOperationsTest {
         ObjectNode patch = objectMapper.createObjectNode();
         patch.put("name", "Site");
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, patch, ACCEPT);
-        operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, patch, LANG);
+        operations.requireEditable(CALLER, 5L, LANG);
 
         assertThat(operations.collection()).isEqualTo("places");
-        verify(placeOpenApiService).deletePlace(CALLER, 5L, LANG);
+        verify(placeOpenApiService).deletePlace(CALLER, 5L, SELECTION, LANG);
         verify(placeOpenApiService).updatePlace(eq(CALLER), eq(5L), any(PlacePatchRequest.class), eq(LANG));
         verify(placeOpenApiService).requireEditable(CALLER, 5L, LANG);
     }
@@ -233,8 +230,8 @@ class BulkOperationsTest {
     void projectOperationsCallTheProjectService() {
         ProjectBulkOperations operations = new ProjectBulkOperations(projectApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, answersPatch(), LANG);
 
         assertThat(operations.collection()).isEqualTo("projects");
         verify(projectApiService).deleteProject(CALLER, "5", LANG);
@@ -242,23 +239,20 @@ class BulkOperationsTest {
     }
 
     /**
-     * Recording units: deleted, patched, checked editable, their stratigraphy added or removed.
+     * Recording units: deleted with the selection, checked editable, their stratigraphy added or removed.
      */
     @Test
     void recordingUnitOperationsCallTheRecordingUnitServices() {
         RecordingUnitBulkOperations operations = recordingUnits();
         RecordingUnitStratigraphicRelationshipRequest relationship = new RecordingUnitStratigraphicRelationshipRequest();
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
-        operations.requireEditable(CALLER, 5L, ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.requireEditable(CALLER, 5L, LANG);
         operations.addStratigraphy(CALLER, 5L, relationship);
         operations.removeStratigraphy(CALLER, 5L, 8L);
 
         assertThat(operations.collection()).isEqualTo("recording-units");
-        verify(projectApiService).deleteRecordingUnit(CALLER, 5L, ACCEPT);
-        verify(recordingUnitOpenApiService).patchRecordingUnit(eq("5"), any(RecordingUnitPatchRequest.class),
-                eq(PERSON), eq(INSTITUTIONS), eq(LANG));
+        verify(projectApiService).deleteRecordingUnit(CALLER, 5L, SELECTION, LANG);
         verify(recordingUnitOpenApiService).requireEditable(5L, PERSON, INSTITUTIONS, LANG);
         verify(stratigraphyWriteService).add("5", relationship, PERSON, INSTITUTIONS);
         verify(stratigraphyWriteService).remove("5", 8L, PERSON, INSTITUTIONS);
@@ -271,12 +265,12 @@ class BulkOperationsTest {
     void studyOperationsCallTheStudyService() {
         StudyBulkOperations operations = new StudyBulkOperations(studyOpenApiService, patchReader);
 
-        operations.delete(CALLER, 5L, ACCEPT);
-        operations.patch(CALLER, 5L, answersPatch(), ACCEPT);
+        operations.delete(CALLER, 5L, SELECTION, LANG);
+        operations.patch(CALLER, 5L, answersPatch(), LANG);
 
         assertThat(operations.collection()).isEqualTo("studies");
         verify(studyOpenApiService).deleteStudy(5L, PERSON, INSTITUTIONS, LANG);
-        verify(studyOpenApiService).patchStudy(eq(5L), any(StudyPatchRequest.class),
+        verify(studyOpenApiService).applyPatchStudy(eq(5L), any(StudyPatchRequest.class),
                 eq(PERSON), eq(INSTITUTIONS), eq(LANG));
     }
 }
