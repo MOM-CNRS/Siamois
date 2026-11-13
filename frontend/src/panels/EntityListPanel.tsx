@@ -491,6 +491,7 @@ function EntityListPanelBody({
           organizationId={organizationId}
           catalog={catalog}
           selection={selection}
+          rowRules={rowRules}
         />
       )}
       {showCards ? (

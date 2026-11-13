@@ -7,11 +7,13 @@ import {DeleteEntityDialog} from "../../../components/detail/DeleteEntityDialog"
 import type {BulkApi} from "../../../entities/shared/bulkApi";
 import type {EntityTypeConfig, FieldCatalog} from "../../../entities/shared/types";
 import type {FieldResource} from "../../../fields/types";
+import type {FieldState} from "../../../rules";
 import {t, tn} from "../../../i18n";
 import {useNotify} from "../../../notify/NotifyProvider";
 import type {RowRecord} from "../useEntityListData";
 import {BulkDocumentEditor} from "./BulkDocumentEditor";
 import {BulkFieldEditor} from "./BulkFieldEditor";
+import {bulkFieldState} from "./bulkFieldState";
 import {BulkFieldPicker, type BulkRelationEntry} from "./BulkFieldPicker";
 import {
   bulkEditableFields,
@@ -31,6 +33,12 @@ export interface BulkActionBarProps {
   // The list's field catalog: the properties a bulk edit can write.
   catalog?: FieldCatalog;
   selection: ListSelection;
+  // The list's rules (useRowRules): a field's state on a row, and the fields' labels — what gives a
+  // bulk editor the same sources and options as the fiche's.
+  rowRules?: {
+    stateOf: (row: RowRecord, fieldId: string) => FieldState | undefined;
+    labelOf: (fieldId: string) => string;
+  };
 }
 
 // The dialog the bar has open, if any.
@@ -62,6 +70,7 @@ function BulkActionBarContent({
   organizationId,
   catalog,
   selection,
+  rowRules,
 }: BulkActionBarProps & { bulk: BulkApi }) {
   const notify = useNotify();
   const pickerRef = useRef<OverlayPanel>(null);
@@ -232,6 +241,12 @@ function BulkActionBarContent({
             key={dialog.field.id}
             field={dialog.field}
             context={context}
+            state={bulkFieldState(
+              dialog.field,
+              editable.map((row) => rowRules?.stateOf(row, dialog.field.id)),
+              context.typeConceptId,
+            )}
+            fieldLabelOf={rowRules?.labelOf}
             editableCount={editable.length}
             skippedCount={skippedCount}
             running={actions.running}
