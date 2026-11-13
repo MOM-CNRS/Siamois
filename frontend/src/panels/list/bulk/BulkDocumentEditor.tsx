@@ -26,8 +26,9 @@ function labelOf(doc: DocumentSummary): string {
 }
 
 /**
- * Links one existing document to every selected entity, or removes that link from each (the
- * document itself stays). The bulk counterpart of a Documents tab's « Associer » and « Retirer le lien ».
+ * The « Documents » relation of the selection: adds the link to one existing document to every
+ * selected entity, or removes it from each (the document itself stays). The bulk counterpart of a
+ * Documents tab's « Associer » and « Retirer le lien ».
  */
 export function BulkDocumentEditor({
   organizationId,
@@ -62,14 +63,17 @@ export function BulkDocumentEditor({
       <SelectButton
         value={mode}
         options={[
-          { label: t("bulk.documentLink"), value: "LINK" },
-          { label: t("bulk.documentUnlink"), value: "UNLINK" },
+          { label: t("bulk.modeAdd"), value: "LINK" },
+          { label: t("bulk.modeRemove"), value: "UNLINK" },
         ]}
         allowEmpty={false}
         disabled={running}
         onChange={(e) => setMode(e.value as BulkLinkMode)}
-        aria-label={t("bulk.documentsTitle")}
+        aria-label={t("entity.document.plural")}
       />
+      <small className="bulk-field-editor-hint">
+        {t(mode === "LINK" ? "bulk.documentAddHint" : "bulk.documentRemoveHint")}
+      </small>
       <div className="p-fluid bulk-field-editor-input">
         <AutoComplete
           value={query}

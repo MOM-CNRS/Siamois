@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {apiFetch} from "../../api/client";
-import {createBulkApi} from "./bulkApi";
+import {BULK_CHUNK_SIZE, createBulkApi} from "./bulkApi";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);
@@ -44,5 +44,17 @@ describe("createBulkApi", () => {
 
   it("offers no document link for a type documents don't link to", () => {
     expect(createBulkApi("studies").linkDocument).toBeUndefined();
+  });
+
+  it("splits a large selection into requests the server accepts, and adds up their results", async () => {
+    mockedApiFetch
+      .mockResolvedValueOnce({ data: { succeeded: [1], failed: [] } })
+      .mockResolvedValueOnce({ data: { succeeded: [], failed: [{ id: 1001, status: 403, message: "Interdit" }] } });
+    const ids = Array.from({ length: BULK_CHUNK_SIZE + 1 }, (_, i) => i + 1);
+
+    const total = await createBulkApi("finds").delete(ids);
+
+    expect(mockedApiFetch).toHaveBeenCalledTimes(2);
+    expect(total).toEqual({ succeeded: [1], failed: [{ id: 1001, status: 403, message: "Interdit" }] });
   });
 });

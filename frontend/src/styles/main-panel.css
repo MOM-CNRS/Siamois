@@ -4163,7 +4163,7 @@ div#search-bar .sia-topbar-search-field .sia-search {
   display: flex;
   flex-direction: column;
   width: 18rem;
-  max-height: 22rem;
+  max-height: 30rem;
 }
 
 .bulk-field-picker-search,
@@ -4176,6 +4176,18 @@ div#search-bar .sia-topbar-search-field .sia-search {
   flex-direction: column;
   margin-top: 0.5rem;
   overflow-y: auto;
+}
+
+/* The properties take the room left and scroll; the relations keep room for four lines of their own
+   (label + 4 × 2.1rem), so they never shrink to a sliver under a long list of properties. */
+.bulk-field-picker-group-properties {
+  flex: 1 1 auto;
+  min-height: 6rem;
+}
+
+.bulk-field-picker-group-relations {
+  flex: 0 0 auto;
+  max-height: 11rem;
 }
 
 .bulk-field-picker-group-label {
