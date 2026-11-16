@@ -257,5 +257,20 @@ public interface SpatialUnitRepository extends CrudRepository<SpatialUnit, Long>
 
     @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM container WHERE fk_spatial_unit_id = :spatialUnitId")
     long countContainersBySpatialUnit(@Param("spatialUnitId") Long spatialUnitId);
+
+    /**
+     * The geometry of each given place as GeoJSON in WGS84 (for the map view), whatever SRID it was
+     * stored in — PostGIS reprojects from the geometry's own SRID, which is never rewritten. Places
+     * with no geometry, no SRID (0) or an SRID absent from spatial_ref_sys are left out: their
+     * coordinates can't be placed on a map without guessing the system.
+     */
+    @Query(nativeQuery = true, value = """
+        SELECT su.spatial_unit_id, ST_AsGeoJSON(ST_Transform(su.geom, 4326))
+        FROM spatial_unit su
+        WHERE su.spatial_unit_id IN (:ids)
+          AND su.geom IS NOT NULL
+          AND ST_SRID(su.geom) IN (SELECT srid FROM spatial_ref_sys)
+        """)
+    List<Object[]> findGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids);
 }
 

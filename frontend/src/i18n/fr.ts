@@ -131,7 +131,7 @@ export const fr = {
   "list.viewModeMap": "Carte",
   "list.mapEmpty": "Aucune géométrie à afficher",
   "list.mapWithoutGeometry": "{count} sans géométrie exploitable (absente, sans SRID ou SRID inconnu)",
-  "list.mapTruncated": "Seules les {shown} premières sur {total} sont examinées : affinez les filtres.",
+  "list.mapTruncated": "Seuls les {shown} premiers éléments sur {total} sont examinés : affinez les filtres.",
   "list.mapOsm": "Fond OpenStreetMap",
   "list.mapSatellite": "Satellite",
   "list.treeEmpty": "Aucun résultat",

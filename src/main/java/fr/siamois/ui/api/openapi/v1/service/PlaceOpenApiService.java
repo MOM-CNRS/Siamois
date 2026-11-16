@@ -54,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 @Service
@@ -108,6 +109,23 @@ public class PlaceOpenApiService {
     private PlaceListResponse listByOrganizationInternal(ProjectApiCaller caller, Long organizationId, ListWindow window,
                                                          String lang, FieldQuery fieldQuery, String fieldsParam,
                                                          TreeRequest tree) {
+        InstitutionDTO institution = requireListOrganization(caller, organizationId);
+        FilterDTO filter = placeFilter(fieldQuery, window.search());
+        filter.setRootOnly(tree.enabled());
+        Page<SpatialUnitDTO> page = searchPlaces(institution, window, fieldQuery, filter);
+
+        return toListResponse(caller, institution, page, lang, window, fieldsParam, tree.enabled() ? filter : null);
+    }
+
+    /**
+     * The organization an organization-wide place list is asked for, checked in the caller's scope.
+     *
+     * @param caller         the authenticated caller
+     * @param organizationId the {@code organizationId} parameter
+     * @return the organization
+     * @throws ResponseStatusException 400 when absent, 403 when out of scope, 404 when unknown
+     */
+    public InstitutionDTO requireListOrganization(ProjectApiCaller caller, Long organizationId) {
         if (organizationId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "organizationId est obligatoire");
         }
@@ -117,13 +135,27 @@ public class PlaceOpenApiService {
         if (institution == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Organisation introuvable");
         }
+        return institution;
+    }
 
+    /**
+     * One page of an organization's flat place list, as rows — the very query of {@link #listByOrganization}
+     * (search, sort and field filters), for the map view to walk.
+     *
+     * @param institution the organization, already checked ({@link #requireListOrganization})
+     * @param window      the page, sort and search
+     * @param fieldQuery  the field filters and sort
+     * @return the page of places
+     */
+    @Transactional(readOnly = true)
+    public Page<SpatialUnitDTO> pagePlaces(InstitutionDTO institution, ListWindow window, FieldQuery fieldQuery) {
+        return searchPlaces(institution, window, fieldQuery, placeFilter(fieldQuery, window.search()));
+    }
+
+    private Page<SpatialUnitDTO> searchPlaces(InstitutionDTO institution, ListWindow window, FieldQuery fieldQuery,
+                                              FilterDTO filter) {
         Sort sort = ProjectApiService.sortOr(fieldQuery, window.sort(), ProjectApiService::parsePlaceSort);
-        FilterDTO filter = placeFilter(fieldQuery, window.search());
-        filter.setRootOnly(tree.enabled());
-        Page<SpatialUnitDTO> page = spatialUnitService.searchSpatialUnits(institution, filter, pageRequest(window, sort));
-
-        return toListResponse(caller, institution, page, lang, window, fieldsParam, tree.enabled() ? filter : null);
+        return spatialUnitService.searchSpatialUnits(institution, filter, pageRequest(window, sort));
     }
 
     /**
@@ -545,7 +577,7 @@ public class PlaceOpenApiService {
         SpatialUnitDTO copy = new SpatialUnitDTO(source);
         copy.setId(null);
         // A copy is new: it comes first in the lists, which show the newest first.
-        copy.setCreationTime(OffsetDateTime.now());
+        copy.setCreationTime(OffsetDateTime.now(ZoneId.systemDefault()));
         copy.setChildren(null);
         copy.setParents(source.getParents() == null ? null : new HashSet<>(source.getParents()));
         for (int i = 1; i <= MAX_DUPLICATE_NAME_ATTEMPTS; i++) {
