@@ -4065,32 +4065,22 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .field-label-tooltip { max-width: 22rem; }
 .field-label-tooltip-definition { margin-top: 0.25rem; white-space: normal; }
 
-/* A geometry's WKT (GeometryRenderer): read-only, monospace, wrapped so a long polygon stays in its column. */
+/* A geometry's WKT, opened (GeometryRenderer): read-only, in the fields' own font, wrapped so a long
+   polygon stays in its column, scrolled past a screenful. */
 .field-geometry {
   display: block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8125rem;
+  font: inherit;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  max-height: 8rem;
+  max-height: 20rem;
   overflow: auto;
 }
 
-.field-geometry-preview {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.field-geometry-overlay {
-  max-width: min(40rem, 90vw);
-}
-
-.field-geometry-overlay .field-geometry {
-  max-height: 20rem;
+/* The same WKT folded in the fiche (FieldEditCell): one line cut to the field's width. */
+.sia-fiche-tab .field-value-cell-geometry {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------- Bulk actions on a list's selection (panels/list/bulk/BulkActionBar.tsx) ----------
