@@ -14,7 +14,7 @@ export interface FeatureLook {
 
 export const LIST_LOOK: FeatureLook = { weight: 2, radius: 6, fillOpacity: 0.35, interactive: true };
 
-// The fiche open in the overview: thicker, on top, outlined in the theme colour (main-panel.css).
+// The fiche open in the overview: thicker, on top, outlined in the recording units' red (main-panel.css).
 export const SELECTED_LOOK: FeatureLook = { weight: 4, radius: 9, fillOpacity: 0.55, interactive: false, className: "entity-map-selected" };
 
 // One colour per type label, stable across renders: a hue from the label's hash.

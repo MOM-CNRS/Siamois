@@ -4321,7 +4321,8 @@ div#search-bar .sia-topbar-search-field .sia-search {
 }
 
 /* A highlighted shape (featureLook's SELECTED_LOOK) — the overview's fiche on the list map, a fiche's
-   geometry on its own map: the stroke attribute Leaflet sets is overridden by the theme colour. */
+   geometry on its own map: the stroke attribute Leaflet sets is overridden by the recording units' red,
+   whatever the entity, so a selection reads the same on every map. */
 .leaflet-container .entity-map-selected {
-  stroke: var(--primary-color, #669966);
+  stroke: var(--ground-main-color, #7e1717);
 }
