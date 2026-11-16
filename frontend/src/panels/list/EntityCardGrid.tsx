@@ -13,6 +13,7 @@ import {rememberListContext} from "./listContext";
 import {PAGE_SIZE_OPTIONS} from "./tableState";
 import type {RowRecord} from "./useEntityListData";
 import {useDocumentFullImage, useDocumentThumbnail} from "./useDocumentThumbnail";
+import {isOpenInOverview} from "./overviewSelection";
 
 const SKELETON_CARD_COUNT = 8;
 
@@ -236,7 +237,7 @@ export function EntityCardGrid({
                 entityType={entityType}
                 config={config}
                 row={row}
-                selected={overviewEntityId != null && String(row.id) === String(overviewEntityId)}
+                selected={isOpenInOverview(overviewEntityId, row.id)}
                 checked={isChecked(row)}
                 onToggleChecked={toggleChecked}
                 onOpen={open}

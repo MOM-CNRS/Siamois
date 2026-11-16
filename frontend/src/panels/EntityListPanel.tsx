@@ -503,6 +503,8 @@ function EntityListPanelBody({
           params={params}
           onNavigate={onNavigate}
           onOpenOverview={rowOpenOverview}
+          // In focus mode a row replaces the list: there is no overview beside the map to mirror.
+          selectedId={rowOpenOverview ? overviewEntityId : undefined}
         />
       ) : showCards ? (
         <EntityCardGrid

@@ -33,6 +33,7 @@ import {isFieldPending, isPlaceholderRow, placeholderRow} from "./usePagedList";
 import type {RowRecord} from "./useEntityListData";
 import {buildTreeSelectionColumn} from "./treeSelectionColumn";
 import type {EntityTableTree} from "./useTreeRows";
+import {isOpenInOverview} from "./overviewSelection";
 import {t} from "../../i18n";
 
 // Placeholder rows shown during a list's very first load, one skeleton per cell — the table keeps
@@ -474,8 +475,7 @@ export function EntityTable({
   const rowStateClasses = (row: RowRecord): string[] => {
     const classes: string[] = [];
     if (tree?.isContext(row)) classes.push("entity-tree-context-row");
-    if (overviewEntityId != null && String(row.id) === String(overviewEntityId))
-      classes.push("overview-open");
+    if (isOpenInOverview(overviewEntityId, row.id)) classes.push("overview-open");
     if (search && !tree?.isContext(row)) classes.push("search-match");
     return classes;
   };

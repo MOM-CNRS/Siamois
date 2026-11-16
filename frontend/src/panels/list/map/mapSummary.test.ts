@@ -1,6 +1,6 @@
 import {describe, expect, it} from "vitest";
 import type {MapFeature} from "../../../entities/shared/listApi";
-import {summarizeMap} from "./mapSummary";
+import {selectedFeature, summarizeMap} from "./mapSummary";
 
 const feature = (id: string): MapFeature => ({ id, label: `UE-${id}`, geometry: { type: "Point", coordinates: [2, 48] } });
 
@@ -17,5 +17,18 @@ describe("summarizeMap", () => {
   it("says an empty result set is empty", () => {
     expect(summarizeMap({ features: [], meta: { total: 0, examined: 0 } }))
       .toEqual({ total: 0, examined: 0, withoutGeometry: 0, truncated: false, empty: true });
+  });
+});
+
+describe("selectedFeature", () => {
+  const features = [feature("1"), feature("2")];
+
+  it("finds the overview's fiche among the placed features", () => {
+    expect(selectedFeature(features, 2)).toBe(features[1]);
+  });
+
+  it("selects nothing for a fiche the map did not place, or with no overview", () => {
+    expect(selectedFeature(features, "3")).toBeUndefined();
+    expect(selectedFeature(features, undefined)).toBeUndefined();
   });
 });

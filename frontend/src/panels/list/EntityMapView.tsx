@@ -1,15 +1,18 @@
-import {useRef} from "react";
+import {useMemo, useRef} from "react";
 import "leaflet/dist/leaflet.css";
 import {Skeleton} from "primereact/skeleton";
 import {type MapFeature, type ResultSetParams, resultSetOf} from "../../entities/shared/listApi";
 import type {EntityPreview, EntityTypeConfig} from "../../entities/shared/types";
-import {LIST_LOOK} from "../../map/featureLook";
-import {fitLayer} from "../../map/leafletMap";
+import {LIST_LOOK, SELECTED_LOOK} from "../../map/featureLook";
+import {fitLayer, revealLayer} from "../../map/leafletMap";
+import {useMapFocusTarget} from "../../map/mapFocus";
 import {useFeatureLayer} from "../../map/useFeatureLayer";
 import {useLeafletMap} from "../../map/useLeafletMap";
+import {isOpenInOverview} from "./overviewSelection";
 import {MapNotices} from "./map/MapNotices";
 import {summarizeMap} from "./map/mapSummary";
 import {useEntityMapData} from "./map/useEntityMapData";
+import {useSelectedFeature} from "./map/useSelectedFeature";
 
 export interface EntityMapViewProps {
   entityType: string;
@@ -18,16 +21,20 @@ export interface EntityMapViewProps {
   params: ResultSetParams;
   onNavigate?: (entityType: string, id: string | number) => void;
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // The fiche the overview pane shows: highlighted and kept in view, even when the list's filter leaves it out.
+  selectedId?: string | number;
 }
 
 const NO_FEATURES: readonly MapFeature[] = [];
 
 /**
  * The list on a map, for an entity whose config is `mappable`. Leaflet draws the features the
- * server returned (already in WGS84); a click opens the entity like the table's identifier chip.
- * Units the server could not place are counted in a banner above the map, not guessed at.
+ * server returned (already in WGS84); a click opens the entity like the table's identifier chip,
+ * and the fiche open in the overview stays highlighted and in view (fetched on its own only when
+ * the result set left it out). Units the server could not
+ * place are counted in a banner above the map, not guessed at.
  */
-export function EntityMapView({ entityType, config, params, onNavigate, onOpenOverview }: EntityMapViewProps) {
+export function EntityMapView({ entityType, config, params, onNavigate, onOpenOverview, selectedId }: EntityMapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const map = useLeafletMap(containerRef);
   const { data, isLoading, error } = useEntityMapData(entityType, config.collectionPath, params);
@@ -44,6 +51,16 @@ export function EntityMapView({ entityType, config, params, onNavigate, onOpenOv
     onDrawn: (m, layer) => {
       if (framedFor.current !== resultSetKey && fitLayer(m, layer)) framedFor.current = resultSetKey;
     },
+  });
+
+  const selected = useSelectedFeature(entityType, data?.features, selectedId);
+  const selection = useMemo(() => (selected ? [selected] : NO_FEATURES), [selected]);
+  const selectionLayer = useFeatureLayer(map, selection, SELECTED_LOOK, { onDrawn: revealLayer });
+  // The fiche's geometry chip, in the overview beside this map, zooms here onto its shape.
+  useMapFocusTarget((type, id) => {
+    const layer = selectionLayer.current;
+    if (!map || !layer || type !== entityType || !isOpenInOverview(id, selected?.id)) return false;
+    return fitLayer(map, layer, true);
   });
 
   return (
