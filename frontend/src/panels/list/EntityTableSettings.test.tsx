@@ -52,7 +52,16 @@ describe("EntityTableSettings' map section", () => {
     expect(onChange).toHaveBeenCalledWith("40");
   });
 
-  it("has no map section when there is nothing to choose", () => {
+  it("shows the section for a single geometry column, which says what the map draws", () => {
+    renderSettings({
+      mapGeometry: { options: [{ mode: "-332", label: "Géométrie", icon: "bi bi-bounding-box-circles" }], value: "-332", onChange: () => {} },
+    });
+
+    const tiles = [...radiogroup("Géométrie affichée")!.querySelectorAll('[role="radio"]')];
+    expect(tiles.map((tile) => [tile.textContent, tile.getAttribute("aria-checked")])).toEqual([["Géométrie", "true"]]);
+  });
+
+  it("has no map section without a geometry column", () => {
     renderSettings({ openMode: { value: "overview", onChange: () => {} } });
     expect(radiogroup("Géométrie affichée")).toBeNull();
   });

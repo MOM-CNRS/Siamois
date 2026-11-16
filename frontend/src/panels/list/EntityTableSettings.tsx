@@ -32,7 +32,7 @@ export interface EntityTableSettingsProps {
     visible: string[];
     onChange: (visible: string[]) => void;
   } | null;
-  // The geometry column the map places the rows by; null when the list is not shown as a map or has a single one.
+  // The geometry column the map places the rows by; null when the list is not shown as a map or has no geometry column.
   mapGeometry: {
     options: { mode: string; label: string; icon: string }[];
     value: string;

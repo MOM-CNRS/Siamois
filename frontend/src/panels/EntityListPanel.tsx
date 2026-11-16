@@ -434,7 +434,8 @@ function EntityListPanelBody({
               <EntityTableSettings
                 openMode={onOpenOverview && onNavigate ? { value: openMode, onChange: setOpenMode } : null}
                 mapGeometry={
-                  showMap && mapGeometry && geometryOptions.length > 1
+                  // Shown even for a single column: it says which geometry the map draws.
+                  showMap && mapGeometry
                     ? {
                         options: geometryOptions.map((o) => ({ mode: o.value, label: o.label, icon: o.icon })),
                         value: mapGeometry.value,
