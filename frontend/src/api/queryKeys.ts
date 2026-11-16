@@ -19,7 +19,8 @@ export const queryKeys = {
   ) => ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id, filters ?? null] as const,
   // A list's map (listApi's fetchMap): under the list's own prefix, so anything that refreshes the list
   // refreshes its map too.
-  entityListMap: (entityType: string, params: ResultSetParams) => ["entity-list", entityType, "map", params] as const,
+  entityListMap: (entityType: string, params: ResultSetParams, geometry?: string) =>
+    ["entity-list", entityType, "map", params, geometry ?? null] as const,
   entityListSchema: (entityType: string, organizationId: number | undefined, scope: ListScope | undefined) =>
     ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id] as const,
 
@@ -27,7 +28,9 @@ export const queryKeys = {
   entityDetailsOf: (entityType: string) => ["entity-detail", entityType] as const,
   entityDetail: (entityType: string, id: string | number) => ["entity-detail", entityType, id] as const,
   // One entity on a map (listApi's fetchMapFeature): under its detail, so editing the fiche refreshes it.
-  entityMapFeature: (entityType: string, id: string | number) => ["entity-detail", entityType, id, "map"] as const,
+  // Without `geometry`, the prefix of every geometry column's: invalidating it reaches them all.
+  entityMapFeature: (entityType: string, id: string | number, geometry?: string) =>
+    (geometry == null ? ["entity-detail", entityType, id, "map"] : ["entity-detail", entityType, id, "map", geometry]) as readonly unknown[],
   entitySiblings: (entityType: string, id: string | number, organizationId: number | undefined, context: unknown) =>
     ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
 

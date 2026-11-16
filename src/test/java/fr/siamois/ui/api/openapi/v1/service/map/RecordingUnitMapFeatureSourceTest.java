@@ -3,7 +3,10 @@ package fr.siamois.ui.api.openapi.v1.service.map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.siamois.domain.models.ValidationStatus;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.concept.ResolvedConceptResource;
@@ -17,9 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -27,6 +33,7 @@ class RecordingUnitMapFeatureSourceTest {
 
     @Mock private RecordingUnitRepository repository;
     @Mock private RecordingUnitResponseMapper mapper;
+    @Mock private CustomFieldRepository customFieldRepository;
     @InjectMocks private RecordingUnitMapFeatureSource source;
 
     /**
@@ -53,14 +60,35 @@ class RecordingUnitMapFeatureSourceTest {
     }
 
     /**
-     * The geometries are PostGIS's, as the repository returns them.
+     * The geometry columns are the unit's own geometry (the default, from the system field catalog) and
+     * the additional fields of type geometry — not any other field.
      */
     @Test
-    void geoJsonWgs84ByIds_ReadsTheRepository() {
-        List<Object[]> rows = new ArrayList<>();
-        rows.add(new Object[]{3L, "{}"});
-        when(repository.findGeoJsonWgs84ByIds(List.of(3L))).thenReturn(rows);
+    void geometryColumns_AreTheOwnGeometryAndTheAdditionalGeometryFields() {
+        when(customFieldRepository.findById(40L)).thenReturn(Optional.of(new CustomFieldGeometry()));
+        when(customFieldRepository.findById(41L)).thenReturn(Optional.of(new CustomFieldText()));
+        when(customFieldRepository.findById(42L)).thenReturn(Optional.empty());
 
-        assertSame(rows, source.geoJsonWgs84ByIds(List.of(3L)));
+        assertEquals(-332L, source.defaultGeometryFieldId());
+        assertTrue(source.isGeometryColumn(-332L));
+        assertTrue(source.isGeometryColumn(40L));
+        assertFalse(source.isGeometryColumn(41L));
+        assertFalse(source.isGeometryColumn(42L));
+    }
+
+    /**
+     * By its own geometry, PostGIS's; by an additional field, its answers'.
+     */
+    @Test
+    void geoJsonWgs84ByIds_ReadsTheColumnsGeometries() {
+        List<Object[]> own = new ArrayList<>();
+        own.add(new Object[]{3L, "{}"});
+        List<Object[]> answers = new ArrayList<>();
+        answers.add(new Object[]{3L, "{\"type\":\"Point\"}"});
+        when(repository.findGeoJsonWgs84ByIds(List.of(3L))).thenReturn(own);
+        when(repository.findAnswerGeoJsonWgs84ByIds(List.of(3L), 40L)).thenReturn(answers);
+
+        assertSame(own, source.geoJsonWgs84ByIds(List.of(3L), -332L));
+        assertSame(answers, source.geoJsonWgs84ByIds(List.of(3L), 40L));
     }
 }

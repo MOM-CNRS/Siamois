@@ -32,6 +32,12 @@ export interface EntityTableSettingsProps {
     visible: string[];
     onChange: (visible: string[]) => void;
   } | null;
+  // The geometry column the map places the rows by; null when the list is not shown as a map or has a single one.
+  mapGeometry: {
+    options: { mode: string; label: string; icon: string }[];
+    value: string;
+    onChange: (value: string) => void;
+  } | null;
   // The row actions the user can arrange; null when the list has none.
   actionBar: {
     items: { key: string; label: string; icon: string }[];
@@ -48,6 +54,7 @@ export function EntityTableSettings({
   views,
   openMode,
   columns,
+  mapGeometry,
   actionBar,
 }: EntityTableSettingsProps) {
   const gearPanelRef = useRef<OverlayPanel>(null);
@@ -56,7 +63,7 @@ export function EntityTableSettings({
   const actionBarSettingsRef = useRef<OverlayPanel>(null);
 
   const hasViews = views != null && views.options.length > 1;
-  if (!columns && !actionBar && !hasViews && !openMode) return null;
+  if (!columns && !actionBar && !hasViews && !openMode && !mapGeometry) return null;
 
   // The gear's own panel gives way to the one asked for, anchored on the gear itself.
   function openSettings(ref: RefObject<OverlayPanel>, e: SyntheticEvent) {
@@ -158,6 +165,11 @@ export function EntityTableSettings({
           tiles(t("list.menuOpening"), openModeOptions, openMode.value, (mode) => {
             gearPanelRef.current?.hide();
             openMode.onChange(mode);
+          })}
+        {mapGeometry &&
+          tiles(t("list.menuMapGeometry"), mapGeometry.options, mapGeometry.value, (value) => {
+            gearPanelRef.current?.hide();
+            mapGeometry.onChange(value);
           })}
         {entries.length > 0 && (
           <div className="entity-list-panel-gear-menu" role="menu">

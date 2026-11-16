@@ -1,12 +1,17 @@
 package fr.siamois.ui.api.openapi.v1.service.map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
+import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
+import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -14,15 +19,20 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * The recording units on a map: their geometries come from PostGIS, their identifier, type and
- * validation status from the same mapper as the list's rows.
+ * The recording units on a map, by their own geometry (the system field bound to {@code geom}) or by
+ * an additional geometry field: the geometries come from PostGIS, the identifier, type and validation
+ * status from the same mapper as the list's rows.
  */
 @Component
 @RequiredArgsConstructor
 public class RecordingUnitMapFeatureSource implements MapFeatureSource<RecordingUnitDTO> {
 
+    /** The unit's own geometry column. */
+    static final long OWN_GEOMETRY = SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "geom").getId();
+
     private final RecordingUnitRepository recordingUnitRepository;
     private final RecordingUnitResponseMapper recordingUnitResponseMapper;
+    private final CustomFieldRepository customFieldRepository;
 
     /**
      * {@inheritDoc}
@@ -36,8 +46,29 @@ public class RecordingUnitMapFeatureSource implements MapFeatureSource<Recording
      * {@inheritDoc}
      */
     @Override
-    public List<Object[]> geoJsonWgs84ByIds(Collection<Long> ids) {
-        return recordingUnitRepository.findGeoJsonWgs84ByIds(ids);
+    public long defaultGeometryFieldId() {
+        return OWN_GEOMETRY;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isGeometryColumn(long fieldId) {
+        return fieldId == OWN_GEOMETRY || customFieldRepository.findById(fieldId)
+                .map(Hibernate::unproxy)
+                .filter(CustomFieldGeometry.class::isInstance)
+                .isPresent();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<Object[]> geoJsonWgs84ByIds(Collection<Long> ids, long geometryFieldId) {
+        return geometryFieldId == OWN_GEOMETRY
+                ? recordingUnitRepository.findGeoJsonWgs84ByIds(ids)
+                : recordingUnitRepository.findAnswerGeoJsonWgs84ByIds(ids, geometryFieldId);
     }
 
     /**

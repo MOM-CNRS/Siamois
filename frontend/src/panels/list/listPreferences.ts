@@ -31,6 +31,8 @@ export interface ListPrefs {
   actionBar?: ActionBarPrefs;
   viewMode?: ListViewMode;
   openMode?: OpenMode;
+  // The geometry column the map places the rows by (a field id, panels/list/map/mapGeometry.ts).
+  mapGeometry?: string;
 }
 
 /** Project lists open in focus, every other list in the overview, until the user chooses. */
@@ -57,6 +59,7 @@ export function loadListPrefs(key: string): ListPrefs {
     if (isStringArray(parsed.visibleColumns)) prefs.visibleColumns = parsed.visibleColumns;
     if (isListViewMode(parsed.viewMode)) prefs.viewMode = parsed.viewMode;
     if (parsed.openMode === "overview" || parsed.openMode === "focus") prefs.openMode = parsed.openMode;
+    if (typeof parsed.mapGeometry === "string" && parsed.mapGeometry) prefs.mapGeometry = parsed.mapGeometry;
     const bar = parsed.actionBar;
     if (bar && isStringArray(bar.order) && isStringArray(bar.inline)) prefs.actionBar = { order: bar.order, inline: bar.inline };
     return prefs;

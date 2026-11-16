@@ -7,6 +7,7 @@ import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,15 +17,26 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EntityMapServiceTest {
 
     private static final String POINT = "{\"type\":\"Point\",\"coordinates\":[2.35,48.85]}";
+    private static final String LINE = "{\"type\":\"LineString\",\"coordinates\":[[2,48],[3,49]]}";
+    private static final long OWN = -1L;
+    private static final long ADDITIONAL = 40L;
 
     /**
-     * A collection whose rows are their own ids, placed when the given geometries have them.
+     * A collection whose rows are their own ids, placed by geometry column (field id → GeoJSON by row).
      */
-    private record FakeSource(Map<Long, String> geoJsonById) implements MapFeatureSource<Long> {
+    private record FakeSource(Map<Long, Map<Long, String>> byColumn) implements MapFeatureSource<Long> {
+
+        /**
+         * A collection placed by its own geometries only.
+         */
+        static FakeSource ofOwn(Map<Long, String> geoJsonById) {
+            return new FakeSource(Map.of(OWN, geoJsonById));
+        }
 
         /**
          * {@inheritDoc}
@@ -38,7 +50,24 @@ class EntityMapServiceTest {
          * {@inheritDoc}
          */
         @Override
-        public List<Object[]> geoJsonWgs84ByIds(Collection<Long> ids) {
+        public long defaultGeometryFieldId() {
+            return OWN;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public boolean isGeometryColumn(long fieldId) {
+            return fieldId == OWN || fieldId == ADDITIONAL;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public List<Object[]> geoJsonWgs84ByIds(Collection<Long> ids, long geometryFieldId) {
+            Map<Long, String> geoJsonById = byColumn.getOrDefault(geometryFieldId, Map.of());
             List<Object[]> rows = new ArrayList<>();
             ids.stream().filter(geoJsonById::containsKey).distinct()
                     .forEach(id -> rows.add(new Object[]{id, geoJsonById.get(id)}));
@@ -62,14 +91,18 @@ class EntityMapServiceTest {
     }
 
     /**
+     * A page holding the given rows, and that many in all.
+     */
+    private static PageImpl<Long> pageOf(List<Long> rows) {
+        return new PageImpl<>(rows, PageRequest.of(0, EntityMapService.PAGE_SIZE), rows.size());
+    }
+
+    /**
      * A row with a geometry is placed, one without is only examined.
      */
     @Test
     void build_PlacesRowsWithAGeometryAndExaminesTheOthers() {
-        FakeSource source = new FakeSource(Map.of(1L, POINT));
-
-        EntityMapResponse response = service().build(offset ->
-                new PageImpl<>(List.of(1L, 2L), PageRequest.of(0, EntityMapService.PAGE_SIZE), 2), source);
+        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)), FakeSource.ofOwn(Map.of(1L, POINT)), null);
 
         assertEquals(1, response.features().size());
         assertEquals("1", response.features().get(0).id());
@@ -87,7 +120,7 @@ class EntityMapServiceTest {
         List<Long> full = Collections.nCopies(pageSize, 7L);
 
         EntityMapResponse response = service().build(offset ->
-                new PageImpl<>(full, PageRequest.of(offset / pageSize, pageSize), 5000), new FakeSource(Map.of()));
+                new PageImpl<>(full, PageRequest.of(offset / pageSize, pageSize), 5000), FakeSource.ofOwn(Map.of()), null);
 
         assertEquals(new EntityMapResponse.Meta(5000, EntityMapService.MAX_FEATURES), response.meta());
         assertEquals(0, response.features().size());
@@ -98,23 +131,46 @@ class EntityMapServiceTest {
      */
     @Test
     void build_LeavesOutAnUnreadableGeometry() {
-        FakeSource source = new FakeSource(Map.of(1L, POINT, 2L, "{not json"));
-
-        EntityMapResponse response = service().build(offset ->
-                new PageImpl<>(List.of(1L, 2L), PageRequest.of(0, EntityMapService.PAGE_SIZE), 2), source);
+        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)),
+                FakeSource.ofOwn(Map.of(1L, POINT, 2L, "{not json")), null);
 
         assertEquals(List.of("1"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
     }
 
     /**
-     * A single row with a geometry comes back as its feature, outside of any list.
+     * By an additional geometry field, the rows are placed by its answers, not their own geometry.
+     */
+    @Test
+    void build_ByAnAdditionalGeometryField_PlacesTheRowsByItsAnswers() {
+        FakeSource source = new FakeSource(Map.of(OWN, Map.of(1L, POINT), ADDITIONAL, Map.of(2L, LINE)));
+
+        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)), source, ADDITIONAL);
+
+        assertEquals(List.of("2"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
+        assertEquals("LineString", response.features().get(0).geometry().get("type").asText());
+    }
+
+    /**
+     * A field that is no geometry column of the collection is refused.
+     */
+    @Test
+    void build_UnknownGeometryColumn_IsABadRequest() {
+        FakeSource source = FakeSource.ofOwn(Map.of());
+        assertThrows(ResponseStatusException.class, () -> service().build(offset -> pageOf(List.of(1L)), source, -99L));
+    }
+
+    /**
+     * A single row with a geometry comes back as its feature, outside of any list, by the column asked for.
      */
     @Test
     void feature_WithAGeometry_ReturnsTheRowPlaced() {
-        EntityMapFeatureResponse response = service().feature(3L, new FakeSource(Map.of(3L, POINT)));
+        FakeSource source = new FakeSource(Map.of(OWN, Map.of(3L, POINT), ADDITIONAL, Map.of(3L, LINE)));
 
-        assertEquals("3", response.feature().id());
-        assertEquals("Point", response.feature().geometry().get("type").asText());
+        EntityMapFeatureResponse own = service().feature(3L, source, null);
+        EntityMapFeatureResponse additional = service().feature(3L, source, ADDITIONAL);
+
+        assertEquals("Point", own.feature().geometry().get("type").asText());
+        assertEquals("LineString", additional.feature().geometry().get("type").asText());
     }
 
     /**
@@ -122,6 +178,6 @@ class EntityMapServiceTest {
      */
     @Test
     void feature_WithoutGeometry_ReturnsNoFeature() {
-        assertNull(service().feature(4L, new FakeSource(Map.of())).feature());
+        assertNull(service().feature(4L, FakeSource.ofOwn(Map.of()), null).feature());
     }
 }

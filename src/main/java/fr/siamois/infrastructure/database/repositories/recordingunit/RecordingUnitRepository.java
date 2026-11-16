@@ -50,6 +50,25 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
         """, nativeQuery = true)
     List<Object[]> findGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids);
 
+    /**
+     * The answer of each given unit to an additional geometry field, as GeoJSON in WGS84 (the map view
+     * by that column): the answer's text is read as WKT or EWKT and reprojected by PostGIS
+     * ({@code geojson_wgs84_or_null}). Units whose answer is empty, unreadable, without SRID or with an
+     * unknown one are left out, like {@link #findGeoJsonWgs84ByIds}.
+     */
+    @Query(value = """
+        SELECT ranked.unit_id, ranked.geojson FROM (
+            SELECT fca.fk_recording_unit_id AS unit_id, geojson_wgs84_or_null(cfa.value_as_text) AS geojson
+            FROM form_config_answer fca
+            JOIN custom_field_answer cfa ON cfa.fk_form_config_answer_id = fca.form_config_answer_id
+            WHERE fca.fk_recording_unit_id IN (:ids)
+              AND cfa.fk_custom_field_id = :fieldId
+              AND cfa.value_as_text IS NOT NULL
+        ) ranked
+        WHERE ranked.geojson IS NOT NULL
+        """, nativeQuery = true)
+    List<Object[]> findAnswerGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids, @Param("fieldId") long fieldId);
+
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
             SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)

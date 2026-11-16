@@ -1,4 +1,4 @@
-import {type CSSProperties, type ReactNode, useEffect, useRef, useState} from "react";
+import {type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState} from "react";
 import {PaneStateScope, usePaneState} from "./pane/paneState";
 import {useQuery, useQueryClient} from "@tanstack/react-query";
 import {Skeleton} from "primereact/skeleton";
@@ -25,6 +25,7 @@ import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
 import {EntityMapView} from "./list/EntityMapView";
+import {mapGeometryOptions, resolveMapGeometry} from "./list/map/mapGeometry";
 import {EntityTable} from "./list/EntityTable";
 import {useTreeRows} from "./list/useTreeRows";
 import {EntityTableSettings} from "./list/EntityTableSettings";
@@ -197,14 +198,19 @@ function EntityListPanelBody({
   const showTree = viewMode === "tree";
   const showCards = viewMode === "cards";
   const showMap = viewMode === "map";
-  // How a row opens a page: in the side overview, or in the main pane (focus) by leaving the overview out.
-  // Remembered for the kind of list; project lists start in focus, the others in the overview.
-  const [, setOpenModeTick] = useState(0);
-  const openMode: OpenMode = loadListPrefs(prefsKey).openMode ?? defaultOpenMode(entityType);
-  function setOpenMode(mode: OpenMode) {
-    saveListPrefs(prefsKey, { openMode: mode });
-    setOpenModeTick((n) => n + 1);
+  // What is remembered for the kind of list in this browser (listPreferences): a change re-renders.
+  const [, setPrefsTick] = useState(0);
+  function savePrefs(patch: Parameters<typeof saveListPrefs>[1]) {
+    saveListPrefs(prefsKey, patch);
+    setPrefsTick((n) => n + 1);
   }
+  // How a row opens a page: in the side overview, or in the main pane (focus) by leaving the overview out.
+  // Project lists start in focus, the others in the overview.
+  const openMode: OpenMode = loadListPrefs(prefsKey).openMode ?? defaultOpenMode(entityType);
+  const setOpenMode = (mode: OpenMode) => savePrefs({ openMode: mode });
+  // The geometry column the map places the rows by: one of the catalog's geometry columns, the entity's own by default.
+  const geometryOptions = useMemo(() => mapGeometryOptions(catalog?.fields), [catalog]);
+  const mapGeometry = resolveMapGeometry(loadListPrefs(prefsKey).mapGeometry, geometryOptions);
   const rowOpenOverview = openMode === "focus" ? undefined : onOpenOverview;
   // A tab filtered on exactly one type creates entities of that type.
   const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
@@ -427,6 +433,15 @@ function EntityListPanelBody({
             <>
               <EntityTableSettings
                 openMode={onOpenOverview && onNavigate ? { value: openMode, onChange: setOpenMode } : null}
+                mapGeometry={
+                  showMap && mapGeometry && geometryOptions.length > 1
+                    ? {
+                        options: geometryOptions.map((o) => ({ mode: o.value, label: o.label, icon: o.icon })),
+                        value: mapGeometry.value,
+                        onChange: (value) => savePrefs({ mapGeometry: value }),
+                      }
+                    : null
+                }
                 views={
                   views.length > 1
                     ? {
@@ -505,6 +520,7 @@ function EntityListPanelBody({
           onOpenOverview={rowOpenOverview}
           // In focus mode a row replaces the list: there is no overview beside the map to mirror.
           selectedId={rowOpenOverview ? overviewEntityId : undefined}
+          geometry={mapGeometry?.value}
         />
       ) : showCards ? (
         <EntityCardGrid

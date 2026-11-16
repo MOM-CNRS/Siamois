@@ -124,6 +124,7 @@ export const fr = {
   "list.viewImage": "Voir l'image en entier",
   "list.selectRow": "Sélectionner la ligne",
   "list.menuOpening": "Ouverture des pages",
+  "list.menuMapGeometry": "Géométrie affichée",
   "list.openOverview": "Aperçu latéral",
   "list.openFocus": "Focus",
   "list.viewModeCards": "Vignettes",

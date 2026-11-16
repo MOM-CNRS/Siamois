@@ -77,14 +77,19 @@ export interface MapData {
   meta: { total: number; examined: number };
 }
 
-export function fetchMap(collectionPath: string, params: ResultSetParams): Promise<MapData> {
-  return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${resultSetQuery(params).toString()}`);
+// `geometry`: the field id of the geometry column to place the rows by (their own geometry, or an
+// additional geometry field); the collection's own geometry when absent.
+export function fetchMap(collectionPath: string, params: ResultSetParams, geometry?: string): Promise<MapData> {
+  const query = resultSetQuery(params);
+  if (geometry) query.set("geometry", geometry);
+  return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${query.toString()}`);
 }
 
 // One element on a map, outside of any list — GET .../{collection}/{id}/map (EntityMapFeatureResponse):
 // the fiche open beside a map whose result set left it out. Null when it has no placeable geometry.
-export async function fetchMapFeature(collectionPath: string, id: string | number): Promise<MapFeature | null> {
-  const body = await apiFetch<{ feature: MapFeature | null }>(`/api/v1/${collectionPath}/${encodeURIComponent(String(id))}/map`);
+export async function fetchMapFeature(collectionPath: string, id: string | number, geometry?: string): Promise<MapFeature | null> {
+  const query = geometry ? `?geometry=${encodeURIComponent(geometry)}` : "";
+  const body = await apiFetch<{ feature: MapFeature | null }>(`/api/v1/${collectionPath}/${encodeURIComponent(String(id))}/map${query}`);
   return body.feature;
 }
 

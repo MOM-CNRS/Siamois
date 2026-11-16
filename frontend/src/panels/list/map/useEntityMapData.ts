@@ -5,15 +5,16 @@ import {fetchMap, type ResultSetParams, resultSetOf} from "../../../entities/sha
 import {MAP_STALE_TIME} from "../../../map/useEntityFeature";
 
 /**
- * The map of a list's result set. Keyed on what selects the rows only (not their order nor their
+ * The map of a list's result set, by a geometry column (`geometry`: the rows' own geometry when
+ * absent, or an additional geometry field). Keyed on what selects the rows only (not their order nor their
  * page), so sorting or paging the list never refetches the map; anything that refreshes the list
  * refreshes it too (queryKeys.entityListMap sits under the list's prefix).
  */
-export function useEntityMapData(entityType: string, collectionPath: string, params: ResultSetParams, enabled = true) {
+export function useEntityMapData(entityType: string, collectionPath: string, params: ResultSetParams, enabled = true, geometry?: string) {
   const resultSet = resultSetOf(params);
   return useQuery({
-    queryKey: queryKeys.entityListMap(entityType, resultSet),
-    queryFn: () => fetchMap(collectionPath, resultSet),
+    queryKey: queryKeys.entityListMap(entityType, resultSet, geometry),
+    queryFn: () => fetchMap(collectionPath, resultSet, geometry),
     staleTime: MAP_STALE_TIME,
     enabled,
   });

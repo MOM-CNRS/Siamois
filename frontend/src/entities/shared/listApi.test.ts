@@ -134,6 +134,14 @@ describe("fetchMap", () => {
     expect(path).not.toContain("limit");
   });
 
+  it("asks for the chosen geometry column", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { organizationId: 7 }, "40");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("geometry=40");
+  });
+
   it("goes through the project's own sub-collection when scoped to a project", async () => {
     registerEntityType(stubConfig("project", "projects"));
     mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
@@ -159,6 +167,14 @@ describe("fetchMapFeature", () => {
 
     await expect(fetchMapFeature("recording-units", 12)).resolves.toEqual(feature);
     expect(mockedApiFetch.mock.calls[0][0]).toBe("/api/v1/recording-units/12/map");
+  });
+
+  it("asks for the chosen geometry column", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ feature: null });
+
+    await fetchMapFeature("recording-units", 12, "40");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toBe("/api/v1/recording-units/12/map?geometry=40");
   });
 
   it("answers null for an entity with no placeable geometry", async () => {

@@ -124,6 +124,7 @@ export const en: Record<MessageKey, string> = {
   "list.viewImage": "View the whole image",
   "list.selectRow": "Select the row",
   "list.menuOpening": "Opening pages",
+  "list.menuMapGeometry": "Geometry shown",
   "list.openOverview": "Side preview",
   "list.openFocus": "Focus",
   "list.viewModeCards": "Cards",
