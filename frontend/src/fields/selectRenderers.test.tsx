@@ -19,7 +19,7 @@ vi.mock("./optionSources", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./optionSources")>();
   return {
     ...actual,
-    optionSourceFor: vi.fn(actual.optionSourceFor),
+    optionSourceFor: vi.fn(),
     createPlaceFromSuggestion: vi.fn(),
     createPersonAwaitingAccount: vi.fn(),
   };

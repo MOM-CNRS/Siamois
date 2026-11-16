@@ -1,4 +1,4 @@
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, type Mock, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
@@ -67,8 +67,8 @@ const aView = (overrides: Partial<ViewResource> = {}): ViewResource => ({
 
 let container: HTMLDivElement;
 let root: Root;
-let onViewChange: ReturnType<typeof vi.fn>;
-let refreshViews: ReturnType<typeof vi.fn>;
+let onViewChange: Mock<(viewId?: number) => void>;
+let refreshViews: Mock<() => void>;
 
 async function flush() {
   for (let round = 0; round < 2; round++) {
