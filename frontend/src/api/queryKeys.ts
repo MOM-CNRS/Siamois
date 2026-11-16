@@ -26,6 +26,8 @@ export const queryKeys = {
   entityDetails: () => ["entity-detail"] as const,
   entityDetailsOf: (entityType: string) => ["entity-detail", entityType] as const,
   entityDetail: (entityType: string, id: string | number) => ["entity-detail", entityType, id] as const,
+  // One entity on a map (listApi's fetchMapFeature): under its detail, so editing the fiche refreshes it.
+  entityMapFeature: (entityType: string, id: string | number) => ["entity-detail", entityType, id, "map"] as const,
   entitySiblings: (entityType: string, id: string | number, organizationId: number | undefined, context: unknown) =>
     ["entity-siblings", entityType, id, organizationId, context ?? null] as const,
 
@@ -80,6 +82,8 @@ export const queryKeys = {
 
   // The raw types catalog at `path` (GET …/<x>-types): fetched once per path, whoever reads it.
   typesCatalog: (path: string) => ["types-catalog", path] as const,
+  // A commune's outline from geo.api.gouv.fr (map/communeContour.ts), by INSEE code: never changes.
+  communeContour: (inseeCode: string) => ["commune-contour", inseeCode] as const,
   // What a consumer derives from a catalog — cached apart only so each keeps its own `select`.
   effectiveForm: (segment: string, projectId: string | number | null | undefined, typeId: string | null | undefined) =>
     ["effective-form", segment, projectId, typeId ?? null] as const,

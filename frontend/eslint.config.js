@@ -9,7 +9,7 @@ const ENTITY_FOLDERS = ["project", "recordingUnit", "find", "phase", "container"
 // and an entity folder never reaches into another's. Shared pieces live at entities/ top level.
 
 const genericLayer = {
-  files: ["src/{panels,fields,components,api,auth,styles}/**/*.{ts,tsx}", "src/*.{ts,tsx}"],
+  files: ["src/{panels,fields,components,api,auth,styles,map}/**/*.{ts,tsx}", "src/*.{ts,tsx}"],
   ignores: ["src/mount.ts", "**/*.test.{ts,tsx}"],
   rules: {
     "no-restricted-imports": ["error", {

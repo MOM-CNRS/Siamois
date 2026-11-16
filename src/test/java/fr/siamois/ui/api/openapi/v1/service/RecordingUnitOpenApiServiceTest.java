@@ -3715,4 +3715,23 @@ class RecordingUnitOpenApiServiceTest {
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
                 .isInstanceOf(IdentifierConflictException.class);
     }
+
+    @Test
+    void findViewableRecordingUnit_whenVisible_returnsTheUnit() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+
+        assertThat(service.findViewableRecordingUnit("1026", personDto, SCOPE)).isSameAs(ruDto);
+    }
+
+    @Test
+    void findViewableRecordingUnit_whenNotVisible_throwsNotFound() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.findViewableRecordingUnit("1026", personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
 }

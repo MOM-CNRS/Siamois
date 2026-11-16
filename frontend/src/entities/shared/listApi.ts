@@ -29,6 +29,7 @@ export async function fetchList<T>(
   params: ListParams,
 ): Promise<PagedResult<T>> {
   const query = resultSetQuery(params);
+  if (params.sort) query.set("sort", params.sort);
   query.set("offset", String(params.offset));
   query.set("limit", String(params.limit));
   if (params.fields) query.set("fields", params.fields);
@@ -49,14 +50,22 @@ export async function fetchList<T>(
   };
 }
 
-// The parameters that define a list's result set, without its paging or presentation — what its map shows.
-export type ResultSetParams = Pick<ListParams, "search" | "sort" | "organizationId" | "filters" | "scope">;
+// The parameters that define a list's result set, without its order, paging or presentation — what
+// its map shows. The order is left out on purpose: a map has none, so sorting the list never refetches it.
+export type ResultSetParams = Pick<ListParams, "search" | "organizationId" | "filters" | "scope">;
 
-// What the list's map view shows — GET .../{collection}/map, the same result set as the list
-// (search, sort, filters, scope) answered with each row's geometry in WGS84 instead of a page.
+/** The result set of a list's parameters, so that only what changes the rows keys its map. */
+export function resultSetOf(params: ResultSetParams): ResultSetParams {
+  const { search, organizationId, filters, scope } = params;
+  return { search, organizationId, filters, scope };
+}
+
+// What the list's map view shows — GET .../{collection}/map (EntityMapResponse server side), the
+// same result set as the list answered with each row's geometry in WGS84 instead of a page. The server
+// only says what it alone knows; what is left out and how features look is derived client-side.
 export interface MapFeature {
   id: string;
-  fullIdentifier: string;
+  label: string;
   type?: { resolvedLabel?: string | null } | null;
   validationStatus?: string | null;
   geometry: GeoJSON.Geometry;
@@ -64,18 +73,25 @@ export interface MapFeature {
 
 export interface MapData {
   features: MapFeature[];
-  meta: { total: number; shown: number; withoutGeometry: number; truncated: boolean };
+  // total: rows of the result set; examined: those looked at (up to the server's cap).
+  meta: { total: number; examined: number };
 }
 
 export function fetchMap(collectionPath: string, params: ResultSetParams): Promise<MapData> {
   return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${resultSetQuery(params).toString()}`);
 }
 
+// One element on a map, outside of any list — GET .../{collection}/{id}/map (EntityMapFeatureResponse):
+// the fiche open beside a map whose result set left it out. Null when it has no placeable geometry.
+export async function fetchMapFeature(collectionPath: string, id: string | number): Promise<MapFeature | null> {
+  const body = await apiFetch<{ feature: MapFeature | null }>(`/api/v1/${collectionPath}/${encodeURIComponent(String(id))}/map`);
+  return body.feature;
+}
+
 // The query parameters that define a result set — shared by the list and its map.
 function resultSetQuery(params: ResultSetParams): URLSearchParams {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
-  if (params.sort) query.set("sort", params.sort);
   if (params.organizationId != null)
     query.set("organizationId", String(params.organizationId));
   if (params.filters) {
