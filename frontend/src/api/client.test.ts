@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {apiBlob, ApiError, apiFetch} from "./client";
+import {apiBlob, apiFetch} from "./client";
 import {setLocale} from "../i18n";
 
 vi.mock("../auth/sessionAuth", () => ({
@@ -26,15 +26,17 @@ describe("apiFetch error handling", () => {
       }),
     );
 
-    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(
-      new ApiError(400, "identifier est obligatoire"),
-    );
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "identifier est obligatoire",
+    });
   });
 
   it("falls back to the raw text when the error body isn't JSON", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response("plain text failure", { status: 500 }));
 
-    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(new ApiError(500, "plain text failure"));
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject({ name: "ApiError", status: 500, message: "plain text failure" });
   });
 });
 
@@ -140,7 +142,7 @@ describe("apiBlob", () => {
       .mockResolvedValueOnce(new Response("", { status: 401 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Fichier introuvable" }), { status: 404 }));
 
-    await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject(new ApiError(404, "Fichier introuvable"));
+    await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject({ name: "ApiError", status: 404, message: "Fichier introuvable" });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
