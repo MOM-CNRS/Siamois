@@ -40,6 +40,17 @@ public record FieldQuery(@Nullable Specification<?> specification, boolean order
         return ordering == null ? (root, query, cb) -> null : (Specification<E>) ordering;
     }
 
+    /**
+     * This query narrowed by one more filter on the same entity, its sort unchanged.
+     *
+     * @param filter a specification of the entity this query lists
+     * @return the narrowed query, {@link #filtered()}
+     */
+    @SuppressWarnings("unchecked")
+    public FieldQuery and(Specification<?> filter) {
+        return new FieldQuery(this.<Object>specificationFor().and((Specification<Object>) filter), ordered, true, ordering);
+    }
+
     public Pageable pageable(Pageable pageable) {
         return ordered && pageable.isPaged() ? PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()) : pageable;
     }

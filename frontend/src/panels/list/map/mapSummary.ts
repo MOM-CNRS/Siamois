@@ -5,7 +5,8 @@ import {isOpenInOverview} from "../overviewSelection";
 export interface MapSummary {
   total: number;
   examined: number;
-  // Examined but not placed: no geometry, no SRID or an SRID PostGIS doesn't know.
+  // Examined but not placed: the server keeps only rows with a geometry, so an unreadable one, no SRID or an
+  // SRID PostGIS doesn't know.
   withoutGeometry: number;
   // The result set holds more rows than the server examines for one map.
   truncated: boolean;

@@ -1,5 +1,6 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
 import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
@@ -314,6 +315,36 @@ public class RecordingUnitSpec {
             Join<Object, Object> phase = ru.join("phases");
             members.select(ru.get("id")).where(cb.equal(phase.get("id"), phaseId));
             return root.get("id").in(members);
+        };
+    }
+
+    /**
+     * Recording units whose own geometry is set.
+     *
+     * @return the specification
+     */
+    @NonNull
+    public static Specification<RecordingUnit> hasGeometry() {
+        return (root, query, cb) -> cb.isNotNull(root.get("geom"));
+    }
+
+    /**
+     * Recording units with a non-blank answer to the additional text field {@code fieldId} (a geometry
+     * field's WKT or EWKT, for one). An {@code EXISTS} subquery, compatible with every sort.
+     *
+     * @param fieldId the additional field
+     * @return the specification
+     */
+    @NonNull
+    public static Specification<RecordingUnit> hasTextAnswerTo(long fieldId) {
+        return (root, query, cb) -> {
+            Subquery<Integer> answers = query.subquery(Integer.class);
+            Root<CustomFieldAnswerText> answer = answers.from(CustomFieldAnswerText.class);
+            answers.select(cb.literal(1)).where(
+                    cb.equal(answer.get("formConfigAnswer").get("recordingUnit"), root),
+                    cb.equal(answer.get("customField").get("id"), fieldId),
+                    cb.notEqual(cb.trim(answer.get("value")), ""));
+            return cb.exists(answers);
         };
     }
 

@@ -6,12 +6,14 @@ import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.RecordingUnitSpec;
 import fr.siamois.ui.api.openapi.v1.mapper.RecordingUnitResponseMapper;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -59,6 +61,14 @@ public class RecordingUnitMapFeatureSource implements MapFeatureSource<Recording
                 .map(Hibernate::unproxy)
                 .filter(CustomFieldGeometry.class::isInstance)
                 .isPresent();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Specification<?> withGeometry(long geometryFieldId) {
+        return geometryFieldId == OWN_GEOMETRY ? RecordingUnitSpec.hasGeometry() : RecordingUnitSpec.hasTextAnswerTo(geometryFieldId);
     }
 
     /**

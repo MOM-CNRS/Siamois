@@ -2,6 +2,7 @@ package fr.siamois.ui.api.openapi.v1.service.map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +39,15 @@ public interface MapFeatureSource<D> {
      * @return true when the rows can be placed by it
      */
     boolean isGeometryColumn(long fieldId);
+
+    /**
+     * The rows whose geometry column is not empty, as a filter on the list's entity: the map keeps only them,
+     * so its cap counts rows it can show.
+     *
+     * @param geometryFieldId a geometry column ({@link #isGeometryColumn})
+     * @return a specification of the entity the list's query pages
+     */
+    Specification<?> withGeometry(long geometryFieldId);
 
     /**
      * The geometry of each given row by a geometry column, as GeoJSON in WGS84, for those that have a usable one.

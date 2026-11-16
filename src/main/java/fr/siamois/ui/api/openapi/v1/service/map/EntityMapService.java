@@ -3,6 +3,7 @@ package fr.siamois.ui.api.openapi.v1.service.map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapFeatureResponse;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -18,13 +19,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.IntFunction;
 
 /**
  * Builds the map view of any list: walks the very same filtered, authorized query the list uses (so
- * search, f.* filters and visibility are inherited, not re-implemented), then asks the collection's
- * {@link MapFeatureSource} for those rows' geometries in WGS84, by the geometry column chosen (their own
- * geometry, or an additional geometry field). Only what the server alone knows is
+ * search, f.* filters and visibility are inherited, not re-implemented), narrowed to the rows whose
+ * geometry column chosen (their own geometry, or an additional geometry field) is not empty, then asks the
+ * collection's {@link MapFeatureSource} for those rows' geometries in WGS84. Only what the server alone knows is
  * answered; counting what is left out and styling the features is the client's job.
  */
 @Service
@@ -39,22 +39,44 @@ public class EntityMapService {
     private final ObjectMapper objectMapper;
 
     /**
-     * The rows of the list, up to {@link #MAX_FEATURES}, with those that can be placed on a map.
+     * A list's query, for one page of the map.
      *
-     * @param pageAt          the list's query for the page starting at the given offset (limit {@link #PAGE_SIZE})
+     * @param <D> the row type of the list
+     */
+    @FunctionalInterface
+    public interface ListPager<D> {
+
+        /**
+         * The page of the list starting at an offset (limit {@link #PAGE_SIZE}), by a field query.
+         *
+         * @param offset     the first row
+         * @param fieldQuery the list's field filters and sort, narrowed by the map
+         * @return the page
+         */
+        Page<D> page(int offset, FieldQuery fieldQuery);
+    }
+
+    /**
+     * The rows of the list whose geometry column is not empty, up to {@link #MAX_FEATURES}, with those
+     * that can be placed on a map.
+     *
+     * @param fieldQuery      the list's field filters and sort
+     * @param pager           the list's query
      * @param source          the collection's geometries and feature shape
      * @param geometryFieldId the geometry column to place the rows by; null for the collection's own geometry
      * @param <D>             the row type of the list
-     * @return the placed rows and how many were examined
+     * @return the placed rows, how many have a geometry and how many of them were examined
      * @throws ResponseStatusException 400 when the field is no geometry column of the collection
      */
     @Transactional(readOnly = true)
-    public <D> EntityMapResponse build(IntFunction<Page<D>> pageAt, MapFeatureSource<D> source, @Nullable Long geometryFieldId) {
+    public <D> EntityMapResponse build(FieldQuery fieldQuery, ListPager<D> pager, MapFeatureSource<D> source,
+                                       @Nullable Long geometryFieldId) {
         long column = geometryColumn(source, geometryFieldId);
+        FieldQuery withGeometry = fieldQuery.and(source.withGeometry(column));
         List<D> rows = new ArrayList<>();
         long total = 0;
         for (int offset = 0; rows.size() < MAX_FEATURES; offset += PAGE_SIZE) {
-            Page<D> page = pageAt.apply(offset);
+            Page<D> page = pager.page(offset, withGeometry);
             total = page.getTotalElements();
             rows.addAll(page.getContent());
             if (!page.hasNext()) break;

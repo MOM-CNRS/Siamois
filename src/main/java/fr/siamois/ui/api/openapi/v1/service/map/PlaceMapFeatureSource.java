@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.dto.entity.SpatialUnitDTO;
 import fr.siamois.infrastructure.database.repositories.SpatialUnitRepository;
+import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.resource.place.PlaceResource;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -51,6 +53,14 @@ public class PlaceMapFeatureSource implements MapFeatureSource<SpatialUnitDTO> {
     @Override
     public boolean isGeometryColumn(long fieldId) {
         return fieldId == OWN_GEOMETRY;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Specification<?> withGeometry(long geometryFieldId) {
+        return SpatialUnitSpec.hasGeometry();
     }
 
     /**

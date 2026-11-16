@@ -51,9 +51,9 @@ public class PlaceMapControllerApi {
     @Operation(summary = "Lieux d'une organisation, sur une carte",
             description = "Mêmes recherche, tri et filtres f.<fieldId> que la liste. Les géométries sont reprojetées "
                     + "en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée "
-                    + "stockée. Les lieux sans géométrie, sans SRID ou avec un SRID inconnu sont examinés "
-                    + "(meta.examined) mais absents de features. Au plus 2000 lieux examinés (meta.total > "
-                    + "meta.examined quand le filtre en compte davantage).")
+                    + "stockée. Seuls les lieux dont la géométrie n'est pas vide sont retenus (meta.total) ; ceux "
+                    + "sans SRID ou avec un SRID inconnu sont examinés (meta.examined) mais absents de features. Au plus 2000 lieux "
+                    + "examinés (meta.total > meta.examined quand le filtre en compte davantage).")
     @ApiResponse(responseCode = "200", description = "Ok")
     @ApiResponse(responseCode = "400", description = "organizationId absent, tri, filtre ou colonne de géométrie invalides")
     @ApiResponse(responseCode = "401", description = "Non authentifié")
@@ -69,9 +69,9 @@ public class PlaceMapControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = placeOpenApiService.requireListOrganization(caller, organizationId);
         var fieldQuery = fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(offset ->
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
                 placeOpenApiService.pagePlaces(institution,
-                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), fieldQuery),
+                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), mapQuery),
                 placeMapFeatureSource, geometry));
     }
 

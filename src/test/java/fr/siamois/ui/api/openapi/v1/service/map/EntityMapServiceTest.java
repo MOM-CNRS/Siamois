@@ -2,11 +2,13 @@ package fr.siamois.ui.api.openapi.v1.service.map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.siamois.dto.FieldQuery;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapFeatureResponse;
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EntityMapServiceTest {
 
@@ -27,9 +30,17 @@ class EntityMapServiceTest {
     private static final long ADDITIONAL = 40L;
 
     /**
-     * A collection whose rows are their own ids, placed by geometry column (field id → GeoJSON by row).
+     * A collection whose rows are their own ids, placed by geometry column (field id → GeoJSON by row);
+     * its geometry filter records, when applied, the column it was made for.
      */
-    private record FakeSource(Map<Long, Map<Long, String>> byColumn) implements MapFeatureSource<Long> {
+    private record FakeSource(Map<Long, Map<Long, String>> byColumn, List<Long> filteredBy) implements MapFeatureSource<Long> {
+
+        /**
+         * A collection placed by geometry column.
+         */
+        FakeSource(Map<Long, Map<Long, String>> byColumn) {
+            this(byColumn, new ArrayList<>());
+        }
 
         /**
          * A collection placed by its own geometries only.
@@ -60,6 +71,17 @@ class EntityMapServiceTest {
         @Override
         public boolean isGeometryColumn(long fieldId) {
             return fieldId == OWN || fieldId == ADDITIONAL;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public Specification<?> withGeometry(long geometryFieldId) {
+            return (root, query, cb) -> {
+                filteredBy.add(geometryFieldId);
+                return null;
+            };
         }
 
         /**
@@ -102,7 +124,7 @@ class EntityMapServiceTest {
      */
     @Test
     void build_PlacesRowsWithAGeometryAndExaminesTheOthers() {
-        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)), FakeSource.ofOwn(Map.of(1L, POINT)), null);
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)), FakeSource.ofOwn(Map.of(1L, POINT)), null);
 
         assertEquals(1, response.features().size());
         assertEquals("1", response.features().get(0).id());
@@ -119,7 +141,7 @@ class EntityMapServiceTest {
         int pageSize = EntityMapService.PAGE_SIZE;
         List<Long> full = Collections.nCopies(pageSize, 7L);
 
-        EntityMapResponse response = service().build(offset ->
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) ->
                 new PageImpl<>(full, PageRequest.of(offset / pageSize, pageSize), 5000), FakeSource.ofOwn(Map.of()), null);
 
         assertEquals(new EntityMapResponse.Meta(5000, EntityMapService.MAX_FEATURES), response.meta());
@@ -131,7 +153,7 @@ class EntityMapServiceTest {
      */
     @Test
     void build_LeavesOutAnUnreadableGeometry() {
-        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)),
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)),
                 FakeSource.ofOwn(Map.of(1L, POINT, 2L, "{not json")), null);
 
         assertEquals(List.of("1"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
@@ -144,10 +166,28 @@ class EntityMapServiceTest {
     void build_ByAnAdditionalGeometryField_PlacesTheRowsByItsAnswers() {
         FakeSource source = new FakeSource(Map.of(OWN, Map.of(1L, POINT), ADDITIONAL, Map.of(2L, LINE)));
 
-        EntityMapResponse response = service().build(offset -> pageOf(List.of(1L, 2L)), source, ADDITIONAL);
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)), source, ADDITIONAL);
 
         assertEquals(List.of("2"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
         assertEquals("LineString", response.features().get(0).geometry().get("type").asText());
+    }
+
+    /**
+     * The list is queried narrowed to the rows whose geometry column, the one asked for, is not empty.
+     */
+    @Test
+    void build_QueriesTheListNarrowedToTheRowsWithAGeometry() {
+        FakeSource source = FakeSource.ofOwn(Map.of());
+        List<FieldQuery> queried = new ArrayList<>();
+
+        service().build(FieldQuery.NONE, (offset, query) -> {
+            queried.add(query);
+            return pageOf(List.of(1L));
+        }, source, ADDITIONAL);
+
+        assertTrue(queried.get(0).filtered());
+        queried.get(0).specificationFor().toPredicate(null, null, null);
+        assertEquals(List.of(ADDITIONAL), source.filteredBy());
     }
 
     /**
@@ -156,7 +196,7 @@ class EntityMapServiceTest {
     @Test
     void build_UnknownGeometryColumn_IsABadRequest() {
         FakeSource source = FakeSource.ofOwn(Map.of());
-        assertThrows(ResponseStatusException.class, () -> service().build(offset -> pageOf(List.of(1L)), source, -99L));
+        assertThrows(ResponseStatusException.class, () -> service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L)), source, -99L));
     }
 
     /**

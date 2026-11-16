@@ -130,7 +130,7 @@ export const en: Record<MessageKey, string> = {
   "list.viewModeCards": "Cards",
   "list.viewModeMap": "Map",
   "list.mapEmpty": "No geometry to display",
-  "list.mapWithoutGeometry": "{count} without a usable geometry (missing, no SRID or unknown SRID)",
+  "list.mapWithoutGeometry": "{count} without a usable geometry (unreadable, no SRID or unknown SRID)",
   "list.mapTruncated": "Only the first {shown} of {total} are examined: narrow the filters.",
   "list.mapOsm": "OpenStreetMap",
   "list.mapSatellite": "Satellite",

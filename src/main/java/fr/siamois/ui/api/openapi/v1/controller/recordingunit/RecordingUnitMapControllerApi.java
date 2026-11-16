@@ -39,7 +39,8 @@ public class RecordingUnitMapControllerApi {
 
     private static final String MAP_DESCRIPTION = "Mêmes recherche, tri et filtres f.<clé> que la liste. "
             + "Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, "
-            + "sans jamais modifier la donnée stockée. Les unités sans géométrie, sans SRID ou avec un SRID "
+            + "sans jamais modifier la donnée stockée. Seules les unités dont la colonne de géométrie n'est pas vide "
+            + "sont retenues (meta.total) ; celles dont la géométrie est illisible, sans SRID ou avec un SRID "
             + "inconnu sont examinées (meta.examined) mais absentes de features. Au plus 2000 unités examinées "
             + "(meta.total > meta.examined quand le filtre en compte davantage).";
 
@@ -75,9 +76,9 @@ public class RecordingUnitMapControllerApi {
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         var fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(offset ->
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
                 organizationListService.pageRecordingUnits(caller, institution, offset, EntityMapService.PAGE_SIZE,
-                        sort, search, filter, fieldQuery), recordingUnitMapFeatureSource, geometry));
+                        sort, search, filter, mapQuery), recordingUnitMapFeatureSource, geometry));
     }
 
     /**
@@ -99,9 +100,9 @@ public class RecordingUnitMapControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         var fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(offset ->
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
                 projectApiService.pageRecordingUnitsForProject(caller, id,
-                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), filter, fieldQuery,
+                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), filter, mapQuery,
                         TreeRequest.OFF), recordingUnitMapFeatureSource, geometry));
     }
 
