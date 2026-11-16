@@ -361,7 +361,7 @@ public abstract class RecordingUnitForm {
             .externalId("4291328")
             .build();
 
-    /** The unit's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    /** The unit's geometry: shown in the fiche as a chip and a map, drawn there; never typed as an answer. */
     @Transient
     @JsonIgnore
     protected static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-332L, GEOM_CONCEPT);
@@ -636,6 +636,6 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(CLOSING_DATE_FIELD),
             SystemFieldSpec.of(AUTHOR_FIELD),
             SystemFieldSpec.of(CONTRIBUTORS_FIELD),
-            SystemFieldSpec.readOnly(GEOM_FIELD));
+            SystemFieldSpec.of(GEOM_FIELD));
     }
 }

@@ -17,6 +17,9 @@ export const LIST_LOOK: FeatureLook = { weight: 2, radius: 6, fillOpacity: 0.35,
 // The fiche open in the overview: thicker, on top, outlined in the theme colour (main-panel.css).
 export const SELECTED_LOOK: FeatureLook = { weight: 4, radius: 9, fillOpacity: 0.55, interactive: false, className: "entity-map-selected" };
 
+// The other units around a shape being drawn: faint and inert, there only to draw next to them.
+export const CONTEXT_LOOK: FeatureLook = { weight: 1, radius: 4, fillOpacity: 0.15, interactive: false };
+
 // One colour per type label, stable across renders: a hue from the label's hash.
 export function typeColor(label: string | null | undefined): string {
   if (!label) return "#6c757d";

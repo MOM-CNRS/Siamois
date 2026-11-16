@@ -31,3 +31,8 @@ export function useEntityFeature(
 export function isMappable(entityType: string | undefined): boolean {
   return entityType != null && getEntityType(entityType)?.list.mappable === true;
 }
+
+/** Whether an entity type's geometry can be drawn on a map: it is mappable and its config saves one (`api.patchGeometry`). */
+export function isGeometryDrawable(entityType: string | undefined): boolean {
+  return isMappable(entityType) && getEntityType(entityType!)?.api.patchGeometry != null;
+}

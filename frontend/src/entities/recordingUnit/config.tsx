@@ -15,6 +15,7 @@ import {
   getRecordingUnitStructure,
   listRecordingUnits,
   patchRecordingUnitAnswers,
+  patchRecordingUnitGeometry,
 } from "./api";
 import {recordingUnitColumns} from "./columns";
 import {RecordingUnitCreateForm} from "./CreateForm";
@@ -69,6 +70,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
     get: getRecordingUnit,
     list: listRecordingUnits,
     patchAnswers: (id, answers) => patchRecordingUnitAnswers(id, answers),
+    patchGeometry: patchRecordingUnitGeometry,
     duplicate: duplicateRecordingUnit,
   },
   // The list row's "Dupliquer" (JSF's DUPLICATE_ROW): pick the descendants and the number of copies.

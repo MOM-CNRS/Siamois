@@ -84,6 +84,8 @@ export const queryKeys = {
   typesCatalog: (path: string) => ["types-catalog", path] as const,
   // A commune's outline from geo.api.gouv.fr (map/communeContour.ts), by INSEE code: never changes.
   communeContour: (inseeCode: string) => ["commune-contour", inseeCode] as const,
+  // Where to frame the map drawing an entity's geometry (map/drawingFocus.ts), from its places and project.
+  drawingFocus: (placeIds: readonly string[], projectId: string | undefined) => ["drawing-focus", placeIds, projectId ?? null] as const,
   // What a consumer derives from a catalog — cached apart only so each keeps its own `select`.
   effectiveForm: (segment: string, projectId: string | number | null | undefined, typeId: string | null | undefined) =>
     ["effective-form", segment, projectId, typeId ?? null] as const,

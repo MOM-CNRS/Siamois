@@ -392,6 +392,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
       id: string | number,
       answers: Record<string, AnswerInputBody>,
     ): Promise<TDetail>;
+    // Writes the entity's geometry drawn on a map (in WGS84; null removes it) — createEntityApi's
+    // patchGeometry. Present: the fiche's geometry field of a `mappable` type can be drawn and edited.
+    patchGeometry?(id: string | number, geometry: GeoJSON.Geometry | null): Promise<TDetail>;
     // The bulk actions on a list's selection (entities/shared/bulkApi.ts createBulkApi): the selection
     // bar is offered only for an entity type that declares them.
     bulk?: BulkApi;

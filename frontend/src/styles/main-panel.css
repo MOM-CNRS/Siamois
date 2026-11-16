@@ -4093,6 +4093,97 @@ div#search-bar .sia-topbar-search-field .sia-search {
   max-height: 20rem;
 }
 
+/* A placeable geometry (fields/GeometryMapField.tsx): a chip naming its type, in the fiche's colour,
+   opening a closable map of the shape below it. */
+.field-geometry-map {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.field-geometry-map-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.field-geometry-chip {
+  --ref-chip-color: var(--main-color, #80b480);
+  --ref-chip-border: color-mix(in srgb, var(--main-color, #80b480) 35%, transparent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.field-geometry-map-panel {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* The close button, above the map rather than over it: Leaflet's controls hold both top corners. */
+.field-geometry-map-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.field-geometry-map-canvas {
+  height: 16rem;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.field-geometry-map-notice.p-message {
+  margin: 0;
+}
+
+/* The geometry editor (fields/GeometryEditor.tsx): a hint above the map, the drawing's actions below. */
+.field-geometry-map-header .field-geometry-editor-hint {
+  flex: 1 1 auto;
+  align-self: center;
+  color: var(--text-color-secondary, #6c757d);
+  font-size: 0.875rem;
+}
+
+.field-geometry-map-header {
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.field-geometry-editor-mode .p-button {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.875rem;
+}
+
+.field-geometry-editor-mode-icon {
+  margin-right: 0.35em;
+}
+
+.field-geometry-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.field-geometry-editor-spacer {
+  flex: 1 1 auto;
+}
+
+/* A polygon being drawn (map/usePolygonDraft.ts): dashed in the theme colour, under a crosshair. */
+.leaflet-container.entity-map-drawing {
+  cursor: crosshair;
+}
+
+.leaflet-container .entity-map-draft {
+  stroke: var(--primary-color, #669966);
+  fill: var(--primary-color, #669966);
+  stroke-dasharray: 6 4;
+}
+
 /* ---------- Bulk actions on a list's selection (panels/list/bulk/BulkActionBar.tsx) ----------
    A Notion-style bar laid over the top of the table while rows are ticked. The anchor takes no room
    (the table keeps its place); the bar floats above the header, after the select-all box so that
@@ -4328,4 +4419,10 @@ div#search-bar .sia-topbar-search-field .sia-search {
 
 .entity-map-notice.p-message {
   margin: 0;
+}
+
+/* A highlighted shape (featureLook's SELECTED_LOOK) — the overview's fiche on the list map, a fiche's
+   geometry on its own map: the stroke attribute Leaflet sets is overridden by the theme colour. */
+.leaflet-container .entity-map-selected {
+  stroke: var(--primary-color, #669966);
 }

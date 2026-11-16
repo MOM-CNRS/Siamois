@@ -34,10 +34,21 @@ export function createEntityApi<TSummary, TDetail, TCreate>(
       body: { identifier?: string; answers?: Record<string, AnswerInputBody> },
     ): Promise<TDetail> => (await apiFetch<DataBody<TDetail>>(`${base}/${id}`, { method: "PATCH", body })).data,
 
+    // The entity's geometry, drawn on a map: sent in WGS84 (SRID 4326), stored as is; null removes it.
+    patchGeometry: async (id: string | number, geometry: GeoJSON.Geometry | null): Promise<TDetail> =>
+      (await apiFetch<DataBody<TDetail>>(`${base}/${id}`, { method: "PATCH", body: { geom: wgs84GeometryBody(geometry) } })).data,
+
     create: async (body: TCreate): Promise<TDetail> =>
       (await apiFetch<DataBody<TDetail>>(base, { method: "POST", body: options.toCreateBody ? options.toCreateBody(body) : body })).data,
 
     duplicate: async (id: string | number): Promise<TDetail> =>
       (await apiFetch<DataBody<TDetail>>(`${base}/${id}/duplicate`, { method: "POST" })).data,
   };
+}
+
+// What a PATCH's `geom` holds (GeometryDTO server side): the GeoJSON geometry and the SRID it is in.
+export const WGS84_SRID = 4326;
+
+export function wgs84GeometryBody(geometry: GeoJSON.Geometry | null): (GeoJSON.Geometry & { srid: number }) | null {
+  return geometry ? { ...geometry, srid: WGS84_SRID } : null;
 }
