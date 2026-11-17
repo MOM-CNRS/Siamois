@@ -148,6 +148,18 @@
   border-style: dashed;
 }
 
+/* A filter the list is defined by (a fiche's configured tab): shown, but neither edited nor removed. */
+.filter-chip-locked {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.filter-chip-locked .filter-chip-body,
+.filter-chip-locked .filter-chip-body:hover {
+  cursor: default;
+  padding-right: 0.6rem;
+  background: transparent;
+}
+
 .filter-chip-remove {
   padding-left: 0.15rem;
   color: var(--text-color-secondary, #6b7280);

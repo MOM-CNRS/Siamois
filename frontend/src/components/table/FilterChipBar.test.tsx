@@ -72,6 +72,27 @@ describe("FilterChipBar", () => {
     expect(document.querySelectorAll(".entity-list-panel-filter-more [data-chip-key]")).toHaveLength(2);
   });
 
+  it("shows a tab's own filters first, locked, over the user's on the same key, and offers them no more", () => {
+    const specs: FilterSpec[] = [
+      { key: "kind", label: "Type", kind: "in" },
+      { key: "name", label: "Nom", kind: "contains" },
+      { key: "code", label: "Code", kind: "contains" },
+    ];
+    const filters = { name: { op: "contains" as const, v: "x" }, kind: { op: "in" as const, v: ["b"] } };
+    const lockedFilters = { kind: { op: "in" as const, v: ["a"], labels: { a: "Antérieur" } } };
+    act(() => root.render(<FilterChipBar specs={specs} filters={filters} lockedFilters={lockedFilters} optionsByKey={{}} onChange={vi.fn()} />));
+
+    const chips = container.querySelectorAll(".entity-list-panel-filter-chips > [data-chip-key]");
+    expect([...chips].map((chip) => chip.getAttribute("data-chip-key"))).toEqual(["kind", "name"]);
+    const locked = chips[0];
+    expect(locked.classList.contains("filter-chip-locked")).toBe(true);
+    expect(locked.querySelector(".filter-chip-value")?.textContent).toBe("Antérieur");
+    expect(locked.querySelector("button")).toBeNull();
+
+    act(() => (container.querySelector(".filter-chip-add") as HTMLElement).click());
+    expect([...document.querySelectorAll(".filter-picker-item")].map((item) => item.textContent)).toEqual(["Code"]);
+  });
+
   it("narrows the « add a filter » list with the typed text, ignoring case and accents", () => {
     const specs: FilterSpec[] = ["État", "Type", "Période"].map((label) => ({ key: label, label, kind: "contains" }));
     act(() => root.render(<FilterChipBar specs={specs} filters={{}} optionsByKey={{}} onChange={vi.fn()} />));

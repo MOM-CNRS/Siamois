@@ -806,6 +806,7 @@ function EntityListToolbar({
           <FilterChipBar
             specs={filterSpecs}
             filters={state.filters}
+            lockedFilters={listData.tabFilters}
             optionsByKey={filterControls.optionsByKey}
             onChange={filterControls.changeFilter}
           />
