@@ -130,19 +130,4 @@ public final class SystemFieldCatalog {
     public static boolean isOwningProject(CustomField field) {
         return field instanceof CustomFieldSelectOneActionUnit && "actionUnit".equals(field.getValueBinding());
     }
-
-    /**
-     * What identifies a system field within a table: its label — a message key, which is unique
-     * per field of a table — and the entity property it binds to. A definition's id is now stable
-     * and persisted as-is (see {@code SystemFieldInitializer}), so it is what tells two tables'
-     * fields apart even when they share a label and binding (e.g. the identifier field, declared
-     * once per table with its own id): each table's declaration is its own row, configured
-     * independently, since a configuration belongs to one table's {@code FormConfig} anyway.
-     *
-     * @param field the field to identify
-     * @return a key equal for two declarations of the same system field within one table
-     */
-    public static String identityOf(CustomField field) {
-        return field.getLabel() + " " + field.getValueBinding();
-    }
 }
