@@ -209,9 +209,9 @@ public class RecordingUnitSeeder {
         Concept erosionProfile = resolveOptionalConcept(conceptsByKey, "erosionProfile", s.erosionProfile, institutionId);
         Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution, institutionId);
 
-        Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author));
+        Person authorPerson = SeederUtils.field("author",    () -> personSeeder.resolveCached(personCache, s.author, institution));
         Person createdBy    = SeederUtils.field("createdBy", () -> personSeeder.resolveCached(personCache, s.createdBy));
-        List<Person> contributors = resolveContributors(s, personCache);
+        List<Person> contributors = resolveContributors(s, personCache, institution);
         SpatialUnit su = resolveSpatialUnit(s, spatialUnitsByKey);
         ActionUnit au = resolveActionUnit(s, actionUnitsByKey);
 
@@ -271,11 +271,11 @@ public class RecordingUnitSeeder {
         });
     }
 
-    private List<Person> resolveContributors(RecordingUnitSpecs s, Map<String, Person> personCache) {
+    private List<Person> resolveContributors(RecordingUnitSpecs s, Map<String, Person> personCache, Institution institution) {
         List<Person> contributors = new ArrayList<>();
         if (s.excavators == null) return contributors;
         for (var email : s.excavators) {
-            contributors.add(SeederUtils.field("excavators[" + email + "]", () -> personSeeder.resolveCached(personCache, email)));
+            contributors.add(SeederUtils.field("excavators[" + email + "]", () -> personSeeder.resolveCached(personCache, email, institution)));
         }
         return contributors;
     }

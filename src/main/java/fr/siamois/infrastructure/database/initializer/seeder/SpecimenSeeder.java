@@ -63,11 +63,11 @@ public class SpecimenSeeder {
 
     }
 
-    private List<Person> buildPersonList(Map<String, Person> personCache, List<String> emails, String fieldPrefix) {
+    private List<Person> buildPersonList(Map<String, Person> personCache, List<String> emails, String fieldPrefix, Institution institution) {
         List<Person> persons = new ArrayList<>();
         if (emails == null) return persons;
         for (var email : emails) {
-            persons.add(SeederUtils.field(fieldPrefix + "[" + email + "]", () -> personSeeder.resolveCached(personCache, email)));
+            persons.add(SeederUtils.field(fieldPrefix + "[" + email + "]", () -> personSeeder.resolveCached(personCache, email, institution)));
         }
         return persons;
     }
@@ -184,10 +184,10 @@ public class SpecimenSeeder {
             Concept chronologicalAttribution = resolveOptionalConcept(conceptsByKey, "chronologicalAttribution", s.chronologicalAttribution(), institutionId);
             Concept sanitaryState = resolveOptionalConcept(conceptsByKey, "sanitaryState", s.sanitaryState(), institutionId);
             Concept materialClass = resolveOptionalConcept(conceptsByKey, "materialClass", s.materialClass(), institutionId);
-            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+            Person author = SeederUtils.field("authorEmail", () -> personSeeder.resolveCached(personCache, s.authorEmail(), institution));
 
-            List<Person> authors    = buildPersonList(personCache, s.authors,    "authors");
-            List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors");
+            List<Person> authors    = buildPersonList(personCache, s.authors,    "authors", institution);
+            List<Person> collectors = buildPersonList(personCache, s.collectors, "collectors", institution);
 
             RecordingUnit ru = SeederUtils.field("UE", () -> {
                 RecordingUnit found = recordingUnitsByKey.get(s.recordingUnitKey());

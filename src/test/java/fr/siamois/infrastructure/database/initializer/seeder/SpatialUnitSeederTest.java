@@ -72,7 +72,7 @@ class SpatialUnitSeederTest {
     @Test
     void seed_AuthorDoesNotExist() {
         stubConceptFound();
-        when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
+        when(personSeeder.resolveCached(any(), eq("author@siamois.fr"), any()))
                 .thenThrow(new IllegalStateException("Auteur introuvable"));
 
         List<SpatialUnitSeeder.SpatialUnitSpecs> toInsert = List.of(spec("name"));

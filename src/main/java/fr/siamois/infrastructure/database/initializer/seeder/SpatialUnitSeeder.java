@@ -117,7 +117,7 @@ public class SpatialUnitSeeder {
             if (c == null) throw new IllegalStateException("Concept introuvable");
             return c;
         });
-        Person author = SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+        Person author = SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail(), institutionsByIdentifier.get(s.institutionIdentifier())));
         Institution institution = SeederUtils.field("institutionIdentifier", () -> {
             Institution inst = institutionsByIdentifier.get(s.institutionIdentifier());
             if (inst == null) throw new IllegalStateException("Institution introuvable");
