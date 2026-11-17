@@ -31,7 +31,7 @@ export const OPERATOR_PROFILES = {
   type: { operators: ["in", "notIn"], defaultOperator: "in" },
   // The entities linked to the row (parents, children, finds, stratigraphy, places…): the row's links contain them or not.
   relation: {
-    operators: ["in", "notIn", "empty"],
+    operators: ["in", "notIn", ...PRESENCE],
     defaultOperator: "in",
     labels: { in: "filter.op.contains", notIn: "filter.op.notContains" },
   },

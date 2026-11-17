@@ -22,10 +22,10 @@ describe("profileOf", () => {
     expect(profileOf("presence").defaultOperator).toBe("notEmpty");
   });
 
-  it("offers a type no « empty », a relation « contains », « does not contain » and « is empty »", () => {
+  it("offers a type no « empty », a relation « contains », « does not contain », « is empty » and « is not empty »", () => {
     expect(OPERATOR_PROFILES.type.operators).toEqual(["in", "notIn"]);
     const relation = OPERATOR_PROFILES.relation;
-    expect(relation.operators.map((op) => operatorLabel(op, relation))).toEqual(["Contient", "Ne contient pas", "Est vide"]);
+    expect(relation.operators.map((op) => operatorLabel(op, relation))).toEqual(["Contient", "Ne contient pas", "Est vide", "N'est pas vide"]);
   });
 
   it("names a date's bounds as dates", () => {

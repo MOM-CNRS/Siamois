@@ -9,7 +9,7 @@ Branche `feat/complex-filters`. La barre de filtres au-dessus des tables et des 
 | Date | est le, est entre, le ou après le, le ou avant le, est vide, n'est pas vide |
 | Liste, concept, personne, oui/non, statut | est, n'est pas, est vide, n'est pas vide |
 | Type | est, n'est pas (une fiche a toujours un type) |
-| Relation (fait partie de, contient, mobilier, stratigraphie, lieux…) | contient, ne contient pas, est vide |
+| Relation (fait partie de, contient, mobilier, stratigraphie, lieux…) | contient, ne contient pas, est vide, n'est pas vide |
 | Géométrie | est vide, n'est pas vide (appliqué dès l'ajout du filtre, « n'est pas vide » par défaut) |
 
 ## Comportement
