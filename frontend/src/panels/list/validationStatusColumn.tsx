@@ -1,3 +1,4 @@
+import {VALIDATION_STATUS_COLUMN_KEY} from "../../entities/shared/listOnlyColumns";
 import type {ColumnDef, EntityTypeConfig} from "../../entities/shared/types";
 import type {FilterOption} from "../../fields/optionSources";
 import {ValidationStatusCell, type ValidationStatusCellProps} from "../../components/table/ValidationStatusCell";
@@ -8,7 +9,7 @@ import type {RowRecord} from "./useEntityListData";
 // The reserved id the server sorts and filters the validation status by (sort=-901:asc,
 // f.-901=VALIDATED) — ListOnlyColumn.VALIDATION_STATUS on the Java side. Not a form field: the
 // status has its own picker on the fiche, so it is no catalog entry either.
-export const VALIDATION_STATUS_COLUMN_KEY = "-901";
+export {VALIDATION_STATUS_COLUMN_KEY};
 
 type ListConfig = EntityTypeConfig<unknown, unknown> | undefined;
 

@@ -39,10 +39,11 @@ function fieldProfile(field: FieldResource, kind: FilterKind): OperatorProfile {
 }
 
 /**
- * A pinned column's filter: picking among its fixed values when it has some, else a text.
+ * A pinned column's filter, keyed by its filterKey when it has one: picking among its fixed values when it
+ * has some, else a text.
  */
 function pinnedFilterSpec(column: ColumnDef<RowRecord>): FilterSpec {
-  const key = column.key;
+  const key = column.filterKey ?? column.key;
   const options = column.filterOptions;
   if (!options) return { key, label: column.header, kind: "contains", operators: profileFor(key, "contains") };
   const loadOptions = async (q?: string) => {

@@ -1,7 +1,7 @@
 import {describe, expect, it} from "vitest";
 import type {EntityTypeConfig, FieldCatalog} from "../../entities/shared/types";
 import type {FieldResource} from "../../fields/types";
-import {availableFilters, isFilterAvailable, isSortAvailable} from "./listStateValidity";
+import {availableFilters, isFilterAvailable, isSortAvailable, withCurrentFilterKeys} from "./listStateValidity";
 
 const field = (id: string, query?: FieldResource["query"]) =>
   ({ id, resourceType: "fields", label: id, answerType: "TEXT", isSystemField: false, query }) as FieldResource;
@@ -78,5 +78,24 @@ describe("the validation status column", () => {
     expect(isFilterAvailable("-901", config, catalog)).toBe(true);
     expect(isFilterAvailable("-901", config, undefined)).toBe(true);
     expect(isSortAvailable("-901:desc", config, undefined)).toBe(true);
+  });
+});
+
+describe("withCurrentFilterKeys", () => {
+  const renamed = {
+    list: {
+      columns: [{ key: "identifier", header: "Identifiant", render: () => null, filterable: true, filterKey: "-902" }],
+    },
+  } as unknown as EntityTypeConfig<unknown, unknown>;
+
+  it("moves a filter kept under a column's own key to the reserved id it filters by now", () => {
+    const filters = { identifier: { op: "contains" as const, v: "UE" } };
+    expect(withCurrentFilterKeys(filters, renamed)).toEqual({ "-902": { op: "contains", v: "UE" } });
+    expect(availableFilters(filters, renamed, undefined)).toEqual({ "-902": { op: "contains", v: "UE" } });
+  });
+
+  it("keeps the filter already set under the new key", () => {
+    const filters = { identifier: { op: "contains" as const, v: "old" }, "-902": { op: "contains" as const, v: "new" } };
+    expect(withCurrentFilterKeys(filters, renamed)).toEqual({ "-902": { op: "contains", v: "new" } });
   });
 });

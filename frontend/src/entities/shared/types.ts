@@ -159,6 +159,9 @@ export interface ColumnDef<TSummary> {
   // Makes a pinned column filterable by picking among these fixed values instead: an "in" filter
   // (repeatable f.<key>=<option id>), e.g. the validation statuses.
   filterOptions?: FilterOption[];
+  // The f.<key> the column's filter uses when it is not the column's own key: the reserved id of a
+  // list-only column (listOnlyColumns.ts), which the server queries like a field, every operator included.
+  filterKey?: string;
   // Extra class on the column's header and cells (e.g. to size it).
   className?: string;
   // Marks the one column whose cell opens the row's entity (plan §8 phase 5) — mirrors JSF's
