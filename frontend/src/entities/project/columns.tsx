@@ -1,5 +1,5 @@
 import type {ColumnDef} from "../shared/types";
-import {NAME_COLUMN_KEY} from "../shared/listOnlyColumns";
+import {NAME_COLUMN_FILTER} from "../shared/listOnlyColumns";
 import type {ProjectSummary} from "./types";
 import {t} from "../../i18n";
 
@@ -22,9 +22,7 @@ export const projectColumns: ColumnDef<ProjectSummary>[] = [
     key: "name",
     header: t("common.name"),
     sortable: true,
-    filterable: true,
-    // Filtered as a text, every text operator included, through the reserved id.
-    filterKey: NAME_COLUMN_KEY,
+    ...NAME_COLUMN_FILTER,
     identifier: true,
     render: (row) => row.name,
   },

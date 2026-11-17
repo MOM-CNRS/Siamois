@@ -114,6 +114,7 @@ public class FieldQueryService {
      */
     private static final Map<Class<?>, Map<String, String>> ENTITY_ATTRIBUTES = Map.of(
             RecordingUnit.class, Map.of("chronologicalPhase", "chronologicalAttribution"));
+    public static final String LE_CHAMP = "Le champ ";
 
     /** The entity attribute a form's {@code valueBinding} reads, differing only by the aliases above. */
     static String entityAttribute(Class<?> entityType, String binding) {
@@ -173,8 +174,7 @@ public class FieldQueryService {
         Kind(String filterOp, FilterOperator defaultOperator, Match... matches) {
             this.filterOp = filterOp;
             this.defaultOperator = defaultOperator;
-            EnumSet<Match> accepted = EnumSet.of(Match.PRESENT, matches);
-            this.matches = Collections.unmodifiableSet(accepted);
+            this.matches = Collections.unmodifiableSet(EnumSet.of(Match.PRESENT, matches));
         }
 
         boolean accepts(FilterOperator operator) {
@@ -183,6 +183,16 @@ public class FieldQueryService {
 
         boolean sortable() {
             return this != GEOMETRY;
+        }
+
+        /** A number or a date: filtered by bounds. */
+        boolean isRange() {
+            return matches.contains(Match.RANGE);
+        }
+
+        /** One or several entities: filtered by their ids. */
+        boolean isReference() {
+            return this == REFERENCE || this == REFERENCES;
         }
     }
 
@@ -213,7 +223,7 @@ public class FieldQueryService {
     public FieldResource.Query capabilityOf(Class<?> entityType, CustomField field) {
         Target target = resolve(entityType, field);
         if (target == null) return null;
-        boolean filterable = target.kind != Kind.REFERENCE && target.kind != Kind.REFERENCES || target.idFilterable;
+        boolean filterable = !target.kind.isReference() || target.idFilterable;
         return new FieldResource.Query(target.kind.sortable(), filterable ? target.kind.filterOp : null);
     }
 
@@ -309,7 +319,7 @@ public class FieldQueryService {
         Specification<E> ordering = null;
         if (query.sortFieldId() != null) {
             Target target = requireTarget(entityType, query.sortFieldId());
-            if (!target.kind.sortable()) throw badRequest("Le champ " + query.sortFieldId() + " ne se trie pas");
+            if (!target.kind.sortable()) throw badRequest(LE_CHAMP + query.sortFieldId() + " ne se trie pas");
             ordering = orderBy(target, query.sortFieldId(), query.ascending(), query.lang());
             parts.add(ordering);
             ordered = true;
@@ -335,7 +345,7 @@ public class FieldQueryService {
         Target target = listOnly.isPresent()
                 ? resolveSystem(entityType, listOnly.get().attributeOf(entityType))
                 : resolve(entityType, requireField(entityType, fieldId));
-        if (target == null) throw badRequest("Le champ " + fieldId + " ne se trie ni ne se filtre sur cette liste");
+        if (target == null) throw badRequest(LE_CHAMP + fieldId + " ne se trie ni ne se filtre sur cette liste");
         return target;
     }
 
@@ -523,6 +533,7 @@ public class FieldQueryService {
 
     public static final String FILTRE_ATTENDU_PLAGE = "Filtre attendu en plage (.from/.to) : f.";
     public static final String FILTRE_PLAGE_IMPOSSIBLE = "Filtre en plage impossible sur une référence : f.";
+    private static final String GEOMETRIE_NON_TRIABLE = "Une géométrie ne se trie pas";
 
     private static final Map<FieldQueryService.Kind, String> MESSAGE_ERREUR = Map.of(
             Kind.TEXT, "Filtre en plage impossible sur un champ texte : f.",
@@ -552,38 +563,38 @@ public class FieldQueryService {
      */
     private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion,
                                            FilterOperator operator) {
-        boolean rangeKind = target.kind == Kind.NUMBER || target.kind == Kind.DATE;
-        if (operator.takesValues() && criterion.isRange() != rangeKind) {
+        if (operator.takesValues() && criterion.isRange() != target.kind.isRange()) {
             throw badRequest(MESSAGE_ERREUR.get(target.kind) + fieldId);
         }
-        if (operator.match() == Match.ANY_OF && isReference(target) && !target.idFilterable) {
-            throw badRequest("Le champ " + fieldId + " ne se filtre pas");
+        if (operator.match() == Match.ANY_OF && target.kind.isReference() && !target.idFilterable) {
+            throw badRequest(LE_CHAMP + fieldId + " ne se filtre pas");
         }
-    }
-
-    private static boolean isReference(Target target) {
-        return target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES;
     }
 
     private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
         FilterOperator operator = operatorOf(target, fieldId, criterion);
         requireFilterShape(target, fieldId, criterion, operator);
         // Parsed up front, so a bad value is a 400 before any query runs.
-        boolean anyOf = operator.match() == Match.ANY_OF;
-        List<Long> ids = anyOf && isReference(target) ? parseIds(fieldId, criterion.values()) : List.of();
-        Object from = bound(target, fieldId, criterion.from(), true);
-        Object to = bound(target, fieldId, criterion.to(), false);
-        List<String> texts = FilterPredicates.lowercased(criterion.values());
-        List<Boolean> flags = anyOf && target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
-        List<Object> choices = anyOf && target.kind == Kind.CHOICE ? parseChoices(target.valueType, fieldId, criterion.values()) : List.of();
-        Filter parsed = new Filter(operator.match(), texts, ids, flags, choices, from, to);
+        Filter parsed = parseFilter(target, fieldId, criterion, operator.match());
 
         return (root, query, cb) -> {
             Predicate matching = matching(target, fieldId, parsed, root, query, cb);
-            // The rows the match leaves out, empty values included: each layout below keeps a row
-            // without a value out of its match, so that NOT brings it back.
+            // The rows the match leaves out, empty values included: each layout of matching() keeps
+            // a row without a value out of its match, so that NOT brings it back.
             return operator.negated() ? cb.not(matching) : matching;
         };
+    }
+
+    /** The values a filter compares the column with, parsed for the column's kind and the operator's match. */
+    private static Filter parseFilter(Target target, long fieldId, FieldListQuery.Criterion criterion, Match match) {
+        List<String> values = criterion.values();
+        boolean anyOf = match == Match.ANY_OF;
+        List<Long> ids = anyOf && target.kind.isReference() ? parseIds(fieldId, values) : List.of();
+        List<Boolean> flags = anyOf && target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, values) : List.of();
+        List<Object> choices = anyOf && target.kind == Kind.CHOICE ? parseChoices(target.valueType, fieldId, values) : List.of();
+        Object from = bound(target, fieldId, criterion.from(), true);
+        Object to = bound(target, fieldId, criterion.to(), false);
+        return new Filter(match, FilterPredicates.lowercased(values), ids, flags, choices, from, to);
     }
 
     /** The rows whose {@code target} column matches {@code parsed}, before any negation. */
@@ -614,7 +625,7 @@ public class FieldQueryService {
         }
         Subquery<Integer> answers = query.subquery(Integer.class);
         Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
-        Expression<?> value = isReference(target)
+        Expression<?> value = target.kind.isReference()
                 ? answer.join(target.attribute)
                 : answer.get(target.attribute);
         answers.select(cb.literal(1)).where(
@@ -711,7 +722,7 @@ public class FieldQueryService {
                     ? conceptLabel(query, cb, root.get(target.attribute), lang)
                     : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
             case REFERENCES -> cb.size((Expression<Collection<?>>) (Expression) root.get(target.attribute));
-            case GEOMETRY -> throw new IllegalStateException("Une géométrie ne se trie pas");
+            case GEOMETRY -> throw new IllegalStateException(GEOMETRIE_NON_TRIABLE);
         };
     }
 
@@ -761,7 +772,7 @@ public class FieldQueryService {
             }
             // An additional field's answer is never an enum: only system properties resolve to CHOICE.
             case CHOICE -> throw new IllegalStateException("Le champ additionnel " + fieldId + " n'a pas de liste de valeurs");
-            case GEOMETRY -> throw new IllegalStateException("Une géométrie ne se trie pas");
+            case GEOMETRY -> throw new IllegalStateException(GEOMETRIE_NON_TRIABLE);
         };
     }
 

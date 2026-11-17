@@ -25,29 +25,16 @@ export interface PagedResult<T> {
   matchCount?: number;
 }
 
-/**
- * One column's filter — mirrors ProjectListFilter's Kind whitelist. Lives here (not in
- * panels/list/tableState.ts, which owns TableState) so both ListParams and TableState can reference it
- * without panels/ becoming something entities/ depends on.
- *
- * <p>`op` is the shape of the value (kept as is in saved views); `operator` refines how a datatable
- * filter compares it — absent, the shape's historical comparison (contains, any of, between). `empty`
- * and `notEmpty` carry no value at all.</p>
- */
-export type FilterValue =
-  | { op: "contains"; v: string; operator?: TextFilterOperator }
-  // `labels`: what the ids were called when picked, kept with the filter so a saved view can show them.
-  | { op: "in"; v: string[]; labels?: Record<string, string>; operator?: OptionsFilterOperator }
-  | { op: "range"; from?: string; to?: string; operator?: RangeFilterOperator }
-  | { op: "empty" }
-  | { op: "notEmpty" };
-
-export type TextFilterOperator = "is" | "isNot" | "contains" | "notContains" | "startsWith" | "endsWith";
-export type OptionsFilterOperator = "in" | "notIn";
-// All sent as bounds: « equals » is from = to, « at least » a lone from, « at most » a lone to.
-export type RangeFilterOperator = "between" | "eq" | "gte" | "lte";
-export type PresenceFilterOperator = "empty" | "notEmpty";
-export type FilterOperator = TextFilterOperator | OptionsFilterOperator | RangeFilterOperator | PresenceFilterOperator;
+// One column's filter and its operators: filterValue.ts.
+import type {FilterValue} from "./filterValue";
+export type {
+  FilterOperator,
+  FilterValue,
+  OptionsFilterOperator,
+  PresenceFilterOperator,
+  RangeFilterOperator,
+  TextFilterOperator,
+} from "./filterValue";
 
 // Scopes a list to one parent entity's own sub-collection — "the recording units OF this
 // project", "the documents OF this recording unit" — rather than the entity type's global list.

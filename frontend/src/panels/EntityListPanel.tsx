@@ -21,6 +21,7 @@ import {FilterChipBar} from "../components/table/FilterChipBar";
 import {withLabels} from "../components/table/ColumnFilter";
 import type {FilterOption} from "../fields/optionSources";
 import {entityColor} from "../fields/display";
+import type {FieldResource} from "../fields/types";
 import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
@@ -255,23 +256,13 @@ function EntityListPanelBody({
   // A search or a filter changes the rows: applied over a selection only once the user agrees to lose it.
   const selectionGuard = useSelectionGuard(selection);
   const filterControls = useFilterControls(table, selectionGuard);
-  // Switching to the map filters the geometry it draws on « n'est pas vide », a chip like any other, which
-  // follows the geometry when another one is drawn.
-  const mapFilter: MapFilterControls = {
-    onShowMap: () => {
-      const filter = mapGeometryFilter(state.filters, mapGeometry, catalog?.fields);
-      if (filter && mapGeometry) filterControls.changeFilter(mapGeometry.value, filter);
-    },
-    onGeometryChange: (value) => {
-      const next = filtersForGeometryChange(
-        state.filters,
-        mapGeometry,
-        geometryOptions.find((o) => o.value === value),
-        catalog?.fields,
-      );
-      if (next) filterControls.replaceFilters(next);
-    },
-  };
+  const mapFilter = mapFilterControls({
+    filters: state.filters,
+    mapGeometry,
+    geometryOptions,
+    fields: catalog?.fields,
+    filterControls,
+  });
   const rowActions = useRowActions({
     entityType,
     config,
@@ -493,6 +484,36 @@ function useFilterControls(table: TableControls, selectionGuard: SelectionGuard)
     });
 
   return { optionsByKey, changeFilter, replaceFilters, applySearch };
+}
+
+/**
+ * What the map does to the filters: switching to it filters the geometry it draws on « n'est pas vide », a
+ * chip like any other, which follows the geometry when another one is drawn.
+ */
+function mapFilterControls({
+  filters,
+  mapGeometry,
+  geometryOptions,
+  fields,
+  filterControls,
+}: {
+  filters: Filters;
+  mapGeometry: MapGeometryOption | undefined;
+  geometryOptions: MapGeometryOption[];
+  fields: Record<string, FieldResource> | undefined;
+  filterControls: ReturnType<typeof useFilterControls>;
+}): MapFilterControls {
+  return {
+    onShowMap: () => {
+      const filter = mapGeometryFilter(filters, mapGeometry, fields);
+      if (filter && mapGeometry) filterControls.changeFilter(mapGeometry.value, filter);
+    },
+    onGeometryChange: (value) => {
+      const drawn = geometryOptions.find((o) => o.value === value);
+      const next = filtersForGeometryChange(filters, mapGeometry, drawn, fields);
+      if (next) filterControls.replaceFilters(next);
+    },
+  };
 }
 
 /**

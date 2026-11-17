@@ -6,11 +6,6 @@ import {VALIDATION_PRESENTATION, VALIDATION_STATUSES} from "../../components/tab
 import {t} from "../../i18n";
 import type {RowRecord} from "./useEntityListData";
 
-// The reserved id the server sorts and filters the validation status by (sort=-901:asc,
-// f.-901=VALIDATED) — ListOnlyColumn.VALIDATION_STATUS on the Java side. Not a form field: the
-// status has its own picker on the fiche, so it is no catalog entry either.
-export {VALIDATION_STATUS_COLUMN_KEY};
-
 type ListConfig = EntityTypeConfig<unknown, unknown> | undefined;
 
 // The statuses offered by the column's filter, in workflow order.

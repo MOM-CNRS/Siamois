@@ -1,8 +1,9 @@
 import {ConceptOptionItem, useFieldWidthCap} from "../../fields/ConceptOptionItem";
-import {useEffect, useRef, useState} from "react";
+import {type FocusEvent, useEffect, useRef, useState} from "react";
 import {AutoComplete, type AutoCompleteCompleteEvent} from "primereact/autocomplete";
 import {Calendar} from "primereact/calendar";
 import {InputText} from "primereact/inputtext";
+import type {InputNumberValueChangeEvent} from "primereact/inputnumber";
 import {MultiSelect} from "primereact/multiselect";
 import {SelectButton} from "primereact/selectbutton";
 import type {FilterValue} from "../../panels/list/tableState";
@@ -50,12 +51,13 @@ export interface ColumnFilterProps {
 /** Which inputs a range filter shows: both bounds, or one value (« equals »), or only one of the bounds. */
 type RangeBounds = "both" | "single" | "from" | "to";
 
+const RANGE_BOUNDS: Partial<Record<FilterOperator, RangeBounds>> = { eq: "single", gte: "from", lte: "to" };
+
 function rangeBoundsOf(operator: FilterOperator | undefined): RangeBounds {
-  const bounds: Partial<Record<FilterOperator, RangeBounds>> = { eq: "single", gte: "from", lte: "to" };
-  return (operator && bounds[operator]) ?? "both";
+  return (operator && RANGE_BOUNDS[operator]) ?? "both";
 }
 
-export function ColumnFilter({ operator, placeholder, onChange: commitValue, ...props }: ColumnFilterProps) {
+export function ColumnFilter({ operator, placeholder, onChange: commitValue, ...props }: Readonly<ColumnFilterProps>) {
   if (operator && !takesValue(operator)) return null;
   const onChange: ColumnFilterProps["onChange"] = operator
     ? (value, options) => commitValue(value ? applyOperator(value, operator) : undefined, options)
@@ -112,7 +114,7 @@ function ContainsFilter({
   value,
   onChange,
   autoFocus,
-}: Pick<ColumnFilterProps, "label" | "value" | "onChange" | "autoFocus">) {
+}: Readonly<Pick<ColumnFilterProps, "label" | "value" | "onChange" | "autoFocus">>) {
   const committed = value?.op === "contains" ? value.v : "";
   const [draft, setDraft] = useState(committed);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -143,28 +145,40 @@ type RangeFilterProps = Pick<ColumnFilterProps, "label" | "value" | "onChange" |
   bounds: RangeBounds;
 };
 
-function RangeFilter({ label, value, onChange, autoFocus, bounds, placeholder }: RangeFilterProps) {
+/**
+ * A range filter's bounds and how to commit new ones: both at once, or the one bound an operator taking a
+ * single value edits — the upper one for « at most », the lower one otherwise (applyOperator copies it to
+ * both ends for « equals »).
+ */
+function rangeBounds(value: FilterValue | undefined, onChange: ColumnFilterProps["onChange"], bounds: RangeBounds) {
   const from = value?.op === "range" ? value.from : undefined;
   const to = value?.op === "range" ? value.to : undefined;
-
-  function commit(nextFrom: string | undefined, nextTo: string | undefined) {
+  const commit = (nextFrom: string | undefined, nextTo: string | undefined) =>
     onChange(nextFrom || nextTo ? { op: "range", from: nextFrom, to: nextTo } : undefined);
-  }
+  const upper = bounds === "to";
+  return {
+    from,
+    to,
+    commit,
+    single: upper ? to : from,
+    commitSingle: (next: string | undefined) => (upper ? commit(undefined, next) : commit(next, undefined)),
+  };
+}
+
+/** The value and handlers of a number input editing one bound. */
+function numberBoundProps(bound: string | undefined, commitBound: (next: string | undefined) => void) {
+  return {
+    value: bound != null ? Number(bound) : null,
+    onBlur: (e: FocusEvent<HTMLInputElement>) => commitBound(e.target.value || undefined),
+    onValueChange: (e: InputNumberValueChangeEvent) => commitBound(e.value != null ? String(e.value) : undefined),
+  };
+}
+
+function RangeFilter({ label, value, onChange, autoFocus, bounds, placeholder }: RangeFilterProps) {
+  const { from, to, commit, single, commitSingle } = rangeBounds(value, onChange, bounds);
 
   if (bounds !== "both") {
-    // One value: the upper bound for « at most », the lower one otherwise (applyOperator copies it to both ends for « equals »).
-    const upper = bounds === "to";
-    const current = upper ? to : from;
-    const commitOne = (next: string | undefined) => (upper ? commit(undefined, next) : commit(next, undefined));
-    return (
-      <SignedInputNumber
-        placeholder={placeholder ?? label}
-        autoFocus={autoFocus}
-        value={current != null ? Number(current) : null}
-        onBlur={(e) => commitOne(e.target.value ? e.target.value : undefined)}
-        onValueChange={(e) => commitOne(e.value != null ? String(e.value) : undefined)}
-      />
-    );
+    return <SignedInputNumber placeholder={placeholder ?? label} autoFocus={autoFocus} {...numberBoundProps(single, commitSingle)} />;
   }
 
   return (
@@ -172,16 +186,9 @@ function RangeFilter({ label, value, onChange, autoFocus, bounds, placeholder }:
       <SignedInputNumber
         placeholder={t("filter.min", { label })}
         autoFocus={autoFocus}
-        value={from != null ? Number(from) : null}
-        onBlur={(e) => commit(e.target.value ? e.target.value : undefined, to)}
-        onValueChange={(e) => commit(e.value != null ? String(e.value) : undefined, to)}
+        {...numberBoundProps(from, (next) => commit(next, to))}
       />
-      <SignedInputNumber
-        placeholder={t("filter.max", { label })}
-        value={to != null ? Number(to) : null}
-        onBlur={(e) => commit(from, e.target.value ? e.target.value : undefined)}
-        onValueChange={(e) => commit(from, e.value != null ? String(e.value) : undefined)}
-      />
+      <SignedInputNumber placeholder={t("filter.max", { label })} {...numberBoundProps(to, (next) => commit(from, next))} />
     </span>
   );
 }
@@ -200,30 +207,21 @@ function fromIsoDate(value: string | undefined): Date | null {
   return y && m && d ? new Date(y, m - 1, d) : null;
 }
 
-function DateRangeFilter({ label, value, onChange, autoFocus, bounds, placeholder }: RangeFilterProps) {
-  const from = value?.op === "range" ? value.from : undefined;
-  const to = value?.op === "range" ? value.to : undefined;
+/** The value and handlers of a calendar editing one bound. */
+function dateBoundProps(bound: string | undefined, commitBound: (next: string | undefined) => void) {
+  return {
+    dateFormat: calendarDateFormat(),
+    value: fromIsoDate(bound),
+    showButtonBar: true,
+    onChange: (e: { value?: Date | null }) => commitBound(toIsoDate(e.value)),
+  };
+}
 
-  function commit(nextFrom: string | undefined, nextTo: string | undefined) {
-    onChange(nextFrom || nextTo ? { op: "range", from: nextFrom, to: nextTo } : undefined);
-  }
+function DateRangeFilter({ label, value, onChange, autoFocus, bounds, placeholder }: RangeFilterProps) {
+  const { from, to, commit, single, commitSingle } = rangeBounds(value, onChange, bounds);
 
   if (bounds !== "both") {
-    const upper = bounds === "to";
-    return (
-      <Calendar
-        placeholder={placeholder ?? label}
-        autoFocus={autoFocus}
-        dateFormat={calendarDateFormat()}
-        value={fromIsoDate(upper ? to : from)}
-        showButtonBar
-        onChange={(e) => {
-          const next = toIsoDate(e.value as Date | null);
-          if (upper) commit(undefined, next);
-          else commit(next, undefined);
-        }}
-      />
-    );
+    return <Calendar placeholder={placeholder ?? label} autoFocus={autoFocus} {...dateBoundProps(single, commitSingle)} />;
   }
 
   return (
@@ -231,18 +229,9 @@ function DateRangeFilter({ label, value, onChange, autoFocus, bounds, placeholde
       <Calendar
         placeholder={t("filter.from", { label })}
         autoFocus={autoFocus}
-        dateFormat={calendarDateFormat()}
-        value={fromIsoDate(from)}
-        showButtonBar
-        onChange={(e) => commit(toIsoDate(e.value as Date | null), to)}
+        {...dateBoundProps(from, (next) => commit(next, to))}
       />
-      <Calendar
-        placeholder={t("filter.to", { label })}
-        dateFormat={calendarDateFormat()}
-        value={fromIsoDate(to)}
-        showButtonBar
-        onChange={(e) => commit(from, toIsoDate(e.value as Date | null))}
-      />
+      <Calendar placeholder={t("filter.to", { label })} {...dateBoundProps(to, (next) => commit(from, next))} />
     </span>
   );
 }
@@ -280,7 +269,7 @@ function ChoiceFilter({
 
 // A yes/no column filters on one answer at a time: the server takes it as f.<id>=true|false, which
 // is the "in" shape with a single id. Picking the chosen one again clears the filter.
-function BooleanFilter({ value, onChange }: Pick<ColumnFilterProps, "value" | "onChange">) {
+function BooleanFilter({ value, onChange }: Readonly<Pick<ColumnFilterProps, "value" | "onChange">>) {
   const picked = value?.op === "in" ? value.v[0] : null;
   const options = [
     { id: "true", label: t("field.yes") },
@@ -307,7 +296,7 @@ function OptionsFilter({
   loadOptions,
   selectedOptions,
   autoFocus,
-}: Pick<ColumnFilterProps, "label" | "value" | "onChange" | "loadOptions" | "selectedOptions" | "autoFocus">) {
+}: Readonly<Pick<ColumnFilterProps, "label" | "value" | "onChange" | "loadOptions" | "selectedOptions" | "autoFocus">>) {
   const [suggestions, setSuggestions] = useState<FilterOption[]>([]);
   const selected = selectedOptions ?? [];
   const { capTo, panelStyle } = useFieldWidthCap();
@@ -323,6 +312,8 @@ function OptionsFilter({
     onChange(next.length > 0 ? { op: "in", v: next.map((o) => o.id) } : undefined, next);
   }
 
+  const itemTemplateFct = (o) => <ConceptOptionItem option={o} />;
+
   // Phone width: the options are picked in a drawer of their own (an autocomplete dropdown would sit under the keyboard).
   if (mobile) {
     return (
@@ -331,11 +322,13 @@ function OptionsFilter({
         selected={selected}
         placeholder={label}
         loadOptions={loadOptions ?? null}
-        itemTemplate={(o) => <ConceptOptionItem option={o} />}
+        itemTemplate={itemTemplateFct}
         onCommit={commit}
       />
     );
   }
+
+  const itemTemplateFct = (o: FilterOption) => <ConceptOptionItem option={o} />
 
   return (
     <AutoComplete
@@ -346,7 +339,7 @@ function OptionsFilter({
       completeMethod={search}
       field="label"
       panelStyle={panelStyle}
-      itemTemplate={(o: FilterOption) => <ConceptOptionItem option={o} />}
+      itemTemplate={itemTemplateFct}
       multiple
       dropdown={false}
       onChange={(e) => commit(e.value as FilterOption[])}

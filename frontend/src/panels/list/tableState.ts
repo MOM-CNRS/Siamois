@@ -5,7 +5,12 @@
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
 // without wiring full route ownership into this phase.
 
-import type {FilterOperator, FilterValue} from "../../entities/shared/types";
+import {
+  type FilterOperator,
+  type FilterValue,
+  isPresenceFilter,
+  OptionsFilterOperator, RangeFilterOperator, TextFilterOperator
+} from "../../entities/shared/filterValue";
 import type {ListViewMode} from "./listViews";
 
 export type { FilterValue };
@@ -47,6 +52,31 @@ export function createTableState(overrides: Partial<TableState> = {}): TableStat
   };
 }
 
+function setFilterKeyParameter(filter: { op: "contains"; v: string; operator?: TextFilterOperator } | {
+  op: "in";
+  v: string[];
+  labels?: Record<string, string>;
+  operator?: OptionsFilterOperator
+} | { op: "range"; from?: string; to?: string; operator?: RangeFilterOperator } | { op: "empty" } | {
+  op: "notEmpty"
+}, params: URLSearchParams, key: string) {
+  switch (filter.op) {
+    case "contains":
+      if (filter.v) params.set(`f.${key}`, filter.v);
+      break;
+    case "in":
+      for (const v of filter.v) params.append(`f.${key}`, v);
+      break;
+    case "range":
+      if (filter.from) params.set(`f.${key}.from`, filter.from);
+      if (filter.to) params.set(`f.${key}.to`, filter.to);
+      break;
+    case "empty":
+    case "notEmpty":
+      break;
+  }
+}
+
 /**
  * Encodes `filters` as the `f.*` query-param contract phase 3 wires GET /api/v1/projects to accept:
  * repeatable `f.<key>` for "in", a bare `f.<key>` for "contains", `f.<key>.from`/`.to` for a range.
@@ -57,21 +87,7 @@ export function createTableState(overrides: Partial<TableState> = {}): TableStat
 export function filtersToQueryParams(filters: Record<string, FilterValue>): URLSearchParams {
   const params = new URLSearchParams();
   for (const [key, filter] of Object.entries(filters)) {
-    switch (filter.op) {
-      case "contains":
-        if (filter.v) params.set(`f.${key}`, filter.v);
-        break;
-      case "in":
-        for (const v of filter.v) params.append(`f.${key}`, v);
-        break;
-      case "range":
-        if (filter.from) params.set(`f.${key}.from`, filter.from);
-        if (filter.to) params.set(`f.${key}.to`, filter.to);
-        break;
-      case "empty":
-      case "notEmpty":
-        break;
-    }
+    setFilterKeyParameter(filter, params, key);
     const operator = wireOperatorOf(filter);
     if (operator) params.set(`f.${key}.op`, operator);
   }
@@ -93,6 +109,6 @@ const WIRE_OPERATORS: Partial<Record<FilterOperator, string>> = {
 };
 
 function wireOperatorOf(filter: FilterValue): string | undefined {
-  const operator: FilterOperator | undefined = filter.op === "empty" || filter.op === "notEmpty" ? filter.op : filter.operator;
+  const operator = isPresenceFilter(filter) ? filter.op : filter.operator;
   return operator ? WIRE_OPERATORS[operator] : undefined;
 }

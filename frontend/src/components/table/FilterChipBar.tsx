@@ -82,7 +82,19 @@ export const MAX_VISIBLE_CHIPS = 3;
 // Case- and accent-insensitive, so « etat » finds « État ».
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export function FilterChipBar({ specs, filters, onChange, optionsByKey }: FilterChipBarProps) {
+const withKey = (keys: string[], key: string) => (keys.includes(key) ? keys : [...keys, key]);
+
+function withoutKey<T>(byKey: Record<string, T>, key: string): Record<string, T> {
+  return Object.fromEntries(Object.entries(byKey).filter(([k]) => k !== key));
+}
+
+/** What a chip filters on as soon as it is added: its default operator, when that takes no value (a geometry: « not empty »). */
+function filterOnAdd(spec: FilterSpec): FilterValue | undefined {
+  const operator = spec.operators?.defaultOperator;
+  return operator && !takesValue(operator) ? applyOperator(undefined, operator) : undefined;
+}
+
+export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readonly<FilterChipBarProps>) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
   // filled in.
@@ -125,10 +137,9 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function addFilter(e: ReactMouseEvent, spec: FilterSpec, anchor: HTMLElement) {
     hideAdd();
-    // Nothing to type for a filter whose default takes no value (a geometry: « not empty »): applied at once.
-    const presence = spec.operators && !takesValue(spec.operators.defaultOperator) ? applyOperator(undefined, spec.operators.defaultOperator) : undefined;
-    if (presence) onChange(spec.key, presence);
-    const addKey = (keys: string[]) => (keys.includes(spec.key) ? keys : [...keys, spec.key]);
+    const immediate = filterOnAdd(spec);
+    if (immediate) onChange(spec.key, immediate);
+    const addKey = (keys: string[]) => withKey(keys, spec.key);
     if (availableSpecs.length > 1) {
       setPendingKeys(addKey);
       openEditor(e, spec.key, anchor);
@@ -142,7 +153,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function removeFilter(key: string) {
     setPendingKeys((keys) => keys.filter((k) => k !== key));
-    setPendingOperators((operators) => Object.fromEntries(Object.entries(operators).filter(([k]) => k !== key)));
+    setPendingOperators((operators) => withoutKey(operators, key));
     if (editingKey === key) {
       setEditingKey(null);
       hideEditor();
@@ -205,10 +216,11 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       onChange(spec.key, next);
       return;
     }
-    setPendingKeys((keys) => (keys.includes(spec.key) ? keys : [...keys, spec.key]));
+    setPendingKeys((keys) => withKey(keys, spec.key));
     if (filters[spec.key] != null) onChange(spec.key, undefined);
   }
 
+  const editingOperator = editingSpec?.operators && operatorFor(editingSpec.key, editingSpec.operators);
   const valueWidget = editingSpec && (
     <ColumnFilter
       key={editingSpec.key}
@@ -219,16 +231,16 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       loadOptions={editingSpec.loadOptions}
       options={editingSpec.options}
       autoFocus={!editSheetOpen}
-      operator={editingSpec.operators ? operatorFor(editingSpec.key, editingSpec.operators) : undefined}
+      operator={editingOperator}
       placeholder={editingSpec.operators ? t("filter.value") : undefined}
       onChange={(value, options) => onChange(editingSpec.key, value, options)}
     />
   );
-  const editor = editingSpec?.operators ? (
+  const editor = editingSpec?.operators && editingOperator ? (
     <FilterOperatorEditor
       label={editingSpec.label}
       profile={editingSpec.operators}
-      operator={operatorFor(editingSpec.key, editingSpec.operators)}
+      operator={editingOperator}
       onOperatorChange={(operator) => changeOperator(editingSpec, operator)}
       onRemove={() => removeFilter(editingSpec.key)}
     >

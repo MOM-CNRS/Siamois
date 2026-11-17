@@ -1,6 +1,7 @@
 import {describe, expect, it} from "vitest";
 import type {EntityTypeConfig} from "../../entities/shared/types";
-import {pinnedColumnsOf, VALIDATION_STATUS_COLUMN_KEY, validationStatusColumn} from "./validationStatusColumn";
+import {pinnedColumnsOf, validationStatusColumn} from "./validationStatusColumn";
+import {VALIDATION_STATUS_COLUMN_KEY} from "../../entities/shared/listOnlyColumns";
 
 const configWith = (columns: { key: string; identifier?: boolean }[]) =>
   ({

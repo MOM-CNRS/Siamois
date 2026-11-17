@@ -119,11 +119,11 @@ class FieldQueryServiceQueryTest {
     }
 
     private static FieldListQuery.Criterion values(String... v) {
-        return new FieldListQuery.Criterion(List.of(v), null, null);
+        return new FieldListQuery.Criterion(List.of(v), null, null, null);
     }
 
     private static FieldListQuery.Criterion range(String from, String to) {
-        return new FieldListQuery.Criterion(List.of(), from, to);
+        return new FieldListQuery.Criterion(List.of(), from, to, null);
     }
 
     private static FieldListQuery.Criterion values(FilterOperator operator, String... v) {
@@ -518,7 +518,7 @@ class FieldQueryServiceQueryTest {
     @Test
     void listOnlyColumnsAreFoundByTheirReservedId() {
         assertThat(ListOnlyColumn.ofFieldId(-901L)).contains(ListOnlyColumn.VALIDATION_STATUS);
-        assertThat(ListOnlyColumn.VALIDATION_STATUS.attribute()).isEqualTo("validationStatus");
+        assertThat(ListOnlyColumn.VALIDATION_STATUS.attributeOf(RecordingUnit.class)).isEqualTo("validationStatus");
         assertThat(ListOnlyColumn.ofFieldId(-301L)).isEmpty();
     }
 

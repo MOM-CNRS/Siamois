@@ -24,9 +24,9 @@ public enum ListOnlyColumn {
 
     /** The identifier a list opens the fiche by: the full one where the entity composes it from its parents. */
     IDENTIFIER(-902L, "identifier", Map.of(
-            RecordingUnit.class, "fullIdentifier",
-            Specimen.class, "fullIdentifier",
-            ActionUnit.class, "fullIdentifier")),
+            RecordingUnit.class, Constants.FULL_IDENTIFIER,
+            Specimen.class, Constants.FULL_IDENTIFIER,
+            ActionUnit.class, Constants.FULL_IDENTIFIER)),
 
     /** The name of the entities that have one (a project). */
     NAME(-903L, "name", Map.of());
@@ -58,15 +58,6 @@ public enum ListOnlyColumn {
     }
 
     /**
-     * The entity property the column reads.
-     *
-     * @return the JPA attribute name
-     */
-    public String attribute() {
-        return attribute;
-    }
-
-    /**
      * The property the column reads on {@code entityType}.
      *
      * @param entityType the listed entity
@@ -84,5 +75,9 @@ public enum ListOnlyColumn {
      */
     public static Optional<ListOnlyColumn> ofFieldId(long fieldId) {
         return Arrays.stream(values()).filter(column -> column.fieldId == fieldId).findFirst();
+    }
+
+    private static class Constants {
+        public static final String FULL_IDENTIFIER = "fullIdentifier";
     }
 }

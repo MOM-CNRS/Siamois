@@ -55,7 +55,7 @@ export function filtersForGeometryChange(
   fields: Record<string, FieldResource> | undefined,
 ): Record<string, FilterValue> | undefined {
   if (!from || !to || from.value === to.value || filters[from.value]?.op !== "notEmpty") return undefined;
-  const rest = Object.fromEntries(Object.entries(filters).filter(([key]) => key !== from.value));
+  const { [from.value]: _drawn, ...rest } = filters;
   const added = mapGeometryFilter(rest, to, fields);
   return added ? { ...rest, [to.value]: added } : rest;
 }

@@ -1,6 +1,7 @@
 import type {ViewStateBody, ViewTableState} from "../../api/resources/views";
 import {type FilterValue, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type TableState} from "./tableState";
 import {isListViewMode, type ListViewMode} from "./listViews";
+import {isOptionsOperator, isRangeOperator, isTextOperator} from "../../entities/shared/filterValue";
 
 // What of a list's TableState is kept for the user (GET/PUT /api/v1/view-states), and how it reads
 // back. The page (`offset`) and the search text are deliberately not: coming back to page 7 of
@@ -20,13 +21,13 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 
-const TEXT_OPERATORS = ["is", "isNot", "contains", "notContains", "startsWith", "endsWith"];
-const OPTIONS_OPERATORS = ["in", "notIn"];
-const RANGE_OPERATORS = ["between", "eq", "gte", "lte"];
-
 /** An optional operator, one of those its shape takes. */
-function isOperatorOf(operator: unknown, operators: string[]): boolean {
-  return operator === undefined || (typeof operator === "string" && operators.includes(operator));
+function isOptional(operator: unknown, ofShape: (operator: unknown) => boolean): boolean {
+  return operator === undefined || ofShape(operator);
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === "string";
 }
 
 export function isFilterValue(value: unknown): value is FilterValue {
@@ -34,12 +35,11 @@ export function isFilterValue(value: unknown): value is FilterValue {
   const f = value as Record<string, unknown>;
   switch (f.op) {
     case "contains":
-      return typeof f.v === "string" && isOperatorOf(f.operator, TEXT_OPERATORS);
+      return typeof f.v === "string" && isOptional(f.operator, isTextOperator);
     case "in":
-      return isStringArray(f.v) && isOperatorOf(f.operator, OPTIONS_OPERATORS);
+      return isStringArray(f.v) && isOptional(f.operator, isOptionsOperator);
     case "range":
-      return (f.from === undefined || typeof f.from === "string") && (f.to === undefined || typeof f.to === "string")
-        && isOperatorOf(f.operator, RANGE_OPERATORS);
+      return isOptionalString(f.from) && isOptionalString(f.to) && isOptional(f.operator, isRangeOperator);
     case "empty":
     case "notEmpty":
       return true;
@@ -50,7 +50,7 @@ export function isFilterValue(value: unknown): value is FilterValue {
 
 /** Tolerant: a state from another version, or hand-edited, reads as the parts that are valid. */
 export function parsePersisted(raw: ViewStateBody | undefined): PersistedListState | undefined {
-  if (raw == null || raw.v !== VERSION) return undefined;
+  if (raw?.v !== VERSION) return undefined;
   const parsed: PersistedListState = {};
   // Only a size the list still offers: the server refuses any other (a page is capped, offset is a multiple of it).
   // (A kept 25 is the former default, not a choice: see LEGACY_DEFAULT_LIMIT.)

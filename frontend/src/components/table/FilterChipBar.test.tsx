@@ -19,6 +19,9 @@ afterEach(() => {
   document.querySelectorAll(".p-overlaypanel, .filter-operator-panel").forEach((el) => el.remove());
 });
 
+// A datatable text filter, offering every text operator.
+const nameSpec: FilterSpec = { key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text };
+
 describe("FilterChipBar", () => {
   it("labels an active filter with its chosen options", () => {
     const specs: FilterSpec[] = [{ key: "kind", label: "Type", kind: "in" }];
@@ -86,7 +89,7 @@ describe("FilterChipBar", () => {
 
   it("reads « <column>… [operator] ⋯ » in the editor of a datatable filter, and changes the operator of its value", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
+    const specs = [nameSpec];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
 
     act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
@@ -103,7 +106,7 @@ describe("FilterChipBar", () => {
 
   it("applies « est vide » at once, and shows the operator on the chip", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
+    const specs = [nameSpec];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "empty" } }} optionsByKey={{}} onChange={onChange} />));
 
     expect(container.querySelector(".filter-chip-value")?.textContent).toBe("est vide");
@@ -114,7 +117,7 @@ describe("FilterChipBar", () => {
 
   it("removes the filter from the « ⋯ » menu", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
+    const specs = [nameSpec];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
 
     act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
@@ -137,7 +140,7 @@ describe("FilterChipBar", () => {
     const onChange = vi.fn();
     const specs: FilterSpec[] = [
       { key: "-40", label: "Géométrie", kind: "presence", operators: OPERATOR_PROFILES.presence },
-      { key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text },
+      nameSpec,
     ];
     act(() => root.render(<FilterChipBar specs={specs} filters={{}} optionsByKey={{}} onChange={onChange} />));
 

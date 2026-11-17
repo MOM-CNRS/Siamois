@@ -1,4 +1,18 @@
-import type {FilterOperator, FilterValue, RangeFilterOperator} from "../../entities/shared/types";
+import {
+  type FilterOperator,
+  type FilterValue,
+  isOptionsOperator,
+  isPresenceFilter,
+  isPresenceOperator,
+  isRangeOperator,
+  isTextOperator,
+  OPTIONS_FILTER_OPERATORS,
+  PRESENCE_FILTER_OPERATORS,
+  RANGE_FILTER_OPERATORS,
+  type RangeFilterOperator,
+  TEXT_FILTER_OPERATORS,
+  type ValueFilter,
+} from "../../entities/shared/filterValue";
 import type {FilterKind} from "../../fields/optionSources";
 import {type MessageKey, t} from "../../i18n";
 
@@ -15,23 +29,26 @@ export interface OperatorProfile {
   labels?: Partial<Record<FilterOperator, MessageKey>>;
 }
 
-const PRESENCE: FilterOperator[] = ["empty", "notEmpty"];
+const TEXT: FilterOperator[] = [...TEXT_FILTER_OPERATORS];
+const RANGE: FilterOperator[] = [...RANGE_FILTER_OPERATORS];
+const OPTIONS: FilterOperator[] = [...OPTIONS_FILTER_OPERATORS];
+const PRESENCE: FilterOperator[] = [...PRESENCE_FILTER_OPERATORS];
 
 export const OPERATOR_PROFILES = {
-  text: { operators: ["is", "isNot", "contains", "notContains", "startsWith", "endsWith", ...PRESENCE], defaultOperator: "contains" },
-  number: { operators: ["eq", "between", "gte", "lte", ...PRESENCE], defaultOperator: "between" },
+  text: { operators: [...TEXT, ...PRESENCE], defaultOperator: "contains" },
+  number: { operators: [...RANGE, ...PRESENCE], defaultOperator: "between" },
   // A date reads better with « on », « on or after »… than with the arithmetic of a number.
   date: {
-    operators: ["eq", "between", "gte", "lte", ...PRESENCE],
+    operators: [...RANGE, ...PRESENCE],
     defaultOperator: "between",
     labels: { eq: "filter.op.dateEq", gte: "filter.op.dateGte", lte: "filter.op.dateLte" },
   },
-  options: { operators: ["in", "notIn", ...PRESENCE], defaultOperator: "in" },
+  options: { operators: [...OPTIONS, ...PRESENCE], defaultOperator: "in" },
   // Every fiche has a type: « empty » would match nothing, « not empty » everything.
-  type: { operators: ["in", "notIn"], defaultOperator: "in" },
+  type: { operators: OPTIONS, defaultOperator: "in" },
   // The entities linked to the row (parents, children, finds, stratigraphy, places…): the row's links contain them or not.
   relation: {
-    operators: ["in", "notIn", ...PRESENCE],
+    operators: [...OPTIONS, ...PRESENCE],
     defaultOperator: "in",
     labels: { in: "filter.op.contains", notIn: "filter.op.notContains" },
   },
@@ -62,18 +79,22 @@ export function defaultOnly(profile: OperatorProfile): OperatorProfile {
 
 /** Whether `operator` compares the column with a value (or bounds), rather than only checking it has one. */
 export function takesValue(operator: FilterOperator): boolean {
-  return operator !== "empty" && operator !== "notEmpty";
+  return !isPresenceOperator(operator);
 }
+
+// The comparison each shape of value had before operators: never stored, never sent.
+const SHAPE_DEFAULT_OPERATORS = {
+  contains: "contains",
+  in: "in",
+  range: "between",
+} as const satisfies Record<ValueFilter["op"], FilterOperator>;
 
 /** The operator `value` applies, `fallback` when there is no value yet (a chip still being filled in). */
 export function operatorOf(value: FilterValue | undefined, fallback: FilterOperator): FilterOperator {
   if (!value) return fallback;
-  if (value.op === "empty" || value.op === "notEmpty") return value.op;
-  return value.operator ?? (value.op === "contains" ? "contains" : value.op === "in" ? "in" : "between");
+  if (isPresenceFilter(value)) return value.op;
+  return value.operator ?? SHAPE_DEFAULT_OPERATORS[value.op];
 }
-
-// The comparison each shape of value had before operators: never stored, never sent.
-const DEFAULT_OPERATORS: FilterOperator[] = ["contains", "in", "between"];
 
 /**
  * `value` compared with `operator` instead: what is kept of it, or undefined when nothing can be (the
@@ -81,29 +102,23 @@ const DEFAULT_OPERATORS: FilterOperator[] = ["contains", "in", "between"];
  * it is stored and sent exactly as before operators existed.
  */
 export function applyOperator(value: FilterValue | undefined, operator: FilterOperator): FilterValue | undefined {
-  if (!takesValue(operator)) return { op: operator as "empty" | "notEmpty" };
-  if (!value || value.op === "empty" || value.op === "notEmpty") return undefined;
-  const refinement = DEFAULT_OPERATORS.includes(operator) ? undefined : operator;
+  if (isPresenceOperator(operator)) return { op: operator };
+  if (!value || isPresenceFilter(value)) return undefined;
   switch (value.op) {
     case "contains":
-      return familyFor(operator) === "text" ? withRefinement({ op: "contains", v: value.v }, refinement) : undefined;
+      return isTextOperator(operator) ? withRefinement({ op: "contains", v: value.v }, operator) : undefined;
     case "in":
-      return familyFor(operator) === "options"
-        ? withRefinement({ op: "in", v: value.v, ...(value.labels ? { labels: value.labels } : {}) }, refinement)
+      return isOptionsOperator(operator)
+        ? withRefinement({ op: "in", v: value.v, ...(value.labels ? { labels: value.labels } : {}) }, operator)
         : undefined;
     case "range":
-      return familyFor(operator) === "range" ? rangeWith(value.from, value.to, operator as RangeFilterOperator) : undefined;
+      return isRangeOperator(operator) ? rangeWith(value.from, value.to, operator) : undefined;
   }
 }
 
-// The shape of value an operator that takes one compares: each belongs to one only.
-function familyFor(operator: FilterOperator): "text" | "range" | "options" {
-  if (OPERATOR_PROFILES.text.operators.includes(operator)) return "text";
-  return OPERATOR_PROFILES.number.operators.includes(operator) ? "range" : "options";
-}
-
-function withRefinement<T extends FilterValue>(value: T, operator: FilterOperator | undefined): T {
-  return operator ? { ...value, operator } as T : value;
+/** `value` with `operator` in it, unless that is its shape's default (left out of the value). */
+function withRefinement<T extends ValueFilter>(value: T, operator: FilterOperator): T {
+  return operator === SHAPE_DEFAULT_OPERATORS[value.op] ? value : { ...value, operator };
 }
 
 /**

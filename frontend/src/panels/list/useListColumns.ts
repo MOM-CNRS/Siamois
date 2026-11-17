@@ -3,12 +3,7 @@ import {scopeProjectId} from "../../entities/shared/scope";
 import type {ColumnDef, EntityTypeConfig, FieldCatalog, ListScope} from "../../entities/shared/types";
 import type {ColumnTogglerOption} from "../../components/table/ColumnToggler";
 import type {FilterSpec} from "../../components/table/FilterChipBar";
-import {
-  defaultOnly,
-  OPERATOR_PROFILES,
-  type OperatorProfile,
-  profileOf,
-} from "../../components/table/filterOperators";
+import {defaultOnly, OPERATOR_PROFILES, type OperatorProfile, profileOf} from "../../components/table/filterOperators";
 import type {FilterKind} from "../../fields/optionSources";
 import {isTypeField} from "../../fields/typeField";
 import {isRelationField} from "./bulk/bulkSelection";
@@ -45,12 +40,14 @@ function fieldProfile(field: FieldResource, kind: FilterKind): OperatorProfile {
 function pinnedFilterSpec(column: ColumnDef<RowRecord>): FilterSpec {
   const key = column.filterKey ?? column.key;
   const options = column.filterOptions;
-  if (!options) return { key, label: column.header, kind: "contains", operators: profileFor(key, "contains") };
+  const kind: FilterKind = options ? "in" : "contains";
+  const spec: FilterSpec = { key, label: column.header, kind, operators: profileFor(key, kind) };
+  if (!options) return spec;
   const loadOptions = async (q?: string) => {
     const needle = (q ?? "").trim().toLocaleLowerCase();
     return options.filter((o) => o.label.toLocaleLowerCase().includes(needle));
   };
-  return { key, label: column.header, kind: "in", loadOptions, options, operators: profileFor(key, "in") };
+  return { ...spec, loadOptions, options };
 }
 
 
