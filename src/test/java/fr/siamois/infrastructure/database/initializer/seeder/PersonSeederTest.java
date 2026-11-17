@@ -212,7 +212,8 @@ class PersonSeederTest {
 
         Map<String, Person> cache = seeder.prefetchByNameLastName(List.of("Pascal Gibut", "author@siamois.fr"));
 
-        assertThat(cache).containsKey("pascal|gibut");
-        assertThat(cache).containsKey("author@siamois.fr");
+        assertThat(cache)
+                .containsKey("pascal|gibut")
+                .containsKey("author@siamois.fr");
     }
 }

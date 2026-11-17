@@ -187,16 +187,6 @@ public class PersonSeeder {
         return person.getEmail() != null && ImportSchema.SIAMOIS_SYSTEM.equalsIgnoreCase(person.getEmail());
     }
 
-    /**
-     * Bulk-prefetches persons by the distinct firstnames appearing in {@code nameLastNameStrings}
-     * (each a "Firstname Lastname" or email string as accepted by {@link #findOrCreatePerson}), for use with
-     * {@link #resolveCached}. One query instead of one per row — callers still fall back to the
-     * normal single-row get-or-create on a cache miss, so correctness is unaffected, only redundant
-     * repeated lookups (e.g. the same excavator named on hundreds of rows) are eliminated.
-     *
-     * @param nameLastNameStrings "Firstname Lastname" or email strings to prefetch persons for
-     * @return persons found, keyed by {@code cacheKey(firstname, lastname)} or lowercase email
-     */
     public Map<String, Person> prefetchByNameLastName(Collection<String> nameLastNameStrings) {
         Set<String> firstnames = new HashSet<>();
         Set<String> emails = new HashSet<>();
@@ -236,29 +226,10 @@ public class PersonSeeder {
         }
     }
 
-    /**
-     * Resolves a "Firstname Lastname" or email string against a cache built by {@link #prefetchByNameLastName},
-     * falling back to {@link #findOrCreatePerson} (and populating the cache) on a miss.
-     *
-     * @param cache cache built by {@link #prefetchByNameLastName}, mutated in place on a cache miss
-     * @param nameLastName "Firstname Lastname" or email string to resolve
-     * @return the resolved (or newly created) {@link Person}
-     */
     public Person resolveCached(Map<String, Person> cache, String nameLastName) {
         return resolveCached(cache, nameLastName, null);
     }
-
-    /**
-     * Resolves a "Firstname Lastname" or email string against a cache built by {@link #prefetchByNameLastName},
-     * falling back to {@link #findOrCreatePerson} (and populating the cache) on a miss.
-     * If an institution is provided and the resolved person is not a system person, ensures that the person
-     * is added as an organization member of the institution.
-     *
-     * @param cache cache built by {@link #prefetchByNameLastName}, mutated in place on a cache miss
-     * @param nameLastName "Firstname Lastname" or email string to resolve
-     * @param institution institution to attach the person to, or null
-     * @return the resolved (or newly created) {@link Person}
-     */
+    
     public Person resolveCached(Map<String, Person> cache, String nameLastName, Institution institution) {
         String key = normalizeKey(nameLastName);
         Person cached = searchPersonInCacheByAssignKey(cache, institution, key);
