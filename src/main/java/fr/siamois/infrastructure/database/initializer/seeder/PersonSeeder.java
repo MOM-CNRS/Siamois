@@ -6,6 +6,7 @@ import fr.siamois.domain.services.permissions.PersonProfileAssignmentService;
 import fr.siamois.infrastructure.database.repositories.person.PersonRepository;
 import fr.siamois.infrastructure.dataimport.ImportSchema;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -13,6 +14,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class PersonSeeder {
+    public static final String INST = "#inst:";
     private final PersonRepository personRepository;
     private final PersonProfileAssignmentService personProfileAssignmentService;
 
@@ -135,10 +137,7 @@ public class PersonSeeder {
             authorGetOrCreated.setName(name);
             authorGetOrCreated.setLastname(lastname);
             authorGetOrCreated.setPassword("mysuperstrongpassword");
-            Person saved = personRepository.save(authorGetOrCreated);
-            if (saved != null) {
-                authorGetOrCreated = saved;
-            }
+            authorGetOrCreated = personRepository.save(authorGetOrCreated);
         }
         return authorGetOrCreated;
     }
@@ -201,6 +200,14 @@ public class PersonSeeder {
     public Map<String, Person> prefetchByNameLastName(Collection<String> nameLastNameStrings) {
         Set<String> firstnames = new HashSet<>();
         Set<String> emails = new HashSet<>();
+        trimPersonDataToSets(nameLastNameStrings, emails, firstnames);
+        Map<String, Person> cache = new HashMap<>();
+        fetchAndAddToCacheByFirstnames(firstnames, cache);
+        fetchAndAddToCacheByEmail(emails, cache);
+        return cache;
+    }
+
+    private static void trimPersonDataToSets(Collection<String> nameLastNameStrings, Set<String> emails, Set<String> firstnames) {
         for (String n : nameLastNameStrings) {
             String trimmed = n == null ? null : n.trim();
             if (trimmed == null || trimmed.isBlank()) continue;
@@ -211,7 +218,9 @@ public class PersonSeeder {
                 if (lastSpace >= 1) firstnames.add(trimmed.substring(0, lastSpace).trim());
             }
         }
-        Map<String, Person> cache = new HashMap<>();
+    }
+
+    private void fetchAndAddToCacheByFirstnames(Set<String> firstnames, Map<String, Person> cache) {
         if (!firstnames.isEmpty()) {
             for (Person p : personRepository.findAllByNameIgnoreCaseIn(firstnames)) {
                 if (p.getName() != null && p.getLastname() != null) {
@@ -219,10 +228,12 @@ public class PersonSeeder {
                 }
             }
         }
+    }
+
+    private void fetchAndAddToCacheByEmail(Set<String> emails, Map<String, Person> cache) {
         for (String email : emails) {
             personRepository.findByEmailIgnoreCase(email).ifPresent(p -> cache.put(email.toLowerCase(), p));
         }
-        return cache;
     }
 
     /**
@@ -250,31 +261,46 @@ public class PersonSeeder {
      */
     public Person resolveCached(Map<String, Person> cache, String nameLastName, Institution institution) {
         String key = normalizeKey(nameLastName);
-        if (key != null && institution != null && institution.getId() != null) {
-            String assignedKey = key + "#inst:" + institution.getId();
-            Person cached = cache.get(assignedKey);
+        Person cached = searchPersonInCacheByAssignKey(cache, institution, key);
+        if (cached != null) return cached;
+
+        if (key != null) {
+            cached = addPersonToCacheWithAssignKey(cache, institution, key);
             if (cached != null) return cached;
-        }
-        if (key != null) {
-            Person cached = cache.get(key);
-            if (cached != null) {
-                if (institution != null) {
-                    ensureMemberOfInstitution(cached, institution);
-                    if (institution.getId() != null) {
-                        cache.put(key + "#inst:" + institution.getId(), cached);
-                    }
-                }
-                return cached;
-            }
-        }
-        Person resolved = findOrCreatePerson(nameLastName, institution);
-        if (key != null) {
+
+            Person resolved = findOrCreatePerson(nameLastName, institution);
             cache.put(key, resolved);
             if (institution != null && institution.getId() != null) {
-                cache.put(key + "#inst:" + institution.getId(), resolved);
+                cache.put(key + INST + institution.getId(), resolved);
             }
+
+            return resolved;
         }
-        return resolved;
+
+        return null;
+    }
+
+    private @Nullable Person addPersonToCacheWithAssignKey(Map<String, Person> cache, Institution institution, String key) {
+        Person cached;
+        cached = cache.get(key);
+        if (cached != null) {
+            if (institution != null) {
+                ensureMemberOfInstitution(cached, institution);
+                if (institution.getId() != null) {
+                    cache.put(key + INST + institution.getId(), cached);
+                }
+            }
+            return cached;
+        }
+        return null;
+    }
+
+    private static @Nullable Person searchPersonInCacheByAssignKey(Map<String, Person> cache, Institution institution, String key) {
+        if (key != null && institution != null && institution.getId() != null) {
+            String assignedKey = key + INST + institution.getId();
+            return cache.get(assignedKey);
+        }
+        return null;
     }
 
     private String normalizeKey(String nameLastName) {
