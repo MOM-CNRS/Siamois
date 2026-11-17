@@ -5,7 +5,7 @@
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
 // without wiring full route ownership into this phase.
 
-import type {FilterValue} from "../../entities/shared/types";
+import type {FilterOperator, FilterValue} from "../../entities/shared/types";
 import type {ListViewMode} from "./listViews";
 
 export type { FilterValue };
@@ -68,7 +68,31 @@ export function filtersToQueryParams(filters: Record<string, FilterValue>): URLS
         if (filter.from) params.set(`f.${key}.from`, filter.from);
         if (filter.to) params.set(`f.${key}.to`, filter.to);
         break;
+      case "empty":
+      case "notEmpty":
+        break;
     }
+    const operator = wireOperatorOf(filter);
+    if (operator) params.set(`f.${key}.op`, operator);
   }
   return params;
+}
+
+// f.<key>.op, as FilterOperator (Java) names it. Range operators travel as bounds, and a default one
+// is left out, so a filter without operator reads exactly as it always did (and a named key, which
+// takes none, never gets one).
+const WIRE_OPERATORS: Partial<Record<FilterOperator, string>> = {
+  is: "is",
+  isNot: "is_not",
+  notContains: "not_contains",
+  startsWith: "starts_with",
+  endsWith: "ends_with",
+  notIn: "not_in",
+  empty: "empty",
+  notEmpty: "not_empty",
+};
+
+function wireOperatorOf(filter: FilterValue): string | undefined {
+  const operator: FilterOperator | undefined = filter.op === "empty" || filter.op === "notEmpty" ? filter.op : filter.operator;
+  return operator ? WIRE_OPERATORS[operator] : undefined;
 }

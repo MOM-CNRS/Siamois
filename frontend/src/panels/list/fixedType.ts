@@ -11,7 +11,7 @@ export function fixedTypeOf(
   if (!fixedFilters) return undefined;
   for (const [key, filter] of Object.entries(fixedFilters)) {
     const isType = key === "type" || catalog?.fields[key]?.valueBinding === "type";
-    if (isType && filter.op === "in" && filter.v.length === 1) return filter.v[0];
+    if (isType && filter.op === "in" && filter.operator !== "notIn" && filter.v.length === 1) return filter.v[0];
   }
   return undefined;
 }

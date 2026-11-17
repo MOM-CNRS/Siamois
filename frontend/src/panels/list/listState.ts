@@ -20,16 +20,29 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 
+const TEXT_OPERATORS = ["is", "isNot", "contains", "notContains", "startsWith", "endsWith"];
+const OPTIONS_OPERATORS = ["in", "notIn"];
+const RANGE_OPERATORS = ["between", "eq", "gte", "lte"];
+
+/** An optional operator, one of those its shape takes. */
+function isOperatorOf(operator: unknown, operators: string[]): boolean {
+  return operator === undefined || (typeof operator === "string" && operators.includes(operator));
+}
+
 export function isFilterValue(value: unknown): value is FilterValue {
   if (value == null || typeof value !== "object") return false;
   const f = value as Record<string, unknown>;
   switch (f.op) {
     case "contains":
-      return typeof f.v === "string";
+      return typeof f.v === "string" && isOperatorOf(f.operator, TEXT_OPERATORS);
     case "in":
-      return isStringArray(f.v);
+      return isStringArray(f.v) && isOperatorOf(f.operator, OPTIONS_OPERATORS);
     case "range":
-      return (f.from === undefined || typeof f.from === "string") && (f.to === undefined || typeof f.to === "string");
+      return (f.from === undefined || typeof f.from === "string") && (f.to === undefined || typeof f.to === "string")
+        && isOperatorOf(f.operator, RANGE_OPERATORS);
+    case "empty":
+    case "notEmpty":
+      return true;
     default:
       return false;
   }

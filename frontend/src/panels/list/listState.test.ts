@@ -63,6 +63,18 @@ describe("parsePersisted", () => {
       }),
     ).toEqual({ filters: { ok: { op: "contains", v: "x" } } });
   });
+
+  it("keeps the operators of the filters, and drops an operator their shape does not take", () => {
+    const filters = {
+      a: { op: "contains", v: "x", operator: "endsWith" },
+      b: { op: "in", v: ["1"], operator: "notIn" },
+      c: { op: "range", from: "1", operator: "gte" },
+      d: { op: "empty" },
+      e: { op: "notEmpty" },
+    };
+    expect(parsePersisted({ v: 1, filters })).toEqual({ filters });
+    expect(parsePersisted({ v: 1, filters: { bad: { op: "contains", v: "x", operator: "notIn" } } })).toEqual({ filters: {} });
+  });
 });
 
 describe("a kept page size of 25", () => {

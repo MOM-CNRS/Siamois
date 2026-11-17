@@ -311,5 +311,9 @@ export function describeFilterValue(value: FilterValue | undefined, options?: Fi
       if (value.to) return `≤ ${value.to}`;
       return "";
     }
+    // No value to show: the operator says it all.
+    case "empty":
+    case "notEmpty":
+      return "";
   }
 }
