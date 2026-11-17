@@ -3,31 +3,61 @@ import type {FilterKind} from "../../fields/optionSources";
 import {type MessageKey, t} from "../../i18n";
 
 /**
- * The operators a datatable filter offers, by {@link FilterKind} — the client-side counterpart of the
- * matches each {@code Kind} accepts in {@code FieldQueryService} ({@code FilterOperator} on the Java
- * side). The first of a kind's list is not necessarily its default: the order is the menu's.
+ * What a datatable filter offers: its operators in menu order, the one a filter without operator applies
+ * (what the column has always done, left out of the stored value), and the names some operators take on
+ * it (« Contient » for « any of » on a relation). The client-side counterpart of the matches each
+ * {@code Kind} accepts in {@code FieldQueryService} ({@code FilterOperator} on the Java side), narrowed
+ * where a choice makes no sense (an entity always has a type).
  */
-const OPERATORS: Record<"text" | "range" | "options", FilterOperator[]> = {
-  text: ["is", "isNot", "contains", "notContains", "startsWith", "endsWith", "empty", "notEmpty"],
-  range: ["eq", "between", "gte", "lte", "empty", "notEmpty"],
-  options: ["in", "notIn", "empty", "notEmpty"],
-};
-
-function familyOf(kind: FilterKind): keyof typeof OPERATORS {
-  if (kind === "contains") return "text";
-  if (kind === "range" || kind === "date-range") return "range";
-  return "options";
+export interface OperatorProfile {
+  operators: FilterOperator[];
+  defaultOperator: FilterOperator;
+  labels?: Partial<Record<FilterOperator, MessageKey>>;
 }
 
-/** Every operator a filter of `kind` can take, in menu order. */
-export function operatorsOf(kind: FilterKind): FilterOperator[] {
-  return OPERATORS[familyOf(kind)];
+const PRESENCE: FilterOperator[] = ["empty", "notEmpty"];
+
+export const OPERATOR_PROFILES = {
+  text: { operators: ["is", "isNot", "contains", "notContains", "startsWith", "endsWith", ...PRESENCE], defaultOperator: "contains" },
+  number: { operators: ["eq", "between", "gte", "lte", ...PRESENCE], defaultOperator: "between" },
+  // A date reads better with « on », « on or after »… than with the arithmetic of a number.
+  date: {
+    operators: ["eq", "between", "gte", "lte", ...PRESENCE],
+    defaultOperator: "between",
+    labels: { eq: "filter.op.dateEq", gte: "filter.op.dateGte", lte: "filter.op.dateLte" },
+  },
+  options: { operators: ["in", "notIn", ...PRESENCE], defaultOperator: "in" },
+  // Every fiche has a type: « empty » would match nothing, « not empty » everything.
+  type: { operators: ["in", "notIn"], defaultOperator: "in" },
+  // The entities linked to the row (parents, children, finds, stratigraphy, places…): the row's links contain them or not.
+  relation: {
+    operators: ["in", "notIn", "empty"],
+    defaultOperator: "in",
+    labels: { in: "filter.op.contains", notIn: "filter.op.notContains" },
+  },
+  // A shape is only there or not.
+  presence: { operators: PRESENCE, defaultOperator: "notEmpty" },
+} satisfies Record<string, OperatorProfile>;
+
+/** The profile of a filter of `kind`, before what the field itself narrows (a type, a relation). */
+export function profileOf(kind: FilterKind): OperatorProfile {
+  switch (kind) {
+    case "contains":
+      return OPERATOR_PROFILES.text;
+    case "range":
+      return OPERATOR_PROFILES.number;
+    case "date-range":
+      return OPERATOR_PROFILES.date;
+    case "presence":
+      return OPERATOR_PROFILES.presence;
+    default:
+      return OPERATOR_PROFILES.options;
+  }
 }
 
-/** The operator of a filter that names none: what the filter of `kind` has always done. */
-export function defaultOperatorOf(kind: FilterKind): FilterOperator {
-  const defaults = { text: "contains", range: "between", options: "in" } as const;
-  return defaults[familyOf(kind)];
+/** A profile offering nothing but `profile`'s default: a filter whose server side compares one way only. */
+export function defaultOnly(profile: OperatorProfile): OperatorProfile {
+  return { ...profile, operators: [profile.defaultOperator] };
 }
 
 /** Whether `operator` compares the column with a value (or bounds), rather than only checking it has one. */
@@ -42,6 +72,7 @@ export function operatorOf(value: FilterValue | undefined, fallback: FilterOpera
   return value.operator ?? (value.op === "contains" ? "contains" : value.op === "in" ? "in" : "between");
 }
 
+// The comparison each shape of value had before operators: never stored, never sent.
 const DEFAULT_OPERATORS: FilterOperator[] = ["contains", "in", "between"];
 
 /**
@@ -65,10 +96,10 @@ export function applyOperator(value: FilterValue | undefined, operator: FilterOp
   }
 }
 
-// The family of an operator that takes a value: each belongs to one only.
-function familyFor(operator: FilterOperator): keyof typeof OPERATORS {
-  if (OPERATORS.text.includes(operator)) return "text";
-  return OPERATORS.range.includes(operator) ? "range" : "options";
+// The shape of value an operator that takes one compares: each belongs to one only.
+function familyFor(operator: FilterOperator): "text" | "range" | "options" {
+  if (OPERATOR_PROFILES.text.operators.includes(operator)) return "text";
+  return OPERATOR_PROFILES.number.operators.includes(operator) ? "range" : "options";
 }
 
 function withRefinement<T extends FilterValue>(value: T, operator: FilterOperator | undefined): T {
@@ -96,15 +127,7 @@ export function rangeWith(from: string | undefined, to: string | undefined, oper
   };
 }
 
-// A date reads better with « on », « on or after »… than with the arithmetic of a number.
-const DATE_LABELS: Partial<Record<FilterOperator, MessageKey>> = {
-  eq: "filter.op.dateEq",
-  gte: "filter.op.dateGte",
-  lte: "filter.op.dateLte",
-};
-
-/** The operator's name in the menu, for a filter of `kind`. */
-export function operatorLabel(operator: FilterOperator, kind: FilterKind): string {
-  const dateKey = kind === "date-range" ? DATE_LABELS[operator] : undefined;
-  return t(dateKey ?? (`filter.op.${operator}` as MessageKey));
+/** The operator's name in the menu of a filter with `profile`. */
+export function operatorLabel(operator: FilterOperator, profile: OperatorProfile): string {
+  return t(profile.labels?.[operator] ?? (`filter.op.${operator}` as MessageKey));
 }

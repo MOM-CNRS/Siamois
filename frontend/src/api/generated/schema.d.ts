@@ -4047,10 +4047,10 @@ export interface components {
             /** @description Triable (sort=<id>:asc) ; une colonne multivaluée se trie par nombre de valeurs */
             sortable?: boolean;
             /**
-             * @description Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable) ; null si aucun
+             * @description Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable), presence (géométrie : f.<id>.op=empty|not_empty seulement) ; null si aucun. f.<id>.op choisit un autre opérateur
              * @enum {string}
              */
-            filterOp?: "contains" | "range" | "date-range" | "equals" | "in";
+            filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | "presence";
         };
         /** @description Formulaire de création d'unité d'enregistrement et listes de concepts par field_code */
         RecordingUnitCreateFormData: {

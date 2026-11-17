@@ -3,8 +3,15 @@ import {scopeProjectId} from "../../entities/shared/scope";
 import type {ColumnDef, EntityTypeConfig, FieldCatalog, ListScope} from "../../entities/shared/types";
 import type {ColumnTogglerOption} from "../../components/table/ColumnToggler";
 import type {FilterSpec} from "../../components/table/FilterChipBar";
-import {defaultOperatorOf, operatorsOf} from "../../components/table/filterOperators";
+import {
+  defaultOnly,
+  OPERATOR_PROFILES,
+  type OperatorProfile,
+  profileOf,
+} from "../../components/table/filterOperators";
 import type {FilterKind} from "../../fields/optionSources";
+import {isTypeField} from "../../fields/typeField";
+import {isRelationField} from "./bulk/bulkSelection";
 import {renderAnswerCell} from "../../fields/display";
 import {filterKindForField, optionSourceFor} from "../../fields/optionSources";
 import {type FieldResource, isOwningProjectField, resolveValueBinding} from "../../fields/types";
@@ -14,25 +21,35 @@ import {pinnedColumnsOf} from "./validationStatusColumn";
 const FIELD_KEY = /^-?\d+$/;
 
 /**
- * The operators a datatable filter on `key` offers: every one of its kind for a field-keyed filter
- * (f.<fieldId>, FieldQueryService), the kind's own only for a named key (f.fullIdentifier…), whose
- * list-specific parser compares one way.
+ * The operators a datatable filter on `key` offers: its kind's for a field-keyed filter (f.<fieldId>,
+ * FieldQueryService), the kind's default only for a named key, whose list-specific parser compares one way.
  */
-function operatorsFor(key: string, kind: FilterKind) {
-  return FIELD_KEY.test(key) ? operatorsOf(kind) : [defaultOperatorOf(kind)];
+function profileFor(key: string, kind: FilterKind): OperatorProfile {
+  return FIELD_KEY.test(key) ? profileOf(kind) : defaultOnly(profileOf(kind));
 }
 
 /**
- * A pinned column's filter: picking among its fixed values when it has some, else a plain "contains".
+ * A catalog field's operators: those of its kind, narrowed for a type (every fiche has one) and named for
+ * a relation (its links contain the picked entities or not).
+ */
+function fieldProfile(field: FieldResource, kind: FilterKind): OperatorProfile {
+  if (isTypeField(field)) return OPERATOR_PROFILES.type;
+  if (isRelationField(field)) return OPERATOR_PROFILES.relation;
+  return profileFor(field.id, kind);
+}
+
+/**
+ * A pinned column's filter: picking among its fixed values when it has some, else a text.
  */
 function pinnedFilterSpec(column: ColumnDef<RowRecord>): FilterSpec {
+  const key = column.key;
   const options = column.filterOptions;
-  if (!options) return { key: column.key, label: column.header, kind: "contains", operators: operatorsFor(column.key, "contains") };
+  if (!options) return { key, label: column.header, kind: "contains", operators: profileFor(key, "contains") };
   const loadOptions = async (q?: string) => {
     const needle = (q ?? "").trim().toLocaleLowerCase();
     return options.filter((o) => o.label.toLocaleLowerCase().includes(needle));
   };
-  return { key: column.key, label: column.header, kind: "in", loadOptions, options, operators: operatorsFor(column.key, "in") };
+  return { key, label: column.header, kind: "in", loadOptions, options, operators: profileFor(key, "in") };
 }
 
 
@@ -138,7 +155,7 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
         if (!kind) return [];
         const loadOptions =
           organizationId != null ? (optionSourceFor(field, organizationId, scopeProjectId(scope)) ?? undefined) : undefined;
-        return [{ key: field.id, label: field.label, kind, loadOptions, operators: operatorsFor(field.id, kind) } satisfies FilterSpec];
+        return [{ key: field.id, label: field.label, kind, loadOptions, operators: fieldProfile(field, kind) } satisfies FilterSpec];
       });
     return [...pinned, ...dynamic];
   }, [config, catalog, pinnedFieldIds, organizationId, scope]);

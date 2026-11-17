@@ -1,14 +1,12 @@
 import {type ReactNode, useState} from "react";
 import {Dropdown} from "primereact/dropdown";
 import type {FilterOperator} from "../../entities/shared/types";
-import type {FilterKind} from "../../fields/optionSources";
 import {t} from "../../i18n";
-import {operatorLabel, takesValue} from "./filterOperators";
+import {type OperatorProfile, operatorLabel, takesValue} from "./filterOperators";
 
 export interface FilterOperatorEditorProps {
   label: string;
-  kind: FilterKind;
-  operators: FilterOperator[];
+  profile: OperatorProfile;
   operator: FilterOperator;
   onOperatorChange: (operator: FilterOperator) => void;
   onRemove: () => void;
@@ -18,17 +16,17 @@ export interface FilterOperatorEditorProps {
 
 /**
  * The editor of a datatable filter chip: « <column>… [operator ▾] ⋯ » on top, the value underneath. The
- * operator menu offers what the column's kind can do (filterOperators.ts); « ⋯ » holds the removal of the
+ * operator menu offers what the column's profile can do (filterOperators.ts); « ⋯ » holds the removal of the
  * filter. An operator without value (empty, not empty) hides the value widget: choosing it applies the filter.
  */
-export function FilterOperatorEditor({ label, kind, operators, operator, onOperatorChange, onRemove, children }: FilterOperatorEditorProps) {
+export function FilterOperatorEditor({ label, profile, operator, onOperatorChange, onRemove, children }: FilterOperatorEditorProps) {
   const [actionsOpen, setActionsOpen] = useState(false);
-  const choices = operators.map((value) => ({ value, label: operatorLabel(value, kind) }));
+  const choices = profile.operators.map((value) => ({ value, label: operatorLabel(value, profile) }));
   return (
     <div className="filter-editor">
       <div className="filter-editor-header">
         <span className="filter-editor-label" title={label}>{label}</span>
-        {operators.length > 1 ? (
+        {profile.operators.length > 1 ? (
           <Dropdown
             className="filter-operator"
             panelClassName="filter-operator-panel"
@@ -38,7 +36,7 @@ export function FilterOperatorEditor({ label, kind, operators, operator, onOpera
             onChange={(e) => onOperatorChange(e.value as FilterOperator)}
           />
         ) : (
-          <span className="filter-operator filter-operator-static">{operatorLabel(operator, kind)}</span>
+          <span className="filter-operator filter-operator-static">{operatorLabel(operator, profile)}</span>
         )}
         <button
           type="button"

@@ -46,8 +46,9 @@ export function isOwningProjectField(field: FieldResource): boolean {
 export interface FieldQueryCapability {
   sortable: boolean;
   // contains → f.<id>=text; range / date-range → f.<id>.from / .to; equals → f.<id>=true|false
-  // (yes/no); in → f.<id>=<id> (repeatable).
-  filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | null;
+  // (yes/no); in → f.<id>=<id> (repeatable); presence → f.<id>.op=empty|not_empty only (a geometry).
+  // Any of them takes another operator in f.<id>.op (components/table/filterOperators.ts).
+  filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | "presence" | null;
 }
 
 export interface FieldConstraints {

@@ -2,7 +2,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {FilterChipBar, type FilterSpec} from "./FilterChipBar";
-import {operatorsOf} from "./filterOperators";
+import {OPERATOR_PROFILES} from "./filterOperators";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -86,7 +86,7 @@ describe("FilterChipBar", () => {
 
   it("reads « <column>… [operator] ⋯ » in the editor of a datatable filter, and changes the operator of its value", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
 
     act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
@@ -103,7 +103,7 @@ describe("FilterChipBar", () => {
 
   it("applies « est vide » at once, and shows the operator on the chip", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "empty" } }} optionsByKey={{}} onChange={onChange} />));
 
     expect(container.querySelector(".filter-chip-value")?.textContent).toBe("est vide");
@@ -114,7 +114,7 @@ describe("FilterChipBar", () => {
 
   it("removes the filter from the « ⋯ » menu", () => {
     const onChange = vi.fn();
-    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text }];
     act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
 
     act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
@@ -131,5 +131,33 @@ describe("FilterChipBar", () => {
     act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
     expect(document.querySelector(".filter-editor")).toBeNull();
     expect(document.querySelector(".entity-list-panel-filter-editor input")).not.toBeNull();
+  });
+
+  it("applies a geometry filter as « n'est pas vide » as soon as it is added", () => {
+    const onChange = vi.fn();
+    const specs: FilterSpec[] = [
+      { key: "-40", label: "Géométrie", kind: "presence", operators: OPERATOR_PROFILES.presence },
+      { key: "-12", label: "Nom", kind: "contains", operators: OPERATOR_PROFILES.text },
+    ];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{}} optionsByKey={{}} onChange={onChange} />));
+
+    act(() => (container.querySelector(".filter-chip-add") as HTMLElement).click());
+    act(() => (document.querySelector(".filter-picker-item") as HTMLElement).click());
+
+    expect(onChange).toHaveBeenCalledWith("-40", { op: "notEmpty" });
+  });
+
+  it("says « contient » for a relation's chosen entities", () => {
+    const specs: FilterSpec[] = [{ key: "-30", label: "Mobilier", kind: "in", operators: OPERATOR_PROFILES.relation }];
+    act(() => root.render(
+      <FilterChipBar
+        specs={specs}
+        filters={{ "-30": { op: "in", v: ["8"], operator: "notIn" } }}
+        optionsByKey={{ "-30": [{ id: "8", label: "M-8" }] }}
+        onChange={vi.fn()}
+      />,
+    ));
+
+    expect(container.querySelector(".filter-chip-value")?.textContent).toBe("ne contient pas M-8");
   });
 });

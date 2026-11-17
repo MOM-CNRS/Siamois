@@ -1,23 +1,40 @@
 import {describe, expect, it} from "vitest";
-import {applyOperator, defaultOperatorOf, operatorOf, operatorsOf, rangeWith, takesValue} from "./filterOperators";
+import {applyOperator, defaultOnly, OPERATOR_PROFILES, operatorLabel, operatorOf, profileOf, rangeWith, takesValue} from "./filterOperators";
 
-describe("operatorsOf", () => {
+describe("profileOf", () => {
   it("offers the text operators of the mock-up, in its order", () => {
-    expect(operatorsOf("contains")).toEqual(["is", "isNot", "contains", "notContains", "startsWith", "endsWith", "empty", "notEmpty"]);
+    expect(profileOf("contains").operators).toEqual(["is", "isNot", "contains", "notContains", "startsWith", "endsWith", "empty", "notEmpty"]);
   });
 
-  it("offers bounds to numbers and dates, any / none of to the pickers", () => {
-    expect(operatorsOf("range")).toEqual(operatorsOf("date-range"));
-    expect(operatorsOf("range")).toContain("between");
+  it("offers bounds to numbers and dates, any / none of to the pickers, presence alone to a geometry", () => {
+    expect(profileOf("range").operators).toEqual(profileOf("date-range").operators);
+    expect(profileOf("range").operators).toContain("between");
     for (const kind of ["in", "boolean", "concept-one", "concept-many", "spatial-one"] as const) {
-      expect(operatorsOf(kind)).toEqual(["in", "notIn", "empty", "notEmpty"]);
+      expect(profileOf(kind).operators).toEqual(["in", "notIn", "empty", "notEmpty"]);
     }
+    expect(profileOf("presence").operators).toEqual(["empty", "notEmpty"]);
   });
 
   it("keeps what each kind always did as its default", () => {
-    expect(defaultOperatorOf("contains")).toBe("contains");
-    expect(defaultOperatorOf("date-range")).toBe("between");
-    expect(defaultOperatorOf("concept-many")).toBe("in");
+    expect(profileOf("contains").defaultOperator).toBe("contains");
+    expect(profileOf("date-range").defaultOperator).toBe("between");
+    expect(profileOf("concept-many").defaultOperator).toBe("in");
+    expect(profileOf("presence").defaultOperator).toBe("notEmpty");
+  });
+
+  it("offers a type no « empty », a relation « contains », « does not contain » and « is empty »", () => {
+    expect(OPERATOR_PROFILES.type.operators).toEqual(["in", "notIn"]);
+    const relation = OPERATOR_PROFILES.relation;
+    expect(relation.operators.map((op) => operatorLabel(op, relation))).toEqual(["Contient", "Ne contient pas", "Est vide"]);
+  });
+
+  it("names a date's bounds as dates", () => {
+    expect(operatorLabel("gte", OPERATOR_PROFILES.date)).toBe("Le ou après le");
+    expect(operatorLabel("gte", OPERATOR_PROFILES.number)).toBe("Supérieur ou égal à");
+  });
+
+  it("narrows a profile to its default", () => {
+    expect(defaultOnly(OPERATOR_PROFILES.text).operators).toEqual(["contains"]);
   });
 });
 

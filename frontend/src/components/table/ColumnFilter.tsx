@@ -87,6 +87,9 @@ function KindFilter({
       return <DateRangeFilter label={label} value={value} onChange={onChange} autoFocus={autoFocus} bounds={bounds} placeholder={placeholder} />;
     case "boolean":
       return <BooleanFilter value={value} onChange={onChange} />;
+    // Only having a value or not: the operator says it all.
+    case "presence":
+      return null;
     case "in":
     case "concept-one":
     case "concept-many":

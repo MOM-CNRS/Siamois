@@ -7,7 +7,7 @@ import {BottomSheet} from "../layout/BottomSheet";
 import {useIsMobile} from "../../viewport";
 import {ColumnFilter, describeFilterValue} from "./ColumnFilter";
 import {FilterOperatorEditor} from "./FilterOperatorEditor";
-import {applyOperator, defaultOperatorOf, operatorLabel, operatorOf} from "./filterOperators";
+import {applyOperator, type OperatorProfile, operatorLabel, operatorOf, takesValue} from "./filterOperators";
 import type {FilterKind, FilterOption} from "../../fields/optionSources";
 import type {FilterValue} from "../../panels/list/tableState";
 import type {FilterOperator} from "../../entities/shared/types";
@@ -36,9 +36,9 @@ export interface FilterSpec {
   // A fixed, short list of values (the validation statuses): an "in" filter then picks them from a
   // multi-select dropdown instead of searching them as you type.
   options?: FilterOption[];
-  // The operators a datatable filter offers (filterOperators.ts), in menu order. Set: the chip's editor
-  // reads « <label>… [operator ▾] ⋯ » above the value. Absent (the other chip bars): the bare value widget.
-  operators?: FilterOperator[];
+  // The operators a datatable filter offers (filterOperators.ts). Set: the chip's editor reads
+  // « <label>… [operator ▾] ⋯ » above the value. Absent (the other chip bars): the bare value widget.
+  operators?: OperatorProfile;
 }
 
 // The icon of a datatable filter chip, by kind of value.
@@ -51,6 +51,7 @@ const KIND_ICONS: Record<FilterKind, string> = {
   "concept-one": "bi-list-ul",
   "concept-many": "bi-list-ul",
   "spatial-one": "bi-geo-alt",
+  presence: "bi-bounding-box",
 };
 
 /**
@@ -59,10 +60,12 @@ const KIND_ICONS: Record<FilterKind, string> = {
  */
 export function describeChip(spec: FilterSpec, value: FilterValue | undefined, options?: FilterOption[]): string {
   const summary = describeFilterValue(value, options);
-  if (!spec.operators || !value) return summary;
-  const operator = operatorOf(value, defaultOperatorOf(spec.kind));
-  if (operator === defaultOperatorOf(spec.kind)) return summary;
-  return `${operatorLabel(operator, spec.kind).toLocaleLowerCase()} ${summary}`.trim();
+  const profile = spec.operators;
+  if (!profile || !value) return summary;
+  const operator = operatorOf(value, profile.defaultOperator);
+  // A filter that only checks for a value always names its operator: « non vide » alone would read as nothing.
+  if (operator === profile.defaultOperator && takesValue(operator)) return summary;
+  return `${operatorLabel(operator, profile).toLocaleLowerCase()} ${summary}`.trim();
 }
 
 export interface FilterChipBarProps {
@@ -122,6 +125,9 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function addFilter(e: ReactMouseEvent, spec: FilterSpec, anchor: HTMLElement) {
     hideAdd();
+    // Nothing to type for a filter whose default takes no value (a geometry: « not empty »): applied at once.
+    const presence = spec.operators && !takesValue(spec.operators.defaultOperator) ? applyOperator(undefined, spec.operators.defaultOperator) : undefined;
+    if (presence) onChange(spec.key, presence);
     const addKey = (keys: string[]) => (keys.includes(spec.key) ? keys : [...keys, spec.key]);
     if (availableSpecs.length > 1) {
       setPendingKeys(addKey);
@@ -186,8 +192,8 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
     setEditingKey(null);
   }
 
-  function operatorFor(spec: FilterSpec): FilterOperator {
-    return operatorOf(filters[spec.key], pendingOperators[spec.key] ?? defaultOperatorOf(spec.kind));
+  function operatorFor(key: string, profile: OperatorProfile): FilterOperator {
+    return operatorOf(filters[key], pendingOperators[key] ?? profile.defaultOperator);
   }
 
   // The value is kept when the new operator can compare it (« contient AB » → « commence par AB »);
@@ -213,7 +219,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       loadOptions={editingSpec.loadOptions}
       options={editingSpec.options}
       autoFocus={!editSheetOpen}
-      operator={editingSpec.operators ? operatorFor(editingSpec) : undefined}
+      operator={editingSpec.operators ? operatorFor(editingSpec.key, editingSpec.operators) : undefined}
       placeholder={editingSpec.operators ? t("filter.value") : undefined}
       onChange={(value, options) => onChange(editingSpec.key, value, options)}
     />
@@ -221,9 +227,8 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   const editor = editingSpec?.operators ? (
     <FilterOperatorEditor
       label={editingSpec.label}
-      kind={editingSpec.kind}
-      operators={editingSpec.operators}
-      operator={operatorFor(editingSpec)}
+      profile={editingSpec.operators}
+      operator={operatorFor(editingSpec.key, editingSpec.operators)}
       onOperatorChange={(operator) => changeOperator(editingSpec, operator)}
       onRemove={() => removeFilter(editingSpec.key)}
     >
