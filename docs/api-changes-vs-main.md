@@ -437,4 +437,8 @@ Additive, no break. A form-field filter (`f.<fieldId>`, negative id for a system
 | `between` | number, date | `f.<id>.from` / `f.<id>.to` | within the bounds |
 | `empty`, `not_empty` | every filterable field | **none** (a value or a bound is a `400`) | without / with a value (a blank text counts as empty) |
 
+Two more reserved ids, next to `-901`, filter and sort the identifier and the name of a list as texts: **`-902`** (the full identifier of recording units, finds and projects, the identifier of phases, studies, documents and containers) and **`-903`** (the name, on projects). Unlike `f.identifier` on the phase, study, document, container and find lists, which was silently ignored, they are applied there too.
+
+Geometry fields (the entity's own `geom` and the additional fields of answer type `GEOMETRY`) are now filterable, but only with `empty` / `not_empty` (`filterOp = "presence"` in the catalog, `query.sortable = false`; a sort on one is a `400`). An additional geometry field used to be offered as a text "contains" filter.
+
 A negation (`is_not`, `not_contains`, `not_in`, `empty`) keeps exactly the rows its positive form leaves out, **rows without a value included**. An unknown operator, or one the field's kind cannot apply (`starts_with` on a number…), is a `400`. A text's own `%` and `_` are now matched literally (they used to be SQL wildcards). An operator sent without its value (`f.<id>.op=contains` alone) narrows nothing, like a blank value.

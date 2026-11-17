@@ -522,6 +522,50 @@ class FieldQueryServiceQueryTest {
         assertThat(ListOnlyColumn.ofFieldId(-301L)).isEmpty();
     }
 
+    @Test
+    void theIdentifierColumnReadsTheFullIdentifierWhereTheEntityComposesOne() {
+        assertThat(ListOnlyColumn.ofFieldId(-902L)).contains(ListOnlyColumn.IDENTIFIER);
+        assertThat(ListOnlyColumn.IDENTIFIER.attributeOf(RecordingUnit.class)).isEqualTo("fullIdentifier");
+        assertThat(ListOnlyColumn.IDENTIFIER.attributeOf(Phase.class)).isEqualTo("identifier");
+        assertThat(ListOnlyColumn.NAME.attributeOf(fr.siamois.domain.models.actionunit.ActionUnit.class)).isEqualTo("name");
+    }
+
+    @Test
+    void theIdentifierColumnIsFilteredAsAText_withEveryTextOperator() {
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+        long identifier = ListOnlyColumn.IDENTIFIER.fieldId();
+
+        run(build(RecordingUnit.class, new FieldListQuery(Map.of(identifier, values(FilterOperator.ENDS_WITH, "12")), null, true, "fr")));
+
+        verify(cb).like(any(), org.mockito.ArgumentMatchers.eq("%12"), org.mockito.ArgumentMatchers.eq('\\'));
+        verifyNoInteractions(customFields);
+    }
+
+    // ---------- geometries ----------
+
+    @Test
+    void aGeometryColumnIsOnlyFilteredOnHavingAShape_andNeverSorted() {
+        CustomField geometry = field(new CustomFieldGeometry(), true, "geom");
+        attribute(unit, "geom", Attribute.PersistentAttributeType.BASIC, org.locationtech.jts.geom.Geometry.class);
+
+        assertThat(service.capabilityOf(RecordingUnit.class, geometry)).isEqualTo(new fr.siamois.ui.api.openapi.v1.resource.form.FieldResource.Query(false, "presence"));
+        run(build(RecordingUnit.class, filter(values(FilterOperator.EMPTY))));
+        verify(cb).not(any());
+        assertThat(badRequest(RecordingUnit.class, filter(values(FilterOperator.CONTAINS, "POINT"))).getReason()).contains("Opérateur contains impossible");
+        assertThat(badRequest(RecordingUnit.class, sort(true)).getReason()).contains("ne se trie pas");
+    }
+
+    @Test
+    void anAdditionalGeometryFieldIsNoTextToSearchIn() {
+        CustomField geometry = field(new CustomFieldGeometry(), false, null);
+
+        assertThat(service.capabilityOf(RecordingUnit.class, geometry).filterOp()).isEqualTo("presence");
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_EMPTY))));
+        // Blank WKT counts as no shape.
+        verify(cb).trim(any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).exists(any());
+    }
+
     // ---------- operators ----------
 
     @Test

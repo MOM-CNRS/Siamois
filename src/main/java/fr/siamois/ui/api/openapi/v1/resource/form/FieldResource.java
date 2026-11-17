@@ -199,8 +199,9 @@ public record FieldResource(
             @Schema(description = "Triable (sort=<id>:asc) ; une colonne multivaluée se trie par nombre de valeurs")
             boolean sortable,
             @Schema(description = "Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, "
-                    + "nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable) ; null si aucun",
-                    allowableValues = {"contains", "range", "date-range", "equals", "in"})
+                    + "nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable), "
+                    + "presence (géométrie : f.<id>.op=empty|not_empty seulement) ; null si aucun. f.<id>.op choisit un autre opérateur",
+                    allowableValues = {"contains", "range", "date-range", "equals", "in", "presence"})
             @Nullable String filterOp
     ) {
     }
