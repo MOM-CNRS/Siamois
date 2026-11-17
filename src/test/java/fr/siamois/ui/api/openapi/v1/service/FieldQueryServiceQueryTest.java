@@ -130,6 +130,15 @@ class FieldQueryServiceQueryTest {
         return new FieldListQuery.Criterion(List.of(v), null, null, operator);
     }
 
+    /** The column was compared with {@code pattern} by a LIKE escaping with a backslash. */
+    private void verifyLike(String pattern) {
+        verifyLike(pattern, times(1));
+    }
+
+    private void verifyLike(String pattern, org.mockito.verification.VerificationMode mode) {
+        verify(cb, mode).like(any(), org.mockito.ArgumentMatchers.eq(pattern), org.mockito.ArgumentMatchers.eq('\\'));
+    }
+
     private static FieldListQuery filter(FieldListQuery.Criterion criterion) {
         return new FieldListQuery(Map.of(FIELD, criterion), null, true, "fr");
     }
@@ -216,7 +225,7 @@ class FieldQueryServiceQueryTest {
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
 
         run(build(RecordingUnit.class, filter(values("AB", "cd"))));
-        verify(cb, atLeastOnce()).like(any(), org.mockito.ArgumentMatchers.eq("%ab%"), org.mockito.ArgumentMatchers.eq('\\'));
+        verifyLike("%ab%", atLeastOnce());
 
         run(build(RecordingUnit.class, sort(true)));
         verify(cb, atLeastOnce()).lower(any());
@@ -537,7 +546,7 @@ class FieldQueryServiceQueryTest {
 
         run(build(RecordingUnit.class, new FieldListQuery(Map.of(identifier, values(FilterOperator.ENDS_WITH, "12")), null, true, "fr")));
 
-        verify(cb).like(any(), org.mockito.ArgumentMatchers.eq("%12"), org.mockito.ArgumentMatchers.eq('\\'));
+        verifyLike("%12");
         verifyNoInteractions(customFields);
     }
 
@@ -574,9 +583,9 @@ class FieldQueryServiceQueryTest {
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
 
         run(build(RecordingUnit.class, filter(values(FilterOperator.STARTS_WITH, "AB"))));
-        verify(cb).like(any(), org.mockito.ArgumentMatchers.eq("ab%"), org.mockito.ArgumentMatchers.eq('\\'));
+        verifyLike("ab%");
         run(build(RecordingUnit.class, filter(values(FilterOperator.ENDS_WITH, "AB"))));
-        verify(cb).like(any(), org.mockito.ArgumentMatchers.eq("%ab"), org.mockito.ArgumentMatchers.eq('\\'));
+        verifyLike("%ab");
         run(build(RecordingUnit.class, filter(values(FilterOperator.IS, "AB"))));
         verify(cb).equal(any(jakarta.persistence.criteria.Expression.class), org.mockito.ArgumentMatchers.eq("ab"));
         verify(cb, never()).not(any());

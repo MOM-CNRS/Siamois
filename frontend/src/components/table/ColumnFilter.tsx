@@ -312,7 +312,7 @@ function OptionsFilter({
     onChange(next.length > 0 ? { op: "in", v: next.map((o) => o.id) } : undefined, next);
   }
 
-  const itemTemplateFct = (o) => <ConceptOptionItem option={o} />;
+  const itemTemplateFct = (o: FilterOption) => <ConceptOptionItem option={o} />;
 
   // Phone width: the options are picked in a drawer of their own (an autocomplete dropdown would sit under the keyboard).
   if (mobile) {
@@ -327,8 +327,6 @@ function OptionsFilter({
       />
     );
   }
-
-  const itemTemplateFct = (o: FilterOption) => <ConceptOptionItem option={o} />
 
   return (
     <AutoComplete

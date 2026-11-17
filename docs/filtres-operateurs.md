@@ -24,7 +24,7 @@ Branche `feat/complex-filters`. La barre de filtres au-dessus des tables et des 
 - Les autres barres de filtres (`RelationsList`) et l'overlay de recherche ne changent pas : une `FilterSpec` sans `operators` garde l'éditeur nu.
 
 ## Contrat
-- `FilterValue` (`entities/shared/types.ts`) : `op` reste la forme de la valeur (compatibilité des vues enregistrées), `operator` facultatif la précise ; `{ op: "empty" }` et `{ op: "notEmpty" }` n'ont pas de valeur. Un opérateur par défaut n'est jamais stocké.
+- `FilterValue` et les listes d'opérateurs par forme de valeur (`entities/shared/filterValue.ts`) : `op` reste la forme de la valeur (compatibilité des vues enregistrées), `operator` facultatif la précise ; `{ op: "empty" }` et `{ op: "notEmpty" }` n'ont pas de valeur. Un opérateur par défaut n'est jamais stocké.
 - API : `f.<fieldId>.op=<opérateur>` (`is`, `is_not`, `contains`, `not_contains`, `starts_with`, `ends_with`, `in`, `not_in`, `between`, `empty`, `not_empty`). Absent : comportement historique. Les opérateurs de plage (égal, ≥, ≤) partent en bornes `.from` / `.to`. Détail pour les clients externes : `api-changes-vs-main.md` §12.
 
 ## Code

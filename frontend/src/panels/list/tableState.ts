@@ -5,12 +5,7 @@
 // with zero component changes, and a `?s=` URL param makes a list view shareable/restorable
 // without wiring full route ownership into this phase.
 
-import {
-  type FilterOperator,
-  type FilterValue,
-  isPresenceFilter,
-  OptionsFilterOperator, RangeFilterOperator, TextFilterOperator
-} from "../../entities/shared/filterValue";
+import {type FilterOperator, type FilterValue, isPresenceFilter} from "../../entities/shared/filterValue";
 import type {ListViewMode} from "./listViews";
 
 export type { FilterValue };
@@ -52,14 +47,8 @@ export function createTableState(overrides: Partial<TableState> = {}): TableStat
   };
 }
 
-function setFilterKeyParameter(filter: { op: "contains"; v: string; operator?: TextFilterOperator } | {
-  op: "in";
-  v: string[];
-  labels?: Record<string, string>;
-  operator?: OptionsFilterOperator
-} | { op: "range"; from?: string; to?: string; operator?: RangeFilterOperator } | { op: "empty" } | {
-  op: "notEmpty"
-}, params: URLSearchParams, key: string) {
+// The value(s) or bounds of one filter under f.<key>; a presence filter has none (its operator says it all).
+function setFilterKeyParameter(filter: FilterValue, params: URLSearchParams, key: string) {
   switch (filter.op) {
     case "contains":
       if (filter.v) params.set(`f.${key}`, filter.v);
