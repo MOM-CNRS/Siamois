@@ -48,16 +48,6 @@ public class PersonSeeder {
     }
 
     /**
-     * Finds or creates a person from a "Firstname Lastname" or email string.
-     *
-     * @param nameLastName "Firstname Lastname" or email string
-     * @return the found or newly created {@link Person}
-     */
-    public Person findOrCreatePerson(String nameLastName) {
-        return findOrCreatePerson(nameLastName, null);
-    }
-
-    /**
      * Finds or creates a person from a "Firstname Lastname" or email string,
      * and ensures they are added as an organization member of the given institution if specified.
      *
@@ -87,18 +77,17 @@ public class PersonSeeder {
         if (existing != null) {
             return existing;
         }
-        String localPart = email.substring(0, email.indexOf('@'));
+        String username = email.substring(0, email.indexOf('@'));
         String firstname;
         String lastname;
-        int dot = localPart.indexOf('.');
-        if (dot >= 1 && dot < localPart.length() - 1) {
-            firstname = capitalize(localPart.substring(0, dot));
-            lastname = capitalize(localPart.substring(dot + 1));
+        int dot = username.indexOf('.');
+        if (dot >= 1 && dot < username.length() - 1) {
+            firstname = capitalize(username.substring(0, dot));
+            lastname = capitalize(username.substring(dot + 1));
         } else {
-            firstname = localPart;
-            lastname = localPart;
+            firstname = username;
+            lastname = username;
         }
-        String username = localPart;
         return getOrCreatePerson(email, firstname, lastname, username);
     }
 
