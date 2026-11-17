@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    field_form_config: the find forms (configured_table MOBILIER) of some projects hold the recording unit's geometry
+    field (-332, concept 4291328 « Géométrie de l'UE ») instead of the find's own (-438, concept 4291329 « Géométrie du
+    mobilier (point) »), so their « Détails » section shows the unit's label. Both fields are bound to the record's geom
+    column: only the field the form points at changes, its place in the layout (group, position, width, rules) is kept.
+    The default layout (form-layouts/MOBILIER.json) already cites -438: new projects are not concerned.
+    -->
+
+    <!-- A form that already has the find's geometry keeps it: the unit's is only a duplicate (the key is form + field). -->
+    <changeSet id="2026-11-17-1-find-forms-drop-duplicate-unit-geometry" author="Julien Linget">
+        <sql>
+            DELETE FROM public.field_form_config ffc
+            WHERE ffc.fk_custom_field_id = -332
+              AND ffc.fk_form_config_id IN (SELECT fc.config_id FROM public.form_config fc WHERE fc.configured_table = 'MOBILIER')
+              AND EXISTS (SELECT 1
+                          FROM public.field_form_config own
+                          WHERE own.fk_form_config_id = ffc.fk_form_config_id
+                            AND own.fk_custom_field_id = -438);
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-17-1-find-forms-use-find-geometry" author="Julien Linget">
+        <sql>
+            UPDATE public.field_form_config
+            SET fk_custom_field_id = -438
+            WHERE fk_custom_field_id = -332
+              AND fk_form_config_id IN (SELECT fc.config_id FROM public.form_config fc WHERE fc.configured_table = 'MOBILIER');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
