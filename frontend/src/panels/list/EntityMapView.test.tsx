@@ -6,11 +6,12 @@ import type {MapData, MapFeature} from "../../entities/shared/listApi";
 import type {EntityTypeConfig} from "../../entities/shared/types";
 import {setLocale} from "../../i18n";
 import {LIST_LOOK, SELECTED_LOOK, type FeatureLook} from "../../map/featureLook";
-import {fitLayer, revealLayer} from "../../map/leafletMap";
+import {centerLayer, fitLayer, focusLayer, revealLayer} from "../../map/leafletMap";
 import {focusOnMap} from "../../map/mapFocus";
 import {useFeatureLayer} from "../../map/useFeatureLayer";
 import {useLeafletMap} from "../../map/useLeafletMap";
 import {EntityMapView, type EntityMapViewProps} from "./EntityMapView";
+import {recallListContext} from "./listContext";
 import {useEntityMapData} from "./map/useEntityMapData";
 import {useSelectedFeature} from "./map/useSelectedFeature";
 
@@ -22,7 +23,7 @@ import {useSelectedFeature} from "./map/useSelectedFeature";
 
 vi.mock("../../map/useLeafletMap", () => ({ useLeafletMap: vi.fn() }));
 vi.mock("../../map/useFeatureLayer", () => ({ useFeatureLayer: vi.fn() }));
-vi.mock("../../map/leafletMap", () => ({ fitLayer: vi.fn(), revealLayer: vi.fn() }));
+vi.mock("../../map/leafletMap", () => ({ centerLayer: vi.fn(), fitLayer: vi.fn(), focusLayer: vi.fn(), revealLayer: vi.fn() }));
 vi.mock("./map/useEntityMapData", () => ({ useEntityMapData: vi.fn() }));
 vi.mock("./map/useSelectedFeature", () => ({ useSelectedFeature: vi.fn() }));
 
@@ -75,6 +76,8 @@ beforeEach(() => {
   vi.mocked(useSelectedFeature).mockReset().mockReturnValue(undefined);
   vi.mocked(fitLayer).mockReset().mockReturnValue(true);
   vi.mocked(revealLayer).mockReset();
+  vi.mocked(focusLayer).mockReset();
+  vi.mocked(centerLayer).mockReset();
   vi.mocked(useFeatureLayer).mockReset().mockImplementation((m, f, look, callbacks) => {
     layerCalls.push({ map: m, features: f, look, callbacks });
     return look === SELECTED_LOOK ? selectionRef : { current: listLayer };
@@ -236,14 +239,63 @@ describe("EntityMapView selection", () => {
     expect(useSelectedFeature).toHaveBeenCalledWith("recordingUnit", features, "2", "-9");
   });
 
-  it("highlights the selected feature in its own look, and brings it into view", () => {
+  it("highlights the selected feature in its own look, not clickable", () => {
     vi.mocked(useSelectedFeature).mockReturnValue(features[1]);
 
     render({ selectedId: "2" });
 
     expect(lastSelectionLayer().features).toEqual([features[1]]);
-    expect(lastSelectionLayer().callbacks.onDrawn).toBe(revealLayer);
     expect(lastSelectionLayer().callbacks.onOpen).toBeUndefined();
+  });
+
+  it("zooms onto the first fiche drawn as the selection", () => {
+    vi.mocked(useSelectedFeature).mockReturnValue(features[0]);
+    render({ selectedId: "1" });
+
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    expect(focusLayer).toHaveBeenCalledWith(map, selectionLayer);
+    expect(centerLayer).not.toHaveBeenCalled();
+  });
+
+  it("brings each fiche opened afterwards (the overview's arrows) to the middle of the map", () => {
+    vi.mocked(useSelectedFeature).mockReturnValue(features[0]);
+    render({ selectedId: "1" });
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    vi.mocked(useSelectedFeature).mockReturnValue(features[1]);
+    render({ selectedId: "2" });
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    expect(centerLayer).toHaveBeenCalledWith(map, selectionLayer);
+    expect(focusLayer).toHaveBeenCalledTimes(1);
+  });
+
+  it("only keeps in view the same fiche drawn again (a refetch after an edit)", () => {
+    vi.mocked(useSelectedFeature).mockReturnValue(features[0]);
+    render({ selectedId: "1" });
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    vi.mocked(useSelectedFeature).mockReturnValue({ ...features[0] });
+    render({ selectedId: "1" });
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    expect(revealLayer).toHaveBeenCalledWith(map, selectionLayer);
+    expect(centerLayer).not.toHaveBeenCalled();
+    expect(focusLayer).toHaveBeenCalledTimes(1);
+  });
+
+  it("moves nothing when no fiche is selected, and still zooms onto the first one selected later", () => {
+    render();
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    vi.mocked(useSelectedFeature).mockReturnValue(features[1]);
+    render({ selectedId: "2" });
+    lastSelectionLayer().callbacks.onDrawn!(map, selectionLayer);
+
+    expect(focusLayer).toHaveBeenCalledTimes(1);
+    expect(centerLayer).not.toHaveBeenCalled();
+    expect(revealLayer).not.toHaveBeenCalled();
   });
 
   it("highlights nothing without a selection, with a stable empty set", () => {
@@ -254,6 +306,100 @@ describe("EntityMapView selection", () => {
 
     expect(first).toEqual([]);
     expect(lastSelectionLayer().features).toBe(first);
+  });
+});
+
+describe("EntityMapView first display", () => {
+  it("opens the first feature in the overview, once", () => {
+    const onOpenOverview = vi.fn();
+    render({ onOpenOverview });
+
+    render({ onOpenOverview });
+
+    expect(onOpenOverview).toHaveBeenCalledTimes(1);
+    expect(onOpenOverview).toHaveBeenCalledWith("recordingUnit", "1", { label: "UE-1", validationStatus: "VALIDATED" });
+  });
+
+  it("waits for the features before opening the first one", () => {
+    const onOpenOverview = vi.fn();
+    mapData({ data: undefined, isLoading: true });
+    render({ onOpenOverview });
+    expect(onOpenOverview).not.toHaveBeenCalled();
+
+    mapData();
+    render({ onOpenOverview });
+
+    expect(onOpenOverview).toHaveBeenCalledWith("recordingUnit", "1", expect.anything());
+  });
+
+  it("opens nothing when the result set is empty", () => {
+    const onOpenOverview = vi.fn();
+    mapData({ data: { features: [], meta: { total: 0, examined: 0 } } });
+
+    render({ onOpenOverview });
+
+    expect(onOpenOverview).not.toHaveBeenCalled();
+  });
+
+  it("keeps the fiche already open in the overview", () => {
+    const onOpenOverview = vi.fn();
+    render({ onOpenOverview, selectedId: "2" });
+
+    render({ onOpenOverview });
+
+    expect(onOpenOverview).not.toHaveBeenCalled();
+  });
+
+  it("opens nothing in focus mode, where there is no overview", () => {
+    const onNavigate = vi.fn();
+
+    render({ onNavigate });
+
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("EntityMapView walking its features with the fiche's arrows", () => {
+  const walk = (index: number) => ({
+    params: { organizationId: 3, search: "fosse", filters: { "-9": { op: "notEmpty" } }, scope: undefined, sort: "identifier:asc" },
+    index,
+  });
+  const params = { organizationId: 3, search: "fosse", sort: "identifier:asc" };
+
+  beforeEach(() => window.sessionStorage.clear());
+
+  it("walks from the clicked feature's position", () => {
+    render({ params, geometry: "-9", onOpenOverview: vi.fn(), selectedId: "1" });
+
+    lastListLayer().callbacks.onOpen!(features[1]);
+
+    expect(recallListContext("recordingUnit", "2")).toEqual(walk(1));
+  });
+
+  it("walks from a feature clicked in focus mode too", () => {
+    render({ params, geometry: "-9", onNavigate: vi.fn() });
+
+    lastListLayer().callbacks.onOpen!(features[1]);
+
+    expect(recallListContext("recordingUnit", "2")).toEqual(walk(1));
+  });
+
+  it("walks from the first feature it opens by itself", () => {
+    render({ params, geometry: "-9", onOpenOverview: vi.fn() });
+
+    expect(recallListContext("recordingUnit", "1")).toEqual(walk(0));
+  });
+
+  it("makes the fiche already open walk its features, from its position", () => {
+    render({ params, geometry: "-9", onOpenOverview: vi.fn(), selectedId: "2" });
+
+    expect(recallListContext("recordingUnit", "2")).toEqual(walk(1));
+  });
+
+  it("leaves the walk of a fiche it does not show as it was", () => {
+    render({ params, geometry: "-9", onOpenOverview: vi.fn(), selectedId: "77" });
+
+    expect(recallListContext("recordingUnit", "77")).toBeUndefined();
   });
 });
 

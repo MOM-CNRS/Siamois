@@ -1,5 +1,7 @@
 import type {ListParams, ListScope} from "../entities/shared/types";
-import type {ResultSetParams} from "../entities/shared/listApi";
+import type {MapParams} from "../entities/shared/listApi";
+
+export type UnitId = string | number | null | undefined
 
 /**
  * Every query key of the app, so that a key and the invalidations that target it are written in
@@ -19,7 +21,7 @@ export const queryKeys = {
   ) => ["entity-list", entityType, "unfiltered-total", organizationId, scope?.entityType, scope?.id, filters ?? null] as const,
   // A list's map (listApi's fetchMap): under the list's own prefix, so anything that refreshes the list
   // refreshes its map too.
-  entityListMap: (entityType: string, params: ResultSetParams, geometry?: string) =>
+  entityListMap: (entityType: string, params: MapParams, geometry?: string) =>
     ["entity-list", entityType, "map", params, geometry ?? null] as const,
   entityListSchema: (entityType: string, organizationId: number | undefined, scope: ListScope | undefined) =>
     ["entity-list-schema", entityType, organizationId, scope?.entityType, scope?.id] as const,
@@ -88,21 +90,21 @@ export const queryKeys = {
   // A commune's outline from geo.api.gouv.fr (map/communeContour.ts), by INSEE code: never changes.
   communeContour: (inseeCode: string) => ["commune-contour", inseeCode] as const,
   // What a consumer derives from a catalog — cached apart only so each keeps its own `select`.
-  effectiveForm: (segment: string, projectId: string | number | null | undefined, typeId: string | null | undefined) =>
+  effectiveForm: (segment: string, projectId: UnitId, typeId: string | null | undefined) =>
     ["effective-form", segment, projectId, typeId ?? null] as const,
   typeRules: (segment: string | undefined, projectId: string) => ["type-rules", segment, projectId] as const,
-  recordingUnitTypes: (projectId: string | number | null | undefined) => ["recording-unit-types", projectId] as const,
+  recordingUnitTypes: (projectId: UnitId) => ["recording-unit-types", projectId] as const,
   // The identifier the server would generate for a new entity of a type in a project (a peek, not a
   // consumption): shown pre-filled in the creation form. Not cached — every form opening asks again.
   identifierSuggestion: (
     entityType: string,
-    projectId: string | number | null | undefined,
-    typeId: string | number | null | undefined,
+    projectId: UnitId,
+    typeId: UnitId,
     parentRecordingUnitId?: string | number | null,
   ) => ["identifier-suggestion", entityType, projectId ?? null, typeId ?? null, parentRecordingUnitId ?? null] as const,
-  projectTemplates: (organizationId: string | number | null | undefined) => ["project-templates", organizationId] as const,
-  nextProjectIdentifier: (organizationId: string | number | null | undefined) => ["next-project-identifier", organizationId] as const,
-  projectTypes: (organizationId: string | number | null | undefined) => ["project-types", organizationId] as const,
+  projectTemplates: (organizationId: UnitId) => ["project-templates", organizationId] as const,
+  nextProjectIdentifier: (organizationId: UnitId) => ["next-project-identifier", organizationId] as const,
+  projectTypes: (organizationId: UnitId) => ["project-types", organizationId] as const,
 
   projectHistory: (projectId: string | number | undefined) => ["project-history", projectId] as const,
   projectHomeRecent: (organizationId: number | undefined) => ["project-home-recent", organizationId] as const,

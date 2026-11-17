@@ -60,6 +60,16 @@ export function resultSetOf(params: ResultSetParams): ResultSetParams {
   return { search, organizationId, filters, scope };
 }
 
+// What a list's map asks for: its result set in the list's order. The order is not what the map draws, but
+// its features come in it: the first is the list's first row, and the overview's arrows, walking the list
+// from a feature's position, go through the features in turn. A sort is changed in the table, not on the map.
+export type MapParams = ResultSetParams & Pick<ListParams, "sort">;
+
+/** The map request of a list's parameters: its result set and its order, without its paging. */
+export function mapRequestOf(params: MapParams): MapParams {
+  return params.sort ? { ...resultSetOf(params), sort: params.sort } : resultSetOf(params);
+}
+
 // What the list's map view shows — GET .../{collection}/map (EntityMapResponse server side), the
 // same result set as the list answered with each row's geometry in WGS84 instead of a page. The server
 // only says what it alone knows; what is left out and how features look is derived client-side.
@@ -80,8 +90,9 @@ export interface MapData {
 
 // `geometry`: the field id of the geometry column to place the rows by (their own geometry, or an
 // additional geometry field); the collection's own geometry when absent.
-export function fetchMap(collectionPath: string, params: ResultSetParams, geometry?: string): Promise<MapData> {
+export function fetchMap(collectionPath: string, params: MapParams, geometry?: string): Promise<MapData> {
   const query = resultSetQuery(params);
+  if (params.sort) query.set("sort", params.sort);
   if (geometry) query.set("geometry", geometry);
   return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${query.toString()}`);
 }
