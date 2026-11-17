@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.form;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.specimen.CustomFieldSelectMultipleSpecimen;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectMultiple;
@@ -13,6 +14,7 @@ import fr.siamois.dto.entity.*;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.UnitDefinitionMapper;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO;
 import fr.siamois.ui.bean.LabelBean;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.fieldsource.FieldSource;
@@ -394,6 +396,64 @@ class FormServiceTest {
         assertEquals(OffsetDateTime.of(2022, 5, 6, 7, 8, 9, 0, ZoneOffset.UTC), entity.getCreatedAt());
     }
 
+
+    @Test
+    void updateJpaEntityFromResponse_writesAnEditedGeometry_keepingItsSridWhenTheWktNamesNone() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        unit.setGeom(point(2154, 650000, 6860000));
+
+        formService.updateJpaEntityFromResponse(geometryResponse("POINT (651000 6861000)"), unit);
+
+        PointDTO written = (PointDTO) unit.getGeom();
+        assertArrayEquals(new double[]{651000, 6861000}, written.coordinates);
+        assertEquals(2154, written.srid);
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_takesTheSridAnEwktNames() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        unit.setGeom(point(2154, 650000, 6860000));
+
+        formService.updateJpaEntityFromResponse(geometryResponse("SRID=4326;POINT (2.35 48.85)"), unit);
+
+        assertEquals(4326, unit.getGeom().srid);
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_leavesAnUntouchedGeometryAsItIs() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        PointDTO current = point(2154, 650000, 6860000);
+        unit.setGeom(current);
+
+        formService.updateJpaEntityFromResponse(geometryResponse("POINT (650000 6860000)"), unit);
+
+        assertSame(current, unit.getGeom());
+    }
+
+    @Test
+    void updateJpaEntityFromResponse_clearsAGeometryWrittenBlank() {
+        RecordingUnitDTO unit = new RecordingUnitDTO();
+        unit.setGeom(point(2154, 650000, 6860000));
+
+        formService.updateJpaEntityFromResponse(geometryResponse(" "), unit);
+
+        assertNull(unit.getGeom());
+    }
+
+    private static PointDTO point(int srid, double x, double y) {
+        PointDTO point = new PointDTO();
+        point.coordinates = new double[]{x, y};
+        point.srid = srid;
+        return point;
+    }
+
+    private static CustomFormResponseViewModel geometryResponse(String text) {
+        CustomFieldAnswerTextViewModel answer = new CustomFieldAnswerTextViewModel();
+        answer.setValue(text);
+        CustomFormResponseViewModel response = new CustomFormResponseViewModel();
+        response.setAnswers(new HashMap<>(Map.of(CustomFieldGeometry.of(-332L, null), answer)));
+        return response;
+    }
 
     @Test
     void updateJpaEntityFromResponse_setsAllBindableSystemFields() {

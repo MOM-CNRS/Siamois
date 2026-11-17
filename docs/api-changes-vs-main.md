@@ -446,3 +446,13 @@ A negation (`is_not`, `not_contains`, `not_in`, `empty`) keeps exactly the rows 
 ## 13. Rows of a map's list without a geometry (2026-11-17)
 
 Additive. The map endpoints (`GET …/recording-units/map`, `…/finds/map`, `…/places/map`) answer **`meta.listTotal`**: the rows of the list's filter, whether their displayed geometry is filled in or not. `meta.total` stays the rows with a geometry (the map only walks those). `listTotal - total` is the number of rows the map cannot place for lack of a geometry, on top of those examined but left out of `features` (unreadable geometry, no or unknown SRID). It costs one count query of the list.
+
+## 14. Geometry fields are editable (2026-11-17)
+
+Additive. A field of answer type `GEOMETRY` (the entity's own geometry and the additional geometry fields) is no longer sent `readOnly: true` in the catalog, and a PATCH may now answer it — it used to be a `400` « Champ non modifiable ».
+
+- **Value**: a text, WKT (`POINT (652000 6862000)`) or EWKT naming its SRID (`SRID=2154;POINT (652000 6862000)`). A WKT without SRID keeps the SRID of the entity's current geometry (none if it has none). `{ "value": null }` or a blank text clears the geometry. An unreadable text is a `400`.
+- **The entity's own geometry** (`recording-units`, `finds` through `answers`; `projects` through `answers`, field `-140`): must be a `Point`, `MultiPoint`, `LineString`, `Polygon` or `MultiPolygon` (`400` otherwise); a project's extent must stay a `Polygon` or `MultiPolygon`. It is stored as a geometry, so it reads back as the WKT of what was stored.
+- **An additional geometry field** is kept as the text sent (trimmed): any geometry PostGIS reads. Give its SRID (EWKT) for the map view to place it.
+- **`PATCH /api/v1/places/{id}`** (no `answers` map): new property **`geomWkt`**, the same text, which must be a `MultiPolygon`. Ignored when `geom` (GeoJSON) is sent too. Absent = unchanged.
+- **A `geom` (GeoJSON) JTS cannot build** — a polygon ring that does not close, missing or incomplete coordinates — is now a `400` with a readable message on every endpoint that takes one (recording units and finds, creation and PATCH; project and place PATCH; place creation). It used to fail the save with a `500`. A place's `geom` / `geomWkt` that is not a `MultiPolygon` is likewise a `400` before anything is saved.

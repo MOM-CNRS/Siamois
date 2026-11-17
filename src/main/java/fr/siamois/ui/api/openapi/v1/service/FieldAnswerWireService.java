@@ -70,7 +70,7 @@ public class FieldAnswerWireService {
         } else if (f instanceof CustomFieldSelectMultipleFromFieldCode multi) {
             fieldCode = multi.getFieldCode();
         }
-        FieldResource resource = new FieldResource(
+        return new FieldResource(
                 String.valueOf(field.getId()),
                 "fields",
                 label,
@@ -84,8 +84,6 @@ public class FieldAnswerWireService {
                 // Its concept's page, a system field read from the database included (its row has no concept).
                 CustomField.conceptUriOf(FieldTextService.conceptOf(field)),
                 constraintsOf(f));
-        // A geometry is displayed, never edited: read-only wherever it shows, a list as a fiche.
-        return f instanceof CustomFieldGeometry ? resource.withReadOnly(true) : resource;
     }
 
     /**

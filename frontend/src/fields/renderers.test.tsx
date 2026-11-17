@@ -52,12 +52,24 @@ describe("FallbackRenderer", () => {
 });
 
 describe("GeometryRenderer", () => {
-  const renderGeometry = (value: unknown) =>
+  const renderGeometry = (value: unknown, readOnly = true) =>
     renderToStaticMarkup(
-      <GeometryRenderer field={field({ answerType: "GEOMETRY" })} value={value} readOnly={false} required={false} onChange={() => {}} />,
+      <GeometryRenderer field={field({ answerType: "GEOMETRY" })} value={value} readOnly={readOnly} required={false} onChange={() => {}} />,
     );
 
-  it("shows the WKT as text, with no input to edit it", () => {
+  it("edits the WKT as text when the field is editable", () => {
+    const html = renderGeometry("POINT (2.35 48.85)", false);
+    expect(html).toContain("<textarea");
+    expect(html).toContain("POINT (2.35 48.85)");
+  });
+
+  it("offers an empty text to write a geometry that has none yet", () => {
+    const html = renderGeometry(null, false);
+    expect(html).toContain("<textarea");
+    expect(html).toContain("SRID=");
+  });
+
+  it("shows the WKT as text, with no input to edit it, when read-only", () => {
     const html = renderGeometry("POINT (2.35 48.85)");
     expect(html).toContain("POINT (2.35 48.85)");
     expect(html).not.toContain("<input");

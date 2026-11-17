@@ -82,6 +82,10 @@ export function placePatchBody(answers: Record<string, AnswerInputBody>): Record
       case String(SHOM_MAP_NUMBER_FIELD_ID):
         body.shomMapNumber = value;
         break;
+      // Edited as WKT/EWKT text: PlacePatchRequest.geomWkt, which the server parses (geom is GeoJSON).
+      case String(GEOM_FIELD_ID):
+        body.geomWkt = value;
+        break;
       // The address object has no editor, so it should not reach this: fail loudly rather than
       // report a save that silently wrote nothing.
       default:
@@ -107,6 +111,7 @@ const ADDRESS_POSTCODE_FIELD_ID = -212;
 const ADDRESS_CITY_FIELD_ID = -213;
 const PARCEL_SECTION_FIELD_ID = -214;
 const PARCEL_NUMBER_FIELD_ID = -215;
+const GEOM_FIELD_ID = -210;
 
 // Mirrors PlaceCreateRequest's required trio — address/placeNumber/geom stay editable afterward
 // on the fiche, same reduction as the other create overlays.

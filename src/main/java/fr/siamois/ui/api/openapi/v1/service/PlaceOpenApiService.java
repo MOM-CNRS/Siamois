@@ -24,8 +24,12 @@ import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.InvalidGeometryTextException;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.request.list.ListWindow;
 import fr.siamois.ui.api.openapi.v1.request.list.TreeRequest;
 import fr.siamois.ui.api.openapi.v1.request.place.PlaceCreateRequest;
@@ -323,7 +327,7 @@ public class PlaceOpenApiService {
         answers.put(String.valueOf(SpatialUnit.PARCEL_SECTION_FIELD.getId()), dto.getParcelSection());
         answers.put(String.valueOf(SpatialUnit.PARCEL_NUMBER_FIELD.getId()), dto.getParcelNumber());
         answers.put(String.valueOf(SpatialUnit.COMMENTS_FIELD.getId()), dto.getComments());
-        answers.put(String.valueOf(SpatialUnit.GEOM_FIELD.getId()), fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText.of(dto.getGeom()));
+        answers.put(String.valueOf(SpatialUnit.GEOM_FIELD.getId()), GeometryText.of(dto.getGeom()));
         if (dto.getType() != null && resolvedType != null) {
             answers.put(String.valueOf(SpatialUnit.SPATIAL_UNIT_TYPE_FIELD.getId()),
                     new ResourceRef(resolvedType.getId(), "concepts", resolvedType.getResolvedLabel()));
@@ -413,7 +417,7 @@ public class PlaceOpenApiService {
         toSave.setName(name);
         toSave.setType(category);
         toSave.setPlaceNumber(request.getPlaceNumber());
-        toSave.setGeom(request.getGeom());
+        toSave.setGeom(GeometryInput.requireMultiPolygon(request.getGeom()));
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
@@ -443,8 +447,9 @@ public class PlaceOpenApiService {
         SpatialUnitDTO dto = requireAccessiblePlace(caller, placeId);
         InstitutionDTO institution = dto.getCreatedByInstitution();
         UserInfo userInfo = new UserInfo(institution, caller.person(), lang);
+        boolean geomChange = patch.isGeomPresent() || patch.isGeomWktPresent();
         boolean fieldsChange = patch.getName() != null || patch.getTypeConceptId() != null || patch.getAddress() != null
-                || patch.isPlaceNumberPresent() || patch.isGeomPresent() || patch.isTextDetailsPresent();
+                || patch.isPlaceNumberPresent() || geomChange || patch.isTextDetailsPresent();
         boolean statusChange = ValidationOpenApiService.changes(dto.getValidationStatus(), patch.getValidationStatus());
         // A validator may change the status alone without the edit right; anything else needs it.
         if (fieldsChange || !statusChange) {
@@ -469,11 +474,13 @@ public class PlaceOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name ne peut pas être vide");
         }
 
+        GeometryDTO newGeom = GeometryInput.requireMultiPolygon(
+                patch.isGeomPresent() ? patch.getGeom() : geometryOfText(patch.getGeomWkt(), dto.getGeom()));
         try {
-            SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || patch.isGeomPresent())
+            SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || geomChange)
                     ? spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress(),
                             patch.getPlaceNumber(), patch.isPlaceNumberPresent(),
-                            patch.getGeom(), patch.isGeomPresent())
+                            newGeom, geomChange)
                     : spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress());
             if (patch.isTextDetailsPresent()) {
                 saved = spatialUnitService.updatePlaceDetails(placeId, details -> applyTextDetails(details, patch));
@@ -484,6 +491,18 @@ public class PlaceOpenApiService {
                     saved.getId(), saved.getName(), saved.getInseeCode(), saved.getPlaceNumber());
         } catch (SpatialUnitAlreadyExistsException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * The geometry a place's {@code geomWkt} stands for: a WKT naming no SRID keeps the current geometry's,
+     * a null or blank text clears it.
+     */
+    private static GeometryDTO geometryOfText(String text, GeometryDTO current) {
+        try {
+            return GeometryText.parse(text, current == null ? null : current.srid);
+        } catch (InvalidGeometryTextException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
     }
 

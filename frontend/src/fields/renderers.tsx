@@ -78,10 +78,23 @@ function TextAreaRenderer({ value, readOnly, required, onChange }: Readonly<Fiel
   );
 }
 
-// A geometry's WKT, in the SRID it carries: displayed, never edited (the server sends the field read-only).
-// The fiche folds it on one line (FieldEditCell); opened, it reads whole here, wrapped.
-export function GeometryRenderer({ value }: Readonly<FieldRendererProps>) {
+// A geometry's WKT, in the SRID it carries: edited as text, a WKT or an EWKT (SRID=…;) to name its SRID —
+// a WKT without one keeps the current geometry's (server side). The fiche folds it on one line
+// (FieldEditCell); opened, it reads whole here, wrapped.
+export function GeometryRenderer({ value, readOnly, required, onChange }: Readonly<FieldRendererProps>) {
   const wkt = typeof value === "string" && value.length > 0 ? value : null;
+  if (!readOnly) {
+    return (
+      <InputTextarea
+        className="field-geometry-input"
+        value={wkt ?? ""}
+        required={required}
+        placeholder={t("field.geometryPlaceholder")}
+        onChange={(e) => onChange(e.target.value)}
+        rows={5}
+      />
+    );
+  }
   if (!wkt) return <span>—</span>;
   return <code className="field-geometry">{wkt}</code>;
 }

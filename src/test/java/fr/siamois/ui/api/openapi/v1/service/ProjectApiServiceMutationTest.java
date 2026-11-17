@@ -251,6 +251,25 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void patchProject_geomWithAnUnclosedRing_throws400AndDoesNotSave() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        var polygon = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        polygon.coordinates = new double[][][]{{{0, 0}, {10, 0}, {10, 10}, {0, 5}}};
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setGeom(polygon);
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
     void patchProject_geomPolygonOrNull_isAccepted() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
@@ -261,12 +280,14 @@ class ProjectApiServiceMutationTest {
 
         ProjectPatchRequest withPolygon = new ProjectPatchRequest();
         var polygon = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        polygon.coordinates = new double[][][]{{{0, 0}, {10, 0}, {10, 10}, {0, 0}}};
         withPolygon.setGeom(polygon);
         service.patchProject(caller, "7", withPolygon, "fr");
         assertThat(au.getGeom()).isSameAs(polygon);
 
         ProjectPatchRequest withMulti = new ProjectPatchRequest();
         var multi = new fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO();
+        multi.coordinates = new double[][][][]{{{{0, 0}, {10, 0}, {10, 10}, {0, 0}}}};
         withMulti.setGeom(multi);
         service.patchProject(caller, "7", withMulti, "fr");
         assertThat(au.getGeom()).isSameAs(multi);
@@ -297,6 +318,47 @@ class ProjectApiServiceMutationTest {
         service.patchProject(caller, "7", patch, "fr");
 
         assertThat(au.getOaCode()).isEqualTo("OA-2024-01");
+    }
+
+    @Test
+    void patchProject_answers_writesTheExtentFromItsWkt_keepingItsSrid() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        var current = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        current.srid = 2154;
+        au.setGeom(current);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-140", new AnswerInput("POLYGON ((0 0, 10 0, 10 10, 0 0))", null)); // GEOM_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getGeom()).isInstanceOf(fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO.class);
+        assertThat(au.getGeom()).isNotSameAs(current);
+        assertThat(au.getGeom().srid).isEqualTo(2154);
+    }
+
+    @Test
+    void patchProject_answers_refusesAnExtentThatIsNoAreaOrNoWkt() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        for (String text : List.of("POINT (1 2)", "POLYGON ((0 0")) {
+            ProjectPatchRequest patch = new ProjectPatchRequest();
+            patch.getAnswers().put("-140", new AnswerInput(text, null));
+
+            assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        }
+        verify(actionUnitService, never()).save(any(), any(), any());
     }
 
     @Test

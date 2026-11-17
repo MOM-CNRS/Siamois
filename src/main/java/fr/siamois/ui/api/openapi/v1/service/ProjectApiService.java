@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -74,6 +75,8 @@ import org.springframework.web.server.ResponseStatusException;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO;
 import fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.InvalidGeometryTextException;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
@@ -770,7 +773,7 @@ public class ProjectApiService {
         }
         if (patch.isGeomPresent()) {
             requireSurface(patch.getGeom());
-            dto.setGeom(patch.getGeom());
+            dto.setGeom(GeometryInput.requireValid(patch.getGeom()));
         }
         applyAnswerPatch(dto, patch.getAnswers());
         checkAnswerRules(dto, patch.getAnswers());
@@ -861,7 +864,8 @@ public class ProjectApiService {
      * comme en lecture, écrire une réponse est une écriture réflexive directe sur la propriété
      * {@code ActionUnitDTO} que {@code valueBinding} désigne, pas un appel au moteur de formulaire.
      * Champs pris en charge : TEXT, INTEGER, DECIMAL, DATETIME, SELECT_ONE_FROM_FIELD_CODE,
-     * SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT, SELECT_ONE_PERSON — le sous-ensemble que
+     * SELECT_MULTIPLE_FROM_FIELD_CODE, SELECT_ONE_SPATIAL_UNIT, SELECT_ONE_PERSON, GEOMETRY (l'emprise, en WKT ou
+     * EWKT) — le sous-ensemble que
      * {@code ActionUnit.DETAILS_FORM} utilise réellement (pas tout le zoo de {@code CustomField}
      * que RecordingUnit doit couvrir).</p>
      */
@@ -894,6 +898,8 @@ public class ProjectApiService {
             coerced = null;
         } else if (field instanceof CustomFieldSelectOneDocument) {
             coerced = coerceDocumentId(dto, raw);
+        } else if (field instanceof CustomFieldGeometry) {
+            coerced = coerceGeometryAnswer(dto, raw);
         } else {
             coerced = coerceScalarAnswer(field, raw);
         }
@@ -952,10 +958,23 @@ public class ProjectApiService {
         }
     }
 
-    private Object coerceScalarAnswer(CustomField field, Object raw) {
-        if (field instanceof CustomFieldGeometry) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
+    /**
+     * The project's extent written as WKT or EWKT: a WKT naming no SRID keeps the current extent's, a blank
+     * text clears it, and it must be an area like the {@code geom} of the PATCH.
+     */
+    private static GeometryDTO coerceGeometryAnswer(ActionUnitDTO dto, Object raw) {
+        Integer currentSrid = dto.getGeom() == null ? null : dto.getGeom().srid;
+        GeometryDTO geometry;
+        try {
+            geometry = GeometryText.parse(String.valueOf(raw), currentSrid);
+        } catch (InvalidGeometryTextException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
         }
+        requireSurface(geometry);
+        return geometry;
+    }
+
+    private Object coerceScalarAnswer(CustomField field, Object raw) {
         if (field instanceof CustomFieldText) return String.valueOf(raw);
         if (field instanceof CustomFieldInteger) return coerceIntegerAnswer(raw);
         if (field instanceof CustomFieldDecimal) return coerceDecimalAnswer(raw);

@@ -4155,7 +4155,7 @@ div#search-bar .sia-topbar-search-field .sia-search {
 .field-label-tooltip { max-width: 22rem; }
 .field-label-tooltip-definition { margin-top: 0.25rem; white-space: normal; }
 
-/* A geometry's WKT, opened (GeometryRenderer): read-only, in the fields' own font, wrapped so a long
+/* A geometry's WKT, opened read-only (GeometryRenderer): in the fields' own font, wrapped so a long
    polygon stays in its column, scrolled past a screenful. */
 .field-geometry {
   display: block;
@@ -4164,6 +4164,12 @@ div#search-bar .sia-topbar-search-field .sia-search {
   overflow-wrap: anywhere;
   max-height: 20rem;
   overflow: auto;
+}
+
+/* The same WKT being edited: wrapped anywhere (a WKT has few spaces), a few lines high, scrolled past them. */
+.field-geometry-input {
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* The same WKT folded in the fiche (FieldEditCell): one line cut to the field's width. */

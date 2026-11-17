@@ -813,6 +813,25 @@ class FindOpenApiServiceTest {
     }
 
     @Test
+    void patchFind_geomWithAnUnclosedRing_throws400AndDoesNotSave() {
+        SpecimenDTO specimen = accessibleSpecimen();
+        when(specimenService.findAccessibleById(7L, SCOPE)).thenReturn(Optional.of(specimen));
+        when(recordingUnitService.requireAccessibleRecordingUnitByPrimaryKey(42L, SCOPE)).thenReturn(recordingUnit);
+
+        fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO polygon =
+                new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        polygon.coordinates = new double[][][]{{{0, 0}, {10, 0}, {10, 10}, {0, 5}}};
+        FindPatchRequest request = new FindPatchRequest();
+        request.setGeom(polygon);
+
+        assertThatThrownBy(() -> service.patchFind(7L, request, personDto, SCOPE, LANG))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST))
+                .hasMessageContaining("doit se refermer");
+        verify(specimenService, never()).save(any(), anyMap());
+    }
+
+    @Test
     void patchFind_explicitNullGeom_clearsGeom() {
         SpecimenDTO specimen = accessibleSpecimen();
         specimen.setGeom(new fr.siamois.ui.api.openapi.v1.generic.response.geom.PointDTO());

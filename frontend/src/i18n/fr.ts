@@ -217,6 +217,7 @@ export const fr = {
   "concept.openInThesaurus": "Ouvrir dans le thésaurus",
   "field.comment": "Commentaire",
   "field.value": "Valeur",
+  "field.geometryPlaceholder": "WKT, ou EWKT pour préciser le SRID : SRID=2154;POINT (652000 6862000)",
   "field.yes": "Oui",
   "field.no": "Non",
   "field.noAnswer": "Sans réponse",

@@ -101,6 +101,14 @@ class SystemFieldCatalogTest {
         assertThat(fieldById.get(-438L)).isNotNull();
     }
 
+    /** A recording unit's and a find's own geometry are edited as WKT: neither is read-only. */
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"UE, -332", "MOBILIER, -438"})
+    void theGeometryOfARecordIsEditable(ConfigurableTable table, long geometryFieldId) {
+        assertThat(SystemFieldCatalog.specOf(table, geometryFieldId))
+                .hasValueSatisfying(spec -> assertThat(spec.readOnly()).isFalse());
+    }
+
     /**
      * The declared fields are shared static definitions, so the catalog must hand out independent
      * copies of them, or a caller mutating one (tests routinely stamp an id on a field to simulate a

@@ -640,6 +640,6 @@ public abstract class SpecimenForm {
             SystemFieldSpec.of(storageLocationField),
             SystemFieldSpec.of(objectOrLotField),
             SystemFieldSpec.of(samplingNatureField),
-            SystemFieldSpec.readOnly(geomField));
+            SystemFieldSpec.of(geomField));
     }
 }
