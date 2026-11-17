@@ -214,7 +214,7 @@ class RecordingUnitSeederTest {
         stubConceptsFound();
         stubInstitutionFound();
 
-        when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
+        when(personSeeder.resolveCached(any(), eq("author@siamois.fr"), any()))
                 .thenThrow(new IllegalStateException("Person introuvable"));
         List<RecordingUnitSeeder.RecordingUnitSpecs> specs = oneSpec();
 
@@ -302,6 +302,7 @@ class RecordingUnitSeederTest {
         }));
         verify(entityManager, times(1)).flush();
         verify(entityManager, times(1)).clear();
+        verify(personSeeder).resolveCached(any(), eq("author@siamois.fr"), any(Institution.class));
         SeedCounts.Counts counts = seedCounts.get(ImportSchema.RECORDING_UNIT);
         assertThat(counts.created()).isEqualTo(1);
         assertThat(counts.updated()).isZero();

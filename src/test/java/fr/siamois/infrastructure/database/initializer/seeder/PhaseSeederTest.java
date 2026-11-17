@@ -146,7 +146,7 @@ class PhaseSeederTest {
 
         when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq("th240"), anyCollection()))
                 .thenReturn(List.of(concept));
-        when(personSeeder.resolveCached(any(), eq("author@site.fr"))).thenReturn(author);
+        when(personSeeder.resolveCached(any(), eq("author@site.fr"), any())).thenReturn(author);
         // phaseRepository bulk-existence lookup left unstubbed -> empty -> not already present
 
         PhaseSeeder.PhaseSpecs s = new PhaseSeeder.PhaseSpecs(
@@ -248,7 +248,7 @@ class PhaseSeederTest {
     void seed_authorEmailPresent_authorAndCreatedBySetToPerson() {
         stubActionUnitFound();
         Person author = new Person();
-        when(personSeeder.resolveCached(any(), eq("user@example.fr"))).thenReturn(author);
+        when(personSeeder.resolveCached(any(), eq("user@example.fr"), any())).thenReturn(author);
 
         seeder.seed(List.of(spec("PH-06", null, "user@example.fr")));
 

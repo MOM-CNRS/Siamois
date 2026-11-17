@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
@@ -31,6 +32,37 @@ public class PersonProfileAssignmentService {
         assignment.setProfile(profile);
         assignment.setPerson(person);
         personProfileAssignmentRepository.save(assignment);
+    }
+
+    /**
+     * Ensures that the given person is assigned the {@link ProfileConstants#ORGANIZATION_MEMBER}
+     * profile in the specified institution. If the person already holds any profile in the institution,
+     * this method is a no-op.
+     *
+     * @param institution the institution to assign the member profile in
+     * @param person the person to assign the profile to
+     */
+    public void assignOrganizationMemberProfile(@NonNull InstitutionDTO institution, @NonNull Person person) {
+        if (personProfileAssignmentRepository.personHasAnyProfileInInstitution(person.getId(), institution.getId())) {
+            return;
+        }
+        Profile member = profileService.createOrGetOrganizationMemberProfile(institution);
+        assignProfile(member, person);
+    }
+
+    /**
+     * Ensures that the given person is assigned the {@link ProfileConstants#ORGANIZATION_MEMBER}
+     * profile in the specified institution entity.
+     *
+     * @param institution the institution entity
+     * @param person the person entity
+     */
+    public void assignOrganizationMemberProfile(@NonNull Institution institution, @NonNull Person person) {
+        InstitutionDTO institutionDTO = new InstitutionDTO();
+        institutionDTO.setId(institution.getId());
+        institutionDTO.setName(institution.getName());
+        institutionDTO.setIdentifier(institution.getIdentifier());
+        assignOrganizationMemberProfile(institutionDTO, person);
     }
 
     public boolean addToManagers(InstitutionDTO institution, PersonDTO person) {

@@ -140,7 +140,7 @@ class SpecimenSeederTest {
     void seed_AuthorDoesNotExist() {
         stubTypeFound();
         stubInstitutionFound();
-        when(personSeeder.resolveCached(any(), eq("author@siamois.fr")))
+        when(personSeeder.resolveCached(any(), eq("author@siamois.fr"), any()))
                 .thenThrow(new IllegalStateException("Person introuvable"));
 
         IllegalStateException ex = assertThrows(IllegalStateException.class, () -> seeder.seed(toInsert, 1L));

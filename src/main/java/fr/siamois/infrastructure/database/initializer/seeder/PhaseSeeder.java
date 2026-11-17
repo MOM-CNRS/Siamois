@@ -2,6 +2,7 @@ package fr.siamois.infrastructure.database.initializer.seeder;
 
 import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.misc.ImportProgress;
 import fr.siamois.domain.models.misc.SeedCounts;
 import fr.siamois.domain.models.phase.Phase;
@@ -131,7 +132,7 @@ public class PhaseSeeder {
             ActionUnit au = resolveActionUnit(s, actionUnitsByKey);
             Long institutionId = au.getCreatedByInstitution().getId();
             Concept type = resolveType(s, conceptsByKey, institutionId);
-            Person author = resolveAuthor(s, personCache);
+            Person author = resolveAuthor(s, personCache, au.getCreatedByInstitution());
 
             String dedupKey = au.getId() + "|" + s.identifier();
             if (!queuedKeys.add(dedupKey)) return Optional.empty();
@@ -188,9 +189,9 @@ public class PhaseSeeder {
         return result;
     }
 
-    private Person resolveAuthor(PhaseSpecs s, Map<String, Person> personCache) {
+    private Person resolveAuthor(PhaseSpecs s, Map<String, Person> personCache, Institution institution) {
         if (s.authorEmail() == null || s.authorEmail().isBlank()) return null;
-        return SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail()));
+        return SeederUtils.field("auteur", () -> personSeeder.resolveCached(personCache, s.authorEmail(), institution));
     }
 
     private void flushInBatches(List<Phase> toInsert, ImportProgress progress) {

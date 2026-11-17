@@ -1,6 +1,7 @@
 package fr.siamois.domain.services.permissions;
 
 import fr.siamois.domain.models.auth.Person;
+import fr.siamois.domain.models.institution.Institution;
 import fr.siamois.domain.models.permissions.PersonProfileAssignment;
 import fr.siamois.domain.models.permissions.Profile;
 import fr.siamois.domain.models.permissions.ProfileConstants;
@@ -485,5 +486,43 @@ class PersonProfileAssignmentServiceTest {
         ArgumentCaptor<List<Long>> profileIdsCaptor = ArgumentCaptor.forClass(List.class);
         verify(personProfileAssignmentRepository).personHasAnyProfile(eq(1L), profileIdsCaptor.capture());
         assertThat(profileIdsCaptor.getValue()).containsExactlyInAnyOrder(20L, 21L);
+    }
+
+    @Test
+    void assignOrganizationMemberProfile_alreadyHasProfile_doesNothing() {
+        Institution institution = new Institution();
+        institution.setId(5L);
+        Person p = new Person();
+        p.setId(1L);
+
+        when(personProfileAssignmentRepository.personHasAnyProfileInInstitution(1L, 5L))
+                .thenReturn(true);
+
+        service.assignOrganizationMemberProfile(institution, p);
+
+        verify(profileService, never()).createOrGetOrganizationMemberProfile(any(InstitutionDTO.class));
+        verify(personProfileAssignmentRepository, never()).save(any(PersonProfileAssignment.class));
+    }
+
+    @Test
+    void assignOrganizationMemberProfile_noProfileInInstitution_assignsMemberProfile() {
+        Institution institution = new Institution();
+        institution.setId(5L);
+        Person p = new Person();
+        p.setId(1L);
+
+        Profile memberProfile = buildProfile(10L, ProfileConstants.ORGANIZATION_MEMBER);
+
+        when(personProfileAssignmentRepository.personHasAnyProfileInInstitution(1L, 5L))
+                .thenReturn(false);
+        when(profileService.createOrGetOrganizationMemberProfile(any(InstitutionDTO.class)))
+                .thenReturn(memberProfile);
+        when(personProfileAssignmentRepository.findByProfileIdAndPersonId(10L, 1L))
+                .thenReturn(Optional.empty());
+
+        service.assignOrganizationMemberProfile(institution, p);
+
+        verify(profileService).createOrGetOrganizationMemberProfile(any(InstitutionDTO.class));
+        verify(personProfileAssignmentRepository).save(any(PersonProfileAssignment.class));
     }
 }
