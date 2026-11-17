@@ -137,6 +137,19 @@ class FieldAnswerPatchServiceTest {
     }
 
     @Test
+    void apply_refusesWithA400APolygonWhoseRingIsNotClosed() {
+        CustomFieldGeometry geometry = CustomFieldGeometry.of(-332L, null);
+        givenResponse(Map.of(geometry, new CustomFieldAnswerTextViewModel()));
+        Map<String, AnswerInput> answers = Map.of("-332", new AnswerInput("POLYGON ((0 0, 10 0, 10 10, 0 5))", null));
+        FormUiDto form = form(geometry);
+
+        assertThatThrownBy(() -> service.apply(entity, form, answers, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST))
+                .hasMessageContaining("doit se refermer");
+    }
+
+    @Test
     void apply_refusesARecordGeometryOfATypeTheApiDoesNotCarry_butKeepsItInAnAdditionalField() {
         CustomFieldGeometry system = CustomFieldGeometry.of(-332L, null);
         CustomFieldGeometry additional = new CustomFieldGeometry();

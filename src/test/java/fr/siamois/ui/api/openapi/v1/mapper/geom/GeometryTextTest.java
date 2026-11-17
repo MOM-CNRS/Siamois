@@ -75,6 +75,15 @@ class GeometryTextTest {
     }
 
     @Test
+    void aWellFormedTextThatIsNoValidGeometryIsRefused() {
+        assertThatThrownBy(() -> GeometryText.parse("POLYGON ((0 0, 10 0, 10 10, 0 5))", null))
+                .isInstanceOf(InvalidGeometryTextException.class)
+                .hasMessageContaining("doit se refermer");
+        assertThatThrownBy(() -> GeometryText.requireReadable("MULTIPOLYGON (((0 0, 10 0, 10 10)))"))
+                .isInstanceOf(InvalidGeometryTextException.class);
+    }
+
+    @Test
     void aGeometryOfATypeTheApiDoesNotCarryIsRefused_butReadable() {
         String lines = "MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))";
 
