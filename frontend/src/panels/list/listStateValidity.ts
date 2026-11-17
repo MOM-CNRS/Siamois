@@ -33,7 +33,7 @@ export function withCurrentFilterKeys(filters: Record<string, FilterValue>, conf
   for (const column of pinnedColumnsOf(config)) {
     const target = column.filterKey;
     if (!target || target === column.key || moved[column.key] == null) continue;
-    if (moved[target] == null) moved[target] = moved[column.key];
+    moved[target] ??= moved[column.key];
     delete moved[column.key];
   }
   return moved;

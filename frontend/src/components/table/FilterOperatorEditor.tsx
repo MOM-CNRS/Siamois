@@ -19,7 +19,7 @@ export interface FilterOperatorEditorProps {
  * operator menu offers what the column's profile can do (filterOperators.ts); « ⋯ » holds the removal of the
  * filter. An operator without value (empty, not empty) hides the value widget: choosing it applies the filter.
  */
-export function FilterOperatorEditor({ label, profile, operator, onOperatorChange, onRemove, children }: FilterOperatorEditorProps) {
+export function FilterOperatorEditor({ label, profile, operator, onOperatorChange, onRemove, children }: Readonly<FilterOperatorEditorProps>) {
   const [actionsOpen, setActionsOpen] = useState(false);
   const choices = profile.operators.map((value) => ({ value, label: operatorLabel(value, profile) }));
   return (
