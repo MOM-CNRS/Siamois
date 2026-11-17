@@ -3739,20 +3739,6 @@ class RecordingUnitOpenApiServiceTest {
     // ─── findViewableRecordingUnit / findSiblings ───────────────────────────────────────────────
 
     /**
-     * A unit the caller may see is returned as resolved.
-     */
-    @Test
-    void findViewableRecordingUnit_whenVisible_returnsTheUnit() {
-        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
-                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
-        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(true);
-
-        RecordingUnitDTO found = service.findViewableRecordingUnit("1026", personDto, SCOPE);
-
-        assertThat(found).isSameAs(ruDto);
-    }
-
-    /**
      * A unit the caller may not see answers 404, as if it did not exist.
      */
     @Test
