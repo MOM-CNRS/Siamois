@@ -2,6 +2,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {FilterChipBar, type FilterSpec} from "./FilterChipBar";
+import {operatorsOf} from "./filterOperators";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -15,7 +16,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
-  document.querySelectorAll(".p-overlaypanel").forEach((el) => el.remove());
+  document.querySelectorAll(".p-overlaypanel, .filter-operator-panel").forEach((el) => el.remove());
 });
 
 describe("FilterChipBar", () => {
@@ -81,5 +82,54 @@ describe("FilterChipBar", () => {
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(items()).toEqual(["État"]);
+  });
+
+  it("reads « <column>… [operator] ⋯ » in the editor of a datatable filter, and changes the operator of its value", () => {
+    const onChange = vi.fn();
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
+
+    act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
+    expect(document.querySelector(".filter-editor-label")?.textContent).toBe("Nom");
+    expect(document.querySelector(".filter-operator .p-dropdown-label")?.textContent).toBe("Contient");
+    expect((document.querySelector(".filter-editor-value input") as HTMLInputElement).placeholder).toBe("Saisissez une valeur");
+
+    act(() => (document.querySelector(".filter-operator") as HTMLElement).click());
+    const startsWith = [...document.querySelectorAll(".filter-operator-panel .p-dropdown-item")].find((el) => el.textContent === "Commence par");
+    act(() => (startsWith as HTMLElement).click());
+
+    expect(onChange).toHaveBeenCalledWith("-12", { op: "contains", v: "ab", operator: "startsWith" });
+  });
+
+  it("applies « est vide » at once, and shows the operator on the chip", () => {
+    const onChange = vi.fn();
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "empty" } }} optionsByKey={{}} onChange={onChange} />));
+
+    expect(container.querySelector(".filter-chip-value")?.textContent).toBe("est vide");
+    act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
+    // No value to type for « est vide ».
+    expect(document.querySelector(".filter-editor-value")).toBeNull();
+  });
+
+  it("removes the filter from the « ⋯ » menu", () => {
+    const onChange = vi.fn();
+    const specs: FilterSpec[] = [{ key: "-12", label: "Nom", kind: "contains", operators: operatorsOf("contains") }];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{ "-12": { op: "contains", v: "ab" } }} optionsByKey={{}} onChange={onChange} />));
+
+    act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
+    act(() => (document.querySelector(".filter-editor-actions-toggle") as HTMLElement).click());
+    act(() => (document.querySelector(".filter-editor-actions .filter-picker-item") as HTMLElement).click());
+
+    expect(onChange).toHaveBeenCalledWith("-12", undefined);
+  });
+
+  it("keeps the bare value widget for a filter without operators (outside the datatables)", () => {
+    const specs: FilterSpec[] = [{ key: "kind", label: "Type", kind: "contains" }];
+    act(() => root.render(<FilterChipBar specs={specs} filters={{ kind: { op: "contains", v: "a" } }} optionsByKey={{}} onChange={vi.fn()} />));
+
+    act(() => (container.querySelector(".filter-chip-body") as HTMLElement).click());
+    expect(document.querySelector(".filter-editor")).toBeNull();
+    expect(document.querySelector(".entity-list-panel-filter-editor input")).not.toBeNull();
   });
 });
