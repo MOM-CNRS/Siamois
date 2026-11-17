@@ -10,6 +10,16 @@ describe("summarizeMap", () => {
       .toEqual({ total: 3, examined: 3, withoutGeometry: 2, truncated: false, empty: false });
   });
 
+  it("counts the rows of the list without a geometry too", () => {
+    // 10 rows in the list, 3 with a geometry, 1 of them unreadable.
+    expect(summarizeMap({ features: [feature("1"), feature("2")], meta: { total: 3, examined: 3, listTotal: 10 } }).withoutGeometry)
+      .toBe(8);
+  });
+
+  it("counts none without a geometry once the list keeps only rows with one (the « not empty » filter)", () => {
+    expect(summarizeMap({ features: [feature("1")], meta: { total: 1, examined: 1, listTotal: 1 } }).withoutGeometry).toBe(0);
+  });
+
   it("says the map is truncated when the result set holds more than was examined", () => {
     expect(summarizeMap({ features: [], meta: { total: 5000, examined: 2000 } }).truncated).toBe(true);
   });

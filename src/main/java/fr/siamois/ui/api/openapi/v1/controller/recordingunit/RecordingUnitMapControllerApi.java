@@ -76,8 +76,8 @@ public class RecordingUnitMapControllerApi {
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         var fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
-                organizationListService.pageRecordingUnits(caller, institution, offset, EntityMapService.PAGE_SIZE,
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, limit, mapQuery) ->
+                organizationListService.pageRecordingUnits(caller, institution, offset, limit,
                         sort, search, filter, mapQuery), recordingUnitMapFeatureSource, geometry));
     }
 
@@ -100,9 +100,9 @@ public class RecordingUnitMapControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         RecordingUnitListFilter filter = RecordingUnitListFilter.parse(queryParams);
         var fieldQuery = fieldQueryService.parse(RecordingUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, limit, mapQuery) ->
                 projectApiService.pageRecordingUnitsForProject(caller, id,
-                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), filter, mapQuery,
+                        new ListWindow(offset, limit, sort, search), filter, mapQuery,
                         TreeRequest.OFF), recordingUnitMapFeatureSource, geometry));
     }
 

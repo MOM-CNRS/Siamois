@@ -1,4 +1,5 @@
 import type {ColumnDef} from "../shared/types";
+import {IDENTIFIER_COLUMN_FILTER} from "../shared/listOnlyColumns";
 import type {FindSummary} from "./types";
 import {t} from "../../i18n";
 import {formatDate} from "../../i18n/dates";
@@ -12,7 +13,7 @@ export const findColumns: ColumnDef<FindSummary>[] = [
     key: "fullIdentifier",
     header: t("common.identifier"),
     sortable: true,
-    filterable: true,
+    ...IDENTIFIER_COLUMN_FILTER,
     identifier: true,
     render: (row) => row.fullIdentifier ?? "",
   },

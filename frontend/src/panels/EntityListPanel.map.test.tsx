@@ -229,6 +229,90 @@ describe("EntityListPanel as a map", () => {
     expect(gearTiles("Géométrie affichée")).toHaveLength(0);
   });
 
+  describe("switching to the map", () => {
+    // The server filters the geometries on having one (filterOp « presence »).
+    const filterableGeometries = {
+      ...catalogWithGeometries,
+      fields: {
+        ...catalogWithGeometries.fields,
+        "-5": { ...catalogWithGeometries.fields["-5"], query: { sortable: false, filterOp: "presence" } },
+        "-9": { ...catalogWithGeometries.fields["-9"], query: { sortable: false, filterOp: "presence" } },
+      },
+      // Table columns, as every geometry field is: the filter bar offers the catalog's columns.
+      columns: [
+        ...catalogWithGeometries.columns,
+        { fieldId: "-5", columnId: "geom", visible: false, order: 1 },
+        { fieldId: "-9", columnId: "footprint", visible: false, order: 2 },
+      ],
+    } as unknown as FieldCatalog;
+    const chipValues = () => [...container.querySelectorAll(".filter-chip-value")].map((el) => el.textContent);
+    // Opening on the map is no switch: the list is shown first, then the map.
+    async function switchToMap() {
+      await pickTile("Disposition", "Liste");
+      await pickTile("Disposition", "Carte");
+    }
+
+    it("filters the drawn geometry on « n'est pas vide »", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      // Opening on the map is no switch: nothing is added.
+      expect(lastMap().params.filters).toBeUndefined();
+
+      await switchToMap();
+
+      expect(lastMap().params.filters).toEqual({ "-5": { op: "notEmpty" } });
+      expect(chipValues()).toContain("n'est pas vide");
+    });
+
+    it("shows every row again once the filter is taken off, and adds it back only on the next switch", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      await switchToMap();
+
+      await click(container.querySelector("[data-chip-key='-5'] .filter-chip-remove")!);
+
+      expect(lastMap().params.filters).toBeUndefined();
+      expect(mapStub()).not.toBeNull();
+    });
+
+    it("moves the filter to the geometry picked in the gear", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      await switchToMap();
+
+      await pickTile("Géométrie affichée", "Emprise fouillée");
+
+      expect(lastMap().geometry).toBe("-9");
+      expect(lastMap().params.filters).toEqual({ "-9": { op: "notEmpty" } });
+    });
+
+    it("adds nothing on picking another geometry once the filter was taken off", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      await switchToMap();
+      await click(container.querySelector("[data-chip-key='-5'] .filter-chip-remove")!);
+
+      await pickTile("Géométrie affichée", "Emprise fouillée");
+
+      expect(lastMap().params.filters).toBeUndefined();
+    });
+
+    it("keeps a filter the user already set on that geometry", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel({ initialFilters: { "-5": { op: "empty" } } });
+      await switchToMap();
+
+      expect(lastMap().params.filters).toEqual({ "-5": { op: "empty" } });
+    });
+
+    it("adds nothing on a geometry the server cannot filter", async () => {
+      await renderPanel();
+      await switchToMap();
+
+      expect(lastMap().params.filters).toBeUndefined();
+    });
+  });
+
   it("shows the rows as cards from the gear", async () => {
     await renderPanel();
 

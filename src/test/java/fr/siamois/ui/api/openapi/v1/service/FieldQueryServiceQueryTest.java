@@ -17,6 +17,7 @@ import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.dto.FieldQuery;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
+import fr.siamois.ui.api.openapi.v1.request.list.FilterOperator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
@@ -118,11 +119,24 @@ class FieldQueryServiceQueryTest {
     }
 
     private static FieldListQuery.Criterion values(String... v) {
-        return new FieldListQuery.Criterion(List.of(v), null, null);
+        return new FieldListQuery.Criterion(List.of(v), null, null, null);
     }
 
     private static FieldListQuery.Criterion range(String from, String to) {
-        return new FieldListQuery.Criterion(List.of(), from, to);
+        return new FieldListQuery.Criterion(List.of(), from, to, null);
+    }
+
+    private static FieldListQuery.Criterion values(FilterOperator operator, String... v) {
+        return new FieldListQuery.Criterion(List.of(v), null, null, operator);
+    }
+
+    /** The column was compared with {@code pattern} by a LIKE escaping with a backslash. */
+    private void verifyLike(String pattern) {
+        verifyLike(pattern, times(1));
+    }
+
+    private void verifyLike(String pattern, org.mockito.verification.VerificationMode mode) {
+        verify(cb, mode).like(any(), org.mockito.ArgumentMatchers.eq(pattern), org.mockito.ArgumentMatchers.eq('\\'));
     }
 
     private static FieldListQuery filter(FieldListQuery.Criterion criterion) {
@@ -211,7 +225,7 @@ class FieldQueryServiceQueryTest {
         attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
 
         run(build(RecordingUnit.class, filter(values("AB", "cd"))));
-        verify(cb, atLeastOnce()).like(any(), org.mockito.ArgumentMatchers.eq("%ab%"));
+        verifyLike("%ab%", atLeastOnce());
 
         run(build(RecordingUnit.class, sort(true)));
         verify(cb, atLeastOnce()).lower(any());
@@ -513,8 +527,129 @@ class FieldQueryServiceQueryTest {
     @Test
     void listOnlyColumnsAreFoundByTheirReservedId() {
         assertThat(ListOnlyColumn.ofFieldId(-901L)).contains(ListOnlyColumn.VALIDATION_STATUS);
-        assertThat(ListOnlyColumn.VALIDATION_STATUS.attribute()).isEqualTo("validationStatus");
+        assertThat(ListOnlyColumn.VALIDATION_STATUS.attributeOf(RecordingUnit.class)).isEqualTo("validationStatus");
         assertThat(ListOnlyColumn.ofFieldId(-301L)).isEmpty();
+    }
+
+    @Test
+    void theIdentifierColumnReadsTheFullIdentifierWhereTheEntityComposesOne() {
+        assertThat(ListOnlyColumn.ofFieldId(-902L)).contains(ListOnlyColumn.IDENTIFIER);
+        assertThat(ListOnlyColumn.IDENTIFIER.attributeOf(RecordingUnit.class)).isEqualTo("fullIdentifier");
+        assertThat(ListOnlyColumn.IDENTIFIER.attributeOf(Phase.class)).isEqualTo("identifier");
+        assertThat(ListOnlyColumn.NAME.attributeOf(fr.siamois.domain.models.actionunit.ActionUnit.class)).isEqualTo("name");
+    }
+
+    @Test
+    void theIdentifierColumnIsFilteredAsAText_withEveryTextOperator() {
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+        long identifier = ListOnlyColumn.IDENTIFIER.fieldId();
+
+        run(build(RecordingUnit.class, new FieldListQuery(Map.of(identifier, values(FilterOperator.ENDS_WITH, "12")), null, true, "fr")));
+
+        verifyLike("%12");
+        verifyNoInteractions(customFields);
+    }
+
+    // ---------- geometries ----------
+
+    @Test
+    void aGeometryColumnIsOnlyFilteredOnHavingAShape_andNeverSorted() {
+        CustomField geometry = field(new CustomFieldGeometry(), true, "geom");
+        attribute(unit, "geom", Attribute.PersistentAttributeType.BASIC, org.locationtech.jts.geom.Geometry.class);
+
+        assertThat(service.capabilityOf(RecordingUnit.class, geometry)).isEqualTo(new fr.siamois.ui.api.openapi.v1.resource.form.FieldResource.Query(false, "presence"));
+        run(build(RecordingUnit.class, filter(values(FilterOperator.EMPTY))));
+        verify(cb).not(any());
+        assertThat(badRequest(RecordingUnit.class, filter(values(FilterOperator.CONTAINS, "POINT"))).getReason()).contains("Opérateur contains impossible");
+        assertThat(badRequest(RecordingUnit.class, sort(true)).getReason()).contains("ne se trie pas");
+    }
+
+    @Test
+    void anAdditionalGeometryFieldIsNoTextToSearchIn() {
+        CustomField geometry = field(new CustomFieldGeometry(), false, null);
+
+        assertThat(service.capabilityOf(RecordingUnit.class, geometry).filterOp()).isEqualTo("presence");
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_EMPTY))));
+        // Blank WKT counts as no shape.
+        verify(cb).trim(any(jakarta.persistence.criteria.Expression.class));
+        verify(cb, atLeastOnce()).exists(any());
+    }
+
+    // ---------- operators ----------
+
+    @Test
+    void textColumn_eachTextOperatorBuildsItsOwnComparison() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        run(build(RecordingUnit.class, filter(values(FilterOperator.STARTS_WITH, "AB"))));
+        verifyLike("ab%");
+        run(build(RecordingUnit.class, filter(values(FilterOperator.ENDS_WITH, "AB"))));
+        verifyLike("%ab");
+        run(build(RecordingUnit.class, filter(values(FilterOperator.IS, "AB"))));
+        verify(cb).equal(any(jakarta.persistence.criteria.Expression.class), org.mockito.ArgumentMatchers.eq("ab"));
+        verify(cb, never()).not(any());
+    }
+
+    @Test
+    void aNegatedOperatorKeepsTheRowsTheMatchLeavesOut_emptyOnesIncluded() {
+        field(new CustomFieldText(), true, "fullIdentifier");
+        attribute(unit, "fullIdentifier", Attribute.PersistentAttributeType.BASIC, String.class);
+
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_CONTAINS, "AB"))));
+
+        // NOT (value IS NOT NULL AND value LIKE …): a row without a value is kept.
+        verify(cb).isNotNull(any());
+        verify(cb).not(any());
+    }
+
+    @Test
+    void emptyAndNotEmptyTakeNoValue_onAnyKind() {
+        field(new CustomFieldDecimal(), true, "zInf");
+        attribute(unit, "zInf", Attribute.PersistentAttributeType.BASIC, Double.class);
+
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_EMPTY))));
+        verify(cb, never()).not(any());
+        run(build(RecordingUnit.class, filter(values(FilterOperator.EMPTY))));
+        verify(cb).not(any());
+        verify(cb, never()).greaterThanOrEqualTo(any(jakarta.persistence.criteria.Expression.class), any(Comparable.class));
+    }
+
+    @Test
+    void notIn_onAMultiValuedReference_isHavingNoneOfThem() {
+        field(new CustomFieldSelectMultipleFromFieldCode(), true, "keywords");
+        plural(unit, "keywords", Concept.class);
+
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_IN, "1", "2"))));
+
+        verify(cb).not(any());
+        verify(cb, atLeastOnce()).exists(any());
+    }
+
+    @Test
+    void additionalField_emptyIsHavingNoAnswerWithAValue() {
+        field(new CustomFieldText(), false, null);
+
+        run(build(RecordingUnit.class, filter(values(FilterOperator.EMPTY))));
+
+        verify(cb).not(any());
+        verify(cb, atLeastOnce()).exists(any());
+    }
+
+    @Test
+    void anOperatorTheKindCannotApplyIsABadRequest() {
+        field(new CustomFieldDecimal(), true, "zInf");
+        attribute(unit, "zInf", Attribute.PersistentAttributeType.BASIC, Double.class);
+
+        assertThat(badRequest(RecordingUnit.class, filter(values(FilterOperator.STARTS_WITH, "1"))).getReason())
+                .contains("Opérateur starts_with impossible");
+    }
+
+    @Test
+    void likePatternsEscapeTheTextsOwnWildcards() {
+        assertThat(FilterPredicates.likePattern(FilterOperator.Match.CONTAINS, "10%_a\\b")).isEqualTo("%10\\%\\_a\\\\b%");
+        assertThat(FilterPredicates.likePattern(FilterOperator.Match.STARTS_WITH, "ab")).isEqualTo("ab%");
+        assertThat(FilterPredicates.likePattern(FilterOperator.Match.ENDS_WITH, "ab")).isEqualTo("%ab");
     }
 
     // ---------- capabilities ----------

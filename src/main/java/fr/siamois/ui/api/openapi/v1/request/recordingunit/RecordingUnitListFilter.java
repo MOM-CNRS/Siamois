@@ -99,12 +99,11 @@ public record RecordingUnitListFilter(
         final Map<String, Integer> intTo = new LinkedHashMap<>();
 
         void accept(String rawKey, List<String> values) {
-            if (!rawKey.startsWith("f.")) return;
+            // f.<fieldId>[.from|.to|.op]: a field-keyed filter, FieldListQuery's.
+            if (!rawKey.startsWith("f.") || FieldListQuery.isFieldParameter(rawKey)) return;
             FilterKey key = FilterKey.of(rawKey);
             String baseKey = key.base();
             String rangeBound = key.rangeBound();
-            // f.<fieldId>: a field-keyed filter, FieldListQuery's.
-            if (FieldListQuery.isFieldKey(baseKey)) return;
 
             Kind kind = FILTERABLE_FIELDS.get(baseKey);
             if (kind == null) {

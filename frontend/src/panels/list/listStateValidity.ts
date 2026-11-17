@@ -16,18 +16,37 @@ function sortKeyOf(sort: string | undefined): string | undefined {
 
 /** Whether `key` can still be filtered on: a pinned column declared filterable, or a catalog field with a filter. */
 export function isFilterAvailable(key: string, config: ListConfig, catalog: FieldCatalog | undefined): boolean {
-  if (pinnedColumnsOf(config).some((c) => c.key === key && (c.filterable === true || c.filterOptions != null))) return true;
+  const pinned = pinnedColumnsOf(config).some(
+    (c) => (c.filterKey ?? c.key) === key && (c.filterable === true || c.filterOptions != null),
+  );
+  if (pinned) return true;
   const field = catalog?.fields[key];
   return field != null && filterKindForField(field) != null;
 }
 
-/** The saved filters that can still be applied. */
+/**
+ * `filters` with those kept under a pinned column's own key (`fullIdentifier`, `name`…, before the column
+ * filtered through a reserved id) moved to the key it filters by now — unless that one is set too.
+ */
+export function withCurrentFilterKeys(filters: Record<string, FilterValue>, config: ListConfig): Record<string, FilterValue> {
+  const moved = { ...filters };
+  for (const column of pinnedColumnsOf(config)) {
+    const target = column.filterKey;
+    if (!target || target === column.key || moved[column.key] == null) continue;
+    moved[target] ??= moved[column.key];
+    delete moved[column.key];
+  }
+  return moved;
+}
+
+/** The saved filters that can still be applied, under the keys they are applied by now. */
 export function availableFilters(
   filters: Record<string, FilterValue>,
   config: ListConfig,
   catalog: FieldCatalog | undefined,
 ): Record<string, FilterValue> {
-  return Object.fromEntries(Object.entries(filters).filter(([key]) => isFilterAvailable(key, config, catalog)));
+  const current = withCurrentFilterKeys(filters, config);
+  return Object.fromEntries(Object.entries(current).filter(([key]) => isFilterAvailable(key, config, catalog)));
 }
 
 /** Whether the list can still be ordered by `sort` ("<key>:asc|desc"): the entity's default, a sortable pinned column or a sortable catalog field. */

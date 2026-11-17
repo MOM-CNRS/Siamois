@@ -6,8 +6,11 @@ import {OverlayPanel} from "primereact/overlaypanel";
 import {BottomSheet} from "../layout/BottomSheet";
 import {useIsMobile} from "../../viewport";
 import {ColumnFilter, describeFilterValue} from "./ColumnFilter";
+import {FilterOperatorEditor} from "./FilterOperatorEditor";
+import {applyOperator, type OperatorProfile, operatorLabel, operatorOf, takesValue} from "./filterOperators";
 import type {FilterKind, FilterOption} from "../../fields/optionSources";
 import type {FilterValue} from "../../panels/list/tableState";
+import type {FilterOperator} from "../../entities/shared/types";
 import {t} from "../../i18n";
 
 /**
@@ -33,6 +36,36 @@ export interface FilterSpec {
   // A fixed, short list of values (the validation statuses): an "in" filter then picks them from a
   // multi-select dropdown instead of searching them as you type.
   options?: FilterOption[];
+  // The operators a datatable filter offers (filterOperators.ts). Set: the chip's editor reads
+  // « <label>… [operator ▾] ⋯ » above the value. Absent (the other chip bars): the bare value widget.
+  operators?: OperatorProfile;
+}
+
+// The icon of a datatable filter chip, by kind of value.
+const KIND_ICONS: Record<FilterKind, string> = {
+  contains: "bi-fonts",
+  range: "bi-123",
+  "date-range": "bi-calendar3",
+  boolean: "bi-toggle-on",
+  in: "bi-list-ul",
+  "concept-one": "bi-list-ul",
+  "concept-many": "bi-list-ul",
+  "spatial-one": "bi-geo-alt",
+  presence: "bi-bounding-box",
+};
+
+/**
+ * What a chip says of its filter: the value, preceded by the operator when it is not the kind's own
+ * (« commence par AB », « est vide »).
+ */
+export function describeChip(spec: FilterSpec, value: FilterValue | undefined, options?: FilterOption[]): string {
+  const summary = describeFilterValue(value, options);
+  const profile = spec.operators;
+  if (!profile || !value) return summary;
+  const operator = operatorOf(value, profile.defaultOperator);
+  // A filter that only checks for a value always names its operator: « non vide » alone would read as nothing.
+  if (operator === profile.defaultOperator && takesValue(operator)) return summary;
+  return `${operatorLabel(operator, profile).toLocaleLowerCase()} ${summary}`.trim();
 }
 
 export interface FilterChipBarProps {
@@ -49,12 +82,26 @@ export const MAX_VISIBLE_CHIPS = 3;
 // Case- and accent-insensitive, so « etat » finds « État ».
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export function FilterChipBar({ specs, filters, onChange, optionsByKey }: FilterChipBarProps) {
+const withKey = (keys: string[], key: string) => (keys.includes(key) ? keys : [...keys, key]);
+
+function withoutKey<T>(byKey: Record<string, T>, key: string): Record<string, T> {
+  return Object.fromEntries(Object.entries(byKey).filter(([k]) => k !== key));
+}
+
+/** What a chip filters on as soon as it is added: its default operator, when that takes no value (a geometry: « not empty »). */
+function filterOnAdd(spec: FilterSpec): FilterValue | undefined {
+  const operator = spec.operators?.defaultOperator;
+  return operator && !takesValue(operator) ? applyOperator(undefined, operator) : undefined;
+}
+
+export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readonly<FilterChipBarProps>) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
   // filled in.
   const [pendingKeys, setPendingKeys] = useState<string[]>([]);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  // The operator chosen on a chip that has no value yet (it can't live in `filters` before the value).
+  const [pendingOperators, setPendingOperators] = useState<Record<string, FilterOperator>>({});
   // What is typed in the « add a filter » list to narrow the columns down; cleared each time the list closes.
   const [pickerQuery, setPickerQuery] = useState("");
 
@@ -90,7 +137,9 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function addFilter(e: ReactMouseEvent, spec: FilterSpec, anchor: HTMLElement) {
     hideAdd();
-    const addKey = (keys: string[]) => (keys.includes(spec.key) ? keys : [...keys, spec.key]);
+    const immediate = filterOnAdd(spec);
+    if (immediate) onChange(spec.key, immediate);
+    const addKey = (keys: string[]) => withKey(keys, spec.key);
     if (availableSpecs.length > 1) {
       setPendingKeys(addKey);
       openEditor(e, spec.key, anchor);
@@ -104,6 +153,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
 
   function removeFilter(key: string) {
     setPendingKeys((keys) => keys.filter((k) => k !== key));
+    setPendingOperators((operators) => withoutKey(operators, key));
     if (editingKey === key) {
       setEditingKey(null);
       hideEditor();
@@ -148,10 +198,30 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
   // indistinguishable from a real, unset filter and would accumulate.
   function onEditorHidden() {
     setPendingKeys((keys) => keys.filter((k) => filters[k] != null));
+    // A chip with a value carries its operator in it; the empty ones go, and their operator with them.
+    setPendingOperators({});
     setEditingKey(null);
   }
 
-  const editor = editingSpec && (
+  function operatorFor(key: string, profile: OperatorProfile): FilterOperator {
+    return operatorOf(filters[key], pendingOperators[key] ?? profile.defaultOperator);
+  }
+
+  // The value is kept when the new operator can compare it (« contient AB » → « commence par AB »);
+  // otherwise — or for a chip without value yet — the operator waits on the chip for its value.
+  function changeOperator(spec: FilterSpec, operator: FilterOperator) {
+    const next = applyOperator(filters[spec.key], operator);
+    setPendingOperators((operators) => ({ ...operators, [spec.key]: operator }));
+    if (next) {
+      onChange(spec.key, next);
+      return;
+    }
+    setPendingKeys((keys) => withKey(keys, spec.key));
+    if (filters[spec.key] != null) onChange(spec.key, undefined);
+  }
+
+  const editingOperator = editingSpec?.operators && operatorFor(editingSpec.key, editingSpec.operators);
+  const valueWidget = editingSpec && (
     <ColumnFilter
       key={editingSpec.key}
       label={editingSpec.label}
@@ -161,13 +231,26 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
       loadOptions={editingSpec.loadOptions}
       options={editingSpec.options}
       autoFocus={!editSheetOpen}
+      operator={editingOperator}
+      placeholder={editingSpec.operators ? t("filter.value") : undefined}
       onChange={(value, options) => onChange(editingSpec.key, value, options)}
     />
   );
+  const editor = editingSpec?.operators && editingOperator ? (
+    <FilterOperatorEditor
+      label={editingSpec.label}
+      profile={editingSpec.operators}
+      operator={editingOperator}
+      onOperatorChange={(operator) => changeOperator(editingSpec, operator)}
+      onRemove={() => removeFilter(editingSpec.key)}
+    >
+      {valueWidget}
+    </FilterOperatorEditor>
+  ) : valueWidget;
 
   function renderChip(key: string, anchorOverride?: () => HTMLElement | null) {
     const spec = specs.find((s) => s.key === key)!;
-    const summary = describeFilterValue(filters[key], optionsByKey[key]);
+    const summary = describeChip(spec, filters[key], optionsByKey[key]);
     return (
       <span key={key} data-chip-key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
         <button
@@ -180,8 +263,10 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Filter
             openEditor(e, key, anchor);
           }}
         >
+          {spec.operators && <i className={`bi ${KIND_ICONS[spec.kind]} filter-chip-icon`} aria-hidden="true" />}
           <span className="filter-chip-label">{spec.label}</span>
           {summary && <span className="filter-chip-value">{summary}</span>}
+          {spec.operators && <i className="bi bi-chevron-down filter-chip-chevron" aria-hidden="true" />}
         </button>
         <button
           type="button"

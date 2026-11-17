@@ -67,4 +67,45 @@ class FieldListQueryTest {
         assertThat(FieldListQuery.isFieldKey("12")).isTrue();
         assertThat(List.of("status", "1a", "")).noneMatch(FieldListQuery::isFieldKey);
     }
+
+    @Test
+    void readsTheOperatorOfAField_andKeepsAFilterThatTakesNoValue() {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("f.12", "ab");
+        params.add("f.12.op", "STARTS_WITH");
+        params.add("f.13.op", "empty");
+
+        FieldListQuery query = FieldListQuery.parse(params, null, "fr");
+
+        assertThat(query.filters().get(12L).operator()).isEqualTo(FilterOperator.STARTS_WITH);
+        assertThat(query.filters().get(12L).values()).containsExactly("ab");
+        assertThat(query.filters().get(13L).operator()).isEqualTo(FilterOperator.EMPTY);
+        assertThat(query.filters().get(13L).values()).isEmpty();
+    }
+
+    @Test
+    void dropsAnOperatorStillWaitingForItsValue() {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("f.12.op", "contains");
+
+        assertThat(FieldListQuery.parse(params, null, "fr").isEmpty()).isTrue();
+    }
+
+    @Test
+    void rejectsAnUnknownOperator_andAValueForAnOperatorThatTakesNone() {
+        MultiValueMap<String, String> unknown = new LinkedMultiValueMap<>();
+        unknown.add("f.12.op", "like");
+        MultiValueMap<String, String> valued = new LinkedMultiValueMap<>();
+        valued.add("f.12", "x");
+        valued.add("f.12.op", "not_empty");
+
+        assertThatThrownBy(() -> FieldListQuery.parse(unknown, null, "fr")).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> FieldListQuery.parse(valued, null, "fr")).isInstanceOf(ResponseStatusException.class);
+    }
+
+    @Test
+    void isFieldParameter_coversEverySuffixOfAFieldKey_andNoNamedKey() {
+        assertThat(List.of("f.-118", "f.42.from", "f.42.to", "f.42.op")).allMatch(FieldListQuery::isFieldParameter);
+        assertThat(List.of("f.name", "f.name.op", "f.42.other", "42", "sort")).noneMatch(FieldListQuery::isFieldParameter);
+    }
 }

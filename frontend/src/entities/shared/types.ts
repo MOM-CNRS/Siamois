@@ -25,16 +25,16 @@ export interface PagedResult<T> {
   matchCount?: number;
 }
 
-/**
- * One column's filter — mirrors ProjectListFilter's Kind whitelist. Lives here (not in
- * panels/list/tableState.ts, which owns TableState) so both ListParams and TableState can reference it
- * without panels/ becoming something entities/ depends on.
- */
-export type FilterValue =
-  | { op: "contains"; v: string }
-  // `labels`: what the ids were called when picked, kept with the filter so a saved view can show them.
-  | { op: "in"; v: string[]; labels?: Record<string, string> }
-  | { op: "range"; from?: string; to?: string };
+// One column's filter and its operators: filterValue.ts.
+import type {FilterValue} from "./filterValue";
+export type {
+  FilterOperator,
+  FilterValue,
+  OptionsFilterOperator,
+  PresenceFilterOperator,
+  RangeFilterOperator,
+  TextFilterOperator,
+} from "./filterValue";
 
 // Scopes a list to one parent entity's own sub-collection — "the recording units OF this
 // project", "the documents OF this recording unit" — rather than the entity type's global list.
@@ -146,6 +146,9 @@ export interface ColumnDef<TSummary> {
   // Makes a pinned column filterable by picking among these fixed values instead: an "in" filter
   // (repeatable f.<key>=<option id>), e.g. the validation statuses.
   filterOptions?: FilterOption[];
+  // The f.<key> the column's filter uses when it is not the column's own key: the reserved id of a
+  // list-only column (listOnlyColumns.ts), which the server queries like a field, every operator included.
+  filterKey?: string;
   // Extra class on the column's header and cells (e.g. to size it).
   className?: string;
   // Marks the one column whose cell opens the row's entity (plan §8 phase 5) — mirrors JSF's

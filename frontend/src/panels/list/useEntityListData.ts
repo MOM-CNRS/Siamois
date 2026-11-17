@@ -129,7 +129,8 @@ export function useEntityListData({ entityType, config, organizationId, scope, p
   if (baselineReady && !stateChecked) {
     setStateChecked(true);
     const filters = availableFilters(state.filters, config, catalog);
-    if (Object.keys(filters).length !== Object.keys(state.filters).length) table.setFilters(filters);
+    // Compared by keys: a filter may also have moved to the key its column filters by now.
+    if (Object.keys(filters).join() !== Object.keys(state.filters).join()) table.setFilters(filters);
     if (!isSortAvailable(state.sort, config, catalog)) table.setSort(config?.list.defaultSort);
   }
   const listReady = userStateReady && stateChecked;

@@ -49,4 +49,30 @@ describe("filtersToQueryParams", () => {
     expect(fromOnly.get("f.zmin.from")).toBe("10");
     expect(fromOnly.has("f.zmin.to")).toBe(false);
   });
+
+  it("names a non-default operator in f.<key>.op, and leaves a default one out", () => {
+    const params = filtersToQueryParams({
+      "-12": { op: "contains", v: "ab", operator: "startsWith" },
+      "-13": { op: "in", v: ["4"], operator: "notIn" },
+      "-14": { op: "contains", v: "x", operator: "contains" },
+    });
+    expect(params.get("f.-12")).toBe("ab");
+    expect(params.get("f.-12.op")).toBe("starts_with");
+    expect(params.get("f.-13.op")).toBe("not_in");
+    expect(params.has("f.-14.op")).toBe(false);
+  });
+
+  it("sends an empty / not-empty filter as its operator alone", () => {
+    const params = filtersToQueryParams({ "-12": { op: "empty" }, "-13": { op: "notEmpty" } });
+    expect([...params.keys()]).toEqual(["f.-12.op", "f.-13.op"]);
+    expect(params.get("f.-12.op")).toBe("empty");
+    expect(params.get("f.-13.op")).toBe("not_empty");
+  });
+
+  it("sends a range operator as its bounds only", () => {
+    const params = filtersToQueryParams({ "-12": { op: "range", from: "3", to: "3", operator: "eq" } });
+    expect(params.get("f.-12.from")).toBe("3");
+    expect(params.get("f.-12.to")).toBe("3");
+    expect(params.has("f.-12.op")).toBe(false);
+  });
 });

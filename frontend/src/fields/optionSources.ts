@@ -442,7 +442,8 @@ export function optionSourceFor(
  * (most of the catalog — only the default-visible columns are whitelisted server-side; sending
  * {@code f.<key>} for anything else is a 400, so the UI never offers one for those).
  */
-export type FilterKind = "contains" | "concept-one" | "concept-many" | "spatial-one" | "range" | "date-range" | "boolean" | "in";
+// `presence`: a column only filtered on having a value or not (a geometry) — it has no value widget.
+export type FilterKind = "contains" | "concept-one" | "concept-many" | "spatial-one" | "range" | "date-range" | "boolean" | "in" | "presence";
 
 /**
  * The filter widget for a catalog column, from what the server says the column accepts
@@ -461,6 +462,8 @@ export function filterKindForField(field: FieldResource): FilterKind | null {
       return "boolean";
     case "in":
       return "in";
+    case "presence":
+      return "presence";
     default:
       return null;
   }

@@ -423,3 +423,26 @@ A field that names a person can now name someone without an account: they are cr
 | Study field **-813** `treatmentManager` | **Breaking.** `TEXT` → **`SELECT_ONE_PERSON`**, same shape. |
 
 Existing texts were turned into persons by Liquibase `2026-11-10-2`: linked to the person of the organization who has this name, or created as persons awaiting their account. The former text columns are kept, unmapped.
+
+## 12. Filter operators on form-field filters (2026-11-17)
+
+Additive, no break. A form-field filter (`f.<fieldId>`, negative id for a system field, `-901` for the validation status) can name how it compares the column with `f.<fieldId>.op=<operator>`. Without it, the filter keeps its former meaning (text: contains; number and date: between the bounds; yes/no, list of values, reference: any of). Named keys (`f.name`, `f.fullIdentifier`…) take no operator.
+
+| Operator | Applies to | Value | Keeps the rows… |
+|---|---|---|---|
+| `is`, `is_not` | text | `f.<id>=…` (repeatable: any of them) | equal (ignoring case) / not equal to it |
+| `contains`, `not_contains` | text | idem | containing / not containing it |
+| `starts_with`, `ends_with` | text | idem | starting / ending with it |
+| `in`, `not_in` | yes/no, list of values, reference (single or multiple) | `f.<id>=<id>` (repeatable) | with at least one / none of them |
+| `between` | number, date | `f.<id>.from` / `f.<id>.to` | within the bounds |
+| `empty`, `not_empty` | every filterable field | **none** (a value or a bound is a `400`) | without / with a value (a blank text counts as empty) |
+
+Two more reserved ids, next to `-901`, filter and sort the identifier and the name of a list as texts: **`-902`** (the full identifier of recording units, finds and projects, the identifier of phases, studies, documents and containers) and **`-903`** (the name, on projects). Unlike `f.identifier` on the phase, study, document, container and find lists, which was silently ignored, they are applied there too.
+
+Geometry fields (the entity's own `geom` and the additional fields of answer type `GEOMETRY`) are now filterable, but only with `empty` / `not_empty` (`filterOp = "presence"` in the catalog, `query.sortable = false`; a sort on one is a `400`). An additional geometry field used to be offered as a text "contains" filter.
+
+A negation (`is_not`, `not_contains`, `not_in`, `empty`) keeps exactly the rows its positive form leaves out, **rows without a value included**. An unknown operator, or one the field's kind cannot apply (`starts_with` on a number…), is a `400`. A text's own `%` and `_` are now matched literally (they used to be SQL wildcards). An operator sent without its value (`f.<id>.op=contains` alone) narrows nothing, like a blank value.
+
+## 13. Rows of a map's list without a geometry (2026-11-17)
+
+Additive. The map endpoints (`GET …/recording-units/map`, `…/finds/map`, `…/places/map`) answer **`meta.listTotal`**: the rows of the list's filter, whether their displayed geometry is filled in or not. `meta.total` stays the rows with a geometry (the map only walks those). `listTotal - total` is the number of rows the map cannot place for lack of a geometry, on top of those examined but left out of `features` (unreadable geometry, no or unknown SRID). It costs one count query of the list.

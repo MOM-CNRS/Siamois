@@ -1,4 +1,5 @@
 import type {ColumnDef} from "../shared/types";
+import {IDENTIFIER_COLUMN_FILTER} from "../shared/listOnlyColumns";
 import type {ContainerSummary} from "./types";
 import {t} from "../../i18n";
 
@@ -10,7 +11,7 @@ export const containerColumns: ColumnDef<ContainerSummary>[] = [
     key: "identifier",
     header: t("common.identifier"),
     sortable: true,
-    filterable: true,
+    ...IDENTIFIER_COLUMN_FILTER,
     identifier: true,
     render: (row) => row.identifier ?? "",
   },

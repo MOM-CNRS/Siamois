@@ -21,11 +21,18 @@ import {FilterChipBar} from "../components/table/FilterChipBar";
 import {withLabels} from "../components/table/ColumnFilter";
 import type {FilterOption} from "../fields/optionSources";
 import {entityColor} from "../fields/display";
+import type {FieldResource} from "../fields/types";
 import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
 import {EntityMapView} from "./list/EntityMapView";
-import {mapGeometryOptions, type MapGeometryOption, resolveMapGeometry} from "./list/map/mapGeometry";
+import {
+  filtersForGeometryChange,
+  mapGeometryFilter,
+  mapGeometryOptions,
+  type MapGeometryOption,
+  resolveMapGeometry,
+} from "./list/map/mapGeometry";
 import {EntityTable} from "./list/EntityTable";
 import {type EntityTableTree, useTreeRows} from "./list/useTreeRows";
 import {EntityTableSettings, type EntityTableSettingsProps} from "./list/EntityTableSettings";
@@ -249,6 +256,13 @@ function EntityListPanelBody({
   // A search or a filter changes the rows: applied over a selection only once the user agrees to lose it.
   const selectionGuard = useSelectionGuard(selection);
   const filterControls = useFilterControls(table, selectionGuard);
+  const mapFilter = mapFilterControls({
+    filters: state.filters,
+    mapGeometry,
+    geometryOptions,
+    fields: catalog?.fields,
+    filterControls,
+  });
   const rowActions = useRowActions({
     entityType,
     config,
@@ -291,6 +305,7 @@ function EntityListPanelBody({
     listColumns,
     rowActions: hasActionBarSettings ? rowActions : null,
     savePrefs,
+    mapFilter,
   });
 
   const body = (
@@ -458,6 +473,9 @@ function useFilterControls(table: TableControls, selectionGuard: SelectionGuard)
       if (options) setOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
     });
 
+  // Several filters at once (one moved from a key to another), in a single change.
+  const replaceFilters = (filters: Filters) => selectionGuard.guard(() => table.setFilters(filters));
+
   const applySearch = (search: string, filters: Filters, options: FilterOptionsByKey) =>
     selectionGuard.guard(() => {
       table.setFilters(withLabelsByKey(filters, options));
@@ -465,7 +483,37 @@ function useFilterControls(table: TableControls, selectionGuard: SelectionGuard)
       if (Object.keys(options).length > 0) setOptionsByKey((byKey) => ({ ...byKey, ...options }));
     });
 
-  return { optionsByKey, changeFilter, applySearch };
+  return { optionsByKey, changeFilter, replaceFilters, applySearch };
+}
+
+/**
+ * What the map does to the filters: switching to it filters the geometry it draws on « n'est pas vide », a
+ * chip like any other, which follows the geometry when another one is drawn.
+ */
+function mapFilterControls({
+  filters,
+  mapGeometry,
+  geometryOptions,
+  fields,
+  filterControls,
+}: {
+  filters: Filters;
+  mapGeometry: MapGeometryOption | undefined;
+  geometryOptions: MapGeometryOption[];
+  fields: Record<string, FieldResource> | undefined;
+  filterControls: ReturnType<typeof useFilterControls>;
+}): MapFilterControls {
+  return {
+    onShowMap: () => {
+      const filter = mapGeometryFilter(filters, mapGeometry, fields);
+      if (filter && mapGeometry) filterControls.changeFilter(mapGeometry.value, filter);
+    },
+    onGeometryChange: (value) => {
+      const drawn = geometryOptions.find((o) => o.value === value);
+      const next = filtersForGeometryChange(filters, mapGeometry, drawn, fields);
+      if (next) filterControls.replaceFilters(next);
+    },
+  };
 }
 
 /**
@@ -580,6 +628,7 @@ function buildTableSettings({
   listColumns,
   rowActions,
   savePrefs,
+  mapFilter,
 }: {
   // Null when a row cannot open both in the overview and in the main pane.
   openMode: OpenMode | null;
@@ -591,13 +640,14 @@ function buildTableSettings({
   // Null when there are no row actions to arrange.
   rowActions: RowActions | null;
   savePrefs: SavePrefs;
+  mapFilter: MapFilterControls;
 }): EntityTableSettingsProps {
   const { table, views, viewMode, hasSchema } = listData;
   return {
     openMode: openMode ? { value: openMode, onChange: (mode) => savePrefs({ openMode: mode }) } : null,
     // Shown even for a single column: it says which geometry the map draws.
-    mapGeometry: mapGeometry ? mapGeometrySetting(mapGeometry, geometryOptions, savePrefs) : null,
-    views: views.length > 1 ? viewsSetting(views, viewMode, table) : null,
+    mapGeometry: mapGeometry ? mapGeometrySetting(mapGeometry, geometryOptions, savePrefs, mapFilter.onGeometryChange) : null,
+    views: views.length > 1 ? viewsSetting(views, viewMode, table, mapFilter.onShowMap) : null,
     columns: hasSchema
       ? { options: listColumns.togglerOptions, visible: table.state.visibleColumns, onChange: table.setVisibleColumns }
       : null,
@@ -614,21 +664,35 @@ function mapGeometrySetting(
   mapGeometry: MapGeometryOption,
   geometryOptions: MapGeometryOption[],
   savePrefs: SavePrefs,
+  onGeometryChange: (value: string) => void,
 ): EntityTableSettingsProps["mapGeometry"] {
   return {
     options: geometryOptions.map((o) => ({ mode: o.value, label: o.label, icon: o.icon })),
     value: mapGeometry.value,
-    onChange: (value) => savePrefs({ mapGeometry: value }),
+    onChange: (value) => {
+      savePrefs({ mapGeometry: value });
+      onGeometryChange(value);
+    },
   };
 }
 
 /**
- * The gear's view switch (list, tree, cards, map).
+ * What the map does to the filters: « <geometry> n'est pas vide » added when the user switches to it, and
+ * moved along when they pick another geometry to draw.
+ */
+interface MapFilterControls {
+  onShowMap: () => void;
+  onGeometryChange: (value: string) => void;
+}
+
+/**
+ * The gear's view switch (list, tree, cards, map); `onShowMap` runs when it switches to the map.
  */
 function viewsSetting(
   views: ListViewMode[],
   viewMode: ListViewMode,
   table: TableControls,
+  onShowMap: () => void,
 ): EntityTableSettingsProps["views"] {
   return {
     options: viewOptions(views),
@@ -637,6 +701,7 @@ function viewsSetting(
       table.setViewMode(mode);
       // A page of roots is not a page of the flat list: back to the first.
       table.setPage(0, table.state.limit);
+      if (mode === "map" && viewMode !== "map") onShowMap();
     },
   };
 }

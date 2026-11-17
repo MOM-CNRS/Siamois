@@ -207,6 +207,84 @@
   gap: 0.4rem;
 }
 
+/* A datatable filter chip: the kind's icon before the label, a chevron after the value. */
+.filter-chip-icon,
+.filter-chip-chevron {
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.8em;
+}
+
+/* « <column>… [operator ▾] ⋯ » above the value, in a datatable filter chip's editor. */
+.filter-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 16rem;
+}
+
+.filter-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.filter-editor-label {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.filter-editor-label::after {
+  content: "…";
+}
+
+.p-dropdown.filter-operator,
+.filter-operator-static {
+  border: 0;
+  border-radius: 6px;
+  background: var(--surface-100, #f5f5f5);
+  box-shadow: none;
+  font-size: 0.85rem;
+}
+
+.filter-operator-static {
+  padding: 0.15rem 0.5rem;
+  text-transform: lowercase;
+}
+
+/* The chosen operator reads as part of the sentence (« contient »); the menu keeps its capitals. */
+.p-dropdown.filter-operator .p-dropdown-label {
+  padding: 0.15rem 0.25rem 0.15rem 0.5rem;
+  text-transform: lowercase;
+}
+
+.p-dropdown.filter-operator .p-dropdown-trigger {
+  width: 1.5rem;
+}
+
+.filter-editor-actions-toggle {
+  margin-left: auto;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-color-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+}
+
+.filter-editor-actions-toggle:hover {
+  background: var(--surface-100, #f5f5f5);
+}
+
+.filter-editor-value > .p-inputtext,
+.filter-editor-value > .p-inputnumber,
+.filter-editor-value > .p-calendar {
+  width: 100%;
+}
+
 /* ------------------------------------------------------------- one-line cells */
 
 /*

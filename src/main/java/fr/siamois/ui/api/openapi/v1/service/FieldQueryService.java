@@ -5,6 +5,7 @@ import fr.siamois.domain.models.container.Container;
 import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.form.config.SystemFieldSpec;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfieldanswer.CustomFieldAnswer;
 import fr.siamois.domain.models.form.customfieldanswer.actionunit.CustomFieldAnswerActionUnit;
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.*;
@@ -28,6 +29,8 @@ import fr.siamois.dto.FieldQuery;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
 import fr.siamois.ui.api.openapi.v1.request.list.FieldListQuery;
+import fr.siamois.ui.api.openapi.v1.request.list.FilterOperator;
+import fr.siamois.ui.api.openapi.v1.request.list.FilterOperator.Match;
 import fr.siamois.ui.api.openapi.v1.resource.form.FieldResource;
 import fr.siamois.ui.form.CustomFieldAnswerFactory;
 import fr.siamois.ui.form.dto.CustomColUiDto;
@@ -43,6 +46,7 @@ import jakarta.persistence.metamodel.PluralAttribute;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.Hibernate;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
+import org.locationtech.jts.geom.Geometry;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
@@ -77,6 +81,11 @@ import java.util.function.Function;
  * label — the concept's preferred label in the caller's language, an entity's identifier/name) and
  * multi-valued reference (filter {@code in} = has at least one of them, sort by number of values).
  * Every sort puts empty values last and ends on the id, so paging is stable.</p>
+ *
+ * <p>A filter may name another operator than its kind's default ({@code f.<id>.op}, {@link FilterOperator}):
+ * the other text matches (is, starts with, ends with), the negations (is not, does not contain, none
+ * of) and empty / not empty, for every kind. A negation keeps exactly the rows its positive form
+ * leaves out, empty values included.</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -105,6 +114,7 @@ public class FieldQueryService {
      */
     private static final Map<Class<?>, Map<String, String>> ENTITY_ATTRIBUTES = Map.of(
             RecordingUnit.class, Map.of("chronologicalPhase", "chronologicalAttribution"));
+    public static final String LE_CHAMP = "Le champ ";
 
     /** The entity attribute a form's {@code valueBinding} reads, differing only by the aliases above. */
     static String entityAttribute(Class<?> entityType, String binding) {
@@ -144,14 +154,45 @@ public class FieldQueryService {
     private final EntityManager entityManager;
 
     private enum Kind {
-        TEXT("contains"), NUMBER("range"), DATE("date-range"), BOOLEAN("equals"), REFERENCE("in"), REFERENCES("in"),
+        TEXT("contains", FilterOperator.CONTAINS, Match.EQUAL, Match.CONTAINS, Match.STARTS_WITH, Match.ENDS_WITH),
+        NUMBER("range", FilterOperator.BETWEEN, Match.RANGE),
+        DATE("date-range", FilterOperator.BETWEEN, Match.RANGE),
+        BOOLEAN("equals", FilterOperator.IN, Match.ANY_OF),
+        REFERENCE("in", FilterOperator.IN, Match.ANY_OF),
+        REFERENCES("in", FilterOperator.IN, Match.ANY_OF),
         /** One of an enum's constants: filtered by constant names, sorted in declaration order. */
-        CHOICE("in");
+        CHOICE("in", FilterOperator.IN, Match.ANY_OF),
+        /** A shape (a column of geometries, or WKT text): only filtered on having one or not, never sorted. */
+        GEOMETRY("presence", FilterOperator.NOT_EMPTY);
 
         final String filterOp;
+        /** The operator of a filter that names none: what {@link #filterOp} has always meant. */
+        final FilterOperator defaultOperator;
+        /** What a filter on this kind can compare with; having a value or not, every kind can. */
+        final Set<Match> matches;
 
-        Kind(String filterOp) {
+        Kind(String filterOp, FilterOperator defaultOperator, Match... matches) {
             this.filterOp = filterOp;
+            this.defaultOperator = defaultOperator;
+            this.matches = Collections.unmodifiableSet(EnumSet.of(Match.PRESENT, matches));
+        }
+
+        boolean accepts(FilterOperator operator) {
+            return matches.contains(operator.match());
+        }
+
+        boolean sortable() {
+            return this != GEOMETRY;
+        }
+
+        /** A number or a date: filtered by bounds. */
+        boolean isRange() {
+            return matches.contains(Match.RANGE);
+        }
+
+        /** One or several entities: filtered by their ids. */
+        boolean isReference() {
+            return this == REFERENCE || this == REFERENCES;
         }
     }
 
@@ -182,8 +223,8 @@ public class FieldQueryService {
     public FieldResource.Query capabilityOf(Class<?> entityType, CustomField field) {
         Target target = resolve(entityType, field);
         if (target == null) return null;
-        boolean filterable = target.kind != Kind.REFERENCE && target.kind != Kind.REFERENCES || target.idFilterable;
-        return new FieldResource.Query(true, filterable ? target.kind.filterOp : null);
+        boolean filterable = !target.kind.isReference() || target.idFilterable;
+        return new FieldResource.Query(target.kind.sortable(), filterable ? target.kind.filterOp : null);
     }
 
     /**
@@ -278,6 +319,7 @@ public class FieldQueryService {
         Specification<E> ordering = null;
         if (query.sortFieldId() != null) {
             Target target = requireTarget(entityType, query.sortFieldId());
+            if (!target.kind.sortable()) throw badRequest(LE_CHAMP + query.sortFieldId() + " ne se trie pas");
             ordering = orderBy(target, query.sortFieldId(), query.ascending(), query.lang());
             parts.add(ordering);
             ordered = true;
@@ -301,9 +343,9 @@ public class FieldQueryService {
     private Target requireTarget(Class<?> entityType, long fieldId) {
         Optional<ListOnlyColumn> listOnly = ListOnlyColumn.ofFieldId(fieldId);
         Target target = listOnly.isPresent()
-                ? resolveSystem(entityType, listOnly.get().attribute())
+                ? resolveSystem(entityType, listOnly.get().attributeOf(entityType))
                 : resolve(entityType, requireField(entityType, fieldId));
-        if (target == null) throw badRequest("Le champ " + fieldId + " ne se trie ni ne se filtre sur cette liste");
+        if (target == null) throw badRequest(LE_CHAMP + fieldId + " ne se trie ni ne se filtre sur cette liste");
         return target;
     }
 
@@ -369,6 +411,8 @@ public class FieldQueryService {
         boolean single = FieldAnswerWireService.answerTypeOf(field).startsWith("SELECT_ONE");
         Kind refKind = single ? Kind.REFERENCE : Kind.REFERENCES;
 
+        // A geometry answer is stored as WKT text, yet is no text to search in.
+        if (CustomFieldGeometry.class.isAssignableFrom(Hibernate.getClass(field))) return scalarAnswer(answerClass, Kind.GEOMETRY, String.class);
         if (CustomFieldAnswerText.class.isAssignableFrom(answerClass)) return scalarAnswer(answerClass, Kind.TEXT, String.class);
         if (CustomFieldAnswerInteger.class.isAssignableFrom(answerClass)) return scalarAnswer(answerClass, Kind.NUMBER, Integer.class);
         if (CustomFieldAnswerDecimal.class.isAssignableFrom(answerClass)
@@ -436,6 +480,7 @@ public class FieldQueryService {
     private static Kind scalarKind(Class<?> javaType) {
         Class<?> type = boxed(javaType);
         if (type.isEnum()) return Kind.CHOICE;
+        if (Geometry.class.isAssignableFrom(type)) return Kind.GEOMETRY;
         if (String.class.equals(type)) return Kind.TEXT;
         if (Number.class.isAssignableFrom(type)) return Kind.NUMBER;
         if (Temporal.class.isAssignableFrom(type) || Date.class.isAssignableFrom(type)) return Kind.DATE;
@@ -488,6 +533,7 @@ public class FieldQueryService {
 
     public static final String FILTRE_ATTENDU_PLAGE = "Filtre attendu en plage (.from/.to) : f.";
     public static final String FILTRE_PLAGE_IMPOSSIBLE = "Filtre en plage impossible sur une référence : f.";
+    private static final String GEOMETRIE_NON_TRIABLE = "Une géométrie ne se trie pas";
 
     private static final Map<FieldQueryService.Kind, String> MESSAGE_ERREUR = Map.of(
             Kind.TEXT, "Filtre en plage impossible sur un champ texte : f.",
@@ -496,62 +542,96 @@ public class FieldQueryService {
             Kind.BOOLEAN, "Filtre en plage impossible sur un champ oui/non : f.",
             Kind.CHOICE, "Filtre en plage impossible sur une liste de valeurs : f.",
             Kind.REFERENCE, FILTRE_PLAGE_IMPOSSIBLE,
-            Kind.REFERENCES, FILTRE_PLAGE_IMPOSSIBLE
+            Kind.REFERENCES, FILTRE_PLAGE_IMPOSSIBLE,
+            Kind.GEOMETRY, "Filtre en plage impossible sur une géométrie : f."
     );
 
     /**
-     * A number or date filter is a range, any other a value; a reference one needs a target filterable by id.
+     * The operator the filter names, else its kind's default; one the kind cannot apply is a 400.
      */
-    private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion) {
-        boolean rangeKind = target.kind == Kind.NUMBER || target.kind == Kind.DATE;
-        if (criterion.isRange() != rangeKind) {
+    private static FilterOperator operatorOf(Target target, long fieldId, FieldListQuery.Criterion criterion) {
+        FilterOperator operator = criterion.operator() == null ? target.kind.defaultOperator : criterion.operator();
+        if (!target.kind.accepts(operator)) {
+            throw badRequest("Opérateur " + operator.wireName() + " impossible sur ce champ : f." + fieldId);
+        }
+        return operator;
+    }
+
+    /**
+     * A number or date filter is a range, any other a value — unless the operator takes no value at
+     * all; a filter on reference ids needs a target filterable by id.
+     */
+    private static void requireFilterShape(Target target, long fieldId, FieldListQuery.Criterion criterion,
+                                           FilterOperator operator) {
+        if (operator.takesValues() && criterion.isRange() != target.kind.isRange()) {
             throw badRequest(MESSAGE_ERREUR.get(target.kind) + fieldId);
         }
-        boolean reference = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES;
-        if (reference && !target.idFilterable) throw badRequest("Le champ " + fieldId + " ne se filtre pas");
+        if (operator.match() == Match.ANY_OF && target.kind.isReference() && !target.idFilterable) {
+            throw badRequest(LE_CHAMP + fieldId + " ne se filtre pas");
+        }
     }
 
     private <E> Specification<E> filter(Target target, long fieldId, FieldListQuery.Criterion criterion) {
-        requireFilterShape(target, fieldId, criterion);
+        FilterOperator operator = operatorOf(target, fieldId, criterion);
+        requireFilterShape(target, fieldId, criterion, operator);
         // Parsed up front, so a bad value is a 400 before any query runs.
-        List<Long> ids = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES ? parseIds(fieldId, criterion.values()) : List.of();
-        Object from = bound(target, fieldId, criterion.from(), true);
-        Object to = bound(target, fieldId, criterion.to(), false);
-        List<String> texts = criterion.values().stream().map(v -> "%" + v.toLowerCase(Locale.ROOT) + "%").toList();
-        List<Boolean> flags = target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, criterion.values()) : List.of();
-        List<Object> choices = target.kind == Kind.CHOICE ? parseChoices(target.valueType, fieldId, criterion.values()) : List.of();
-        Filter parsed = new Filter(texts, ids, flags, choices, from, to);
+        Filter parsed = parseFilter(target, fieldId, criterion, operator.match());
 
         return (root, query, cb) -> {
-            String position = stratigraphicPosition(root.getJavaType(), target.attribute);
-            if (position != null) {
-                // Related to at least one of them, at that position.
-                Subquery<Integer> related = query.subquery(Integer.class);
-                Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
-                related.select(cb.literal(1)).where(stratigraphicPredicate(cb, rel, root, position, ids));
-                return cb.exists(related);
-            }
-            if (target.system && target.kind == Kind.REFERENCES) {
-                // Has at least one of them: an EXISTS over the collection, since a join would
-                // repeat the row once per matching element.
-                Subquery<Integer> elements = query.subquery(Integer.class);
-                Join<?, ?> element = correlate(elements, root).join(target.attribute);
-                elements.select(cb.literal(1)).where(element.get("id").in(ids));
-                return cb.exists(elements);
-            }
-            if (target.system) {
-                return valuePredicate(target, systemValue(root, target), parsed, cb);
-            }
-            Subquery<Integer> answers = query.subquery(Integer.class);
-            Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
-            Expression<?> value = target.kind == Kind.REFERENCE || target.kind == Kind.REFERENCES
-                    ? answer.join(target.attribute)
-                    : answer.get(target.attribute);
-            answers.select(cb.literal(1)).where(
-                    ownedBy(answer, root, fieldId, cb),
-                    valuePredicate(target, value, parsed, cb));
-            return cb.exists(answers);
+            Predicate matching = matching(target, fieldId, parsed, root, query, cb);
+            // The rows the match leaves out, empty values included: each layout of matching() keeps
+            // a row without a value out of its match, so that NOT brings it back.
+            return operator.negated() ? cb.not(matching) : matching;
         };
+    }
+
+    /** The values a filter compares the column with, parsed for the column's kind and the operator's match. */
+    private static Filter parseFilter(Target target, long fieldId, FieldListQuery.Criterion criterion, Match match) {
+        List<String> values = criterion.values();
+        boolean anyOf = match == Match.ANY_OF;
+        List<Long> ids = anyOf && target.kind.isReference() ? parseIds(fieldId, values) : List.of();
+        List<Boolean> flags = anyOf && target.kind == Kind.BOOLEAN ? parseBooleans(fieldId, values) : List.of();
+        List<Object> choices = anyOf && target.kind == Kind.CHOICE ? parseChoices(target.valueType, fieldId, values) : List.of();
+        Object from = bound(target, fieldId, criterion.from(), true);
+        Object to = bound(target, fieldId, criterion.to(), false);
+        return new Filter(match, FilterPredicates.lowercased(values), ids, flags, choices, from, to);
+    }
+
+    /** The rows whose {@code target} column matches {@code parsed}, before any negation. */
+    private static Predicate matching(Target target, long fieldId, Filter parsed, Root<?> root,
+                                      CriteriaQuery<?> query, CriteriaBuilder cb) {
+        String position = stratigraphicPosition(root.getJavaType(), target.attribute);
+        if (position != null) {
+            // Related to at least one of them (to any unit at all, for "not empty"), at that position.
+            Subquery<Integer> related = query.subquery(Integer.class);
+            Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
+            List<Long> otherIds = parsed.match() == Match.PRESENT ? null : parsed.ids();
+            related.select(cb.literal(1)).where(stratigraphicPredicate(cb, rel, root, position, otherIds));
+            return cb.exists(related);
+        }
+        if (target.system && target.kind == Kind.REFERENCES) {
+            // Has at least one of them: an EXISTS over the collection, since a join would
+            // repeat the row once per matching element.
+            Subquery<Integer> elements = query.subquery(Integer.class);
+            Join<?, ?> element = correlate(elements, root).join(target.attribute);
+            elements.select(cb.literal(1)).where(valuePredicate(target, element, parsed, cb));
+            return cb.exists(elements);
+        }
+        if (target.system) {
+            // NULL compares as unknown, which NOT would leave unknown: a row without a value must
+            // be plainly out of the match for a negation to bring it back.
+            Expression<?> value = systemValue(root, target);
+            return cb.and(cb.isNotNull(value), valuePredicate(target, value, parsed, cb));
+        }
+        Subquery<Integer> answers = query.subquery(Integer.class);
+        Root<? extends CustomFieldAnswer> answer = answers.from(target.answerClass);
+        Expression<?> value = target.kind.isReference()
+                ? answer.join(target.attribute)
+                : answer.get(target.attribute);
+        answers.select(cb.literal(1)).where(
+                ownedBy(answer, root, fieldId, cb),
+                valuePredicate(target, value, parsed, cb));
+        return cb.exists(answers);
     }
 
     /**
@@ -571,16 +651,14 @@ public class FieldQueryService {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private static Predicate valuePredicate(Target target, Expression<?> value, Filter filter, CriteriaBuilder cb) {
-        List<String> texts = filter.texts();
+        if (filter.match() == Match.PRESENT) return FilterPredicates.hasValue(value, String.class.equals(target.valueType), cb);
         List<Long> ids = filter.ids();
         Object from = filter.from();
         Object to = filter.to();
         return switch (target.kind) {
             case BOOLEAN -> value.in(filter.flags());
             case CHOICE -> value.in(filter.choices());
-            case TEXT -> cb.or(texts.stream()
-                    .map(t -> cb.like(cb.lower((Expression<String>) value), t))
-                    .toArray(Predicate[]::new));
+            case TEXT -> FilterPredicates.textMatches(filter.match(), (Expression<String>) value, filter.texts(), cb);
             case NUMBER, DATE -> {
                 List<Predicate> bounds = new ArrayList<>();
                 if (from != null) bounds.add(cb.greaterThanOrEqualTo((Expression<Comparable>) value, (Comparable) from));
@@ -590,11 +668,16 @@ public class FieldQueryService {
                 yield cb.and(bounds.toArray(Predicate[]::new));
             }
             case REFERENCE, REFERENCES -> ((Path<?>) value).get("id").in(ids);
+            // Kind.GEOMETRY accepts nothing but PRESENT, handled above.
+            case GEOMETRY -> throw new IllegalStateException("Une géométrie ne se compare pas à une valeur");
         };
     }
 
-    /** What a filter compares a column with, parsed once for the kind of the column. */
-    private record Filter(List<String> texts, List<Long> ids, List<Boolean> flags, List<Object> choices,
+    /**
+     * What a filter compares a column with, parsed once for the kind of the column: the operator's
+     * match, and the texts (lowercased), ids, flags, constants or bounds it takes.
+     */
+    private record Filter(Match match, List<String> texts, List<Long> ids, List<Boolean> flags, List<Object> choices,
                           @Nullable Object from, @Nullable Object to) {
     }
 
@@ -639,6 +722,7 @@ public class FieldQueryService {
                     ? conceptLabel(query, cb, root.get(target.attribute), lang)
                     : root.join(target.attribute, JoinType.LEFT).get(target.labelAttribute);
             case REFERENCES -> cb.size((Expression<Collection<?>>) (Expression) root.get(target.attribute));
+            case GEOMETRY -> throw new IllegalStateException(GEOMETRIE_NON_TRIABLE);
         };
     }
 
@@ -688,6 +772,7 @@ public class FieldQueryService {
             }
             // An additional field's answer is never an enum: only system properties resolve to CHOICE.
             case CHOICE -> throw new IllegalStateException("Le champ additionnel " + fieldId + " n'a pas de liste de valeurs");
+            case GEOMETRY -> throw new IllegalStateException(GEOMETRIE_NON_TRIABLE);
         };
     }
 

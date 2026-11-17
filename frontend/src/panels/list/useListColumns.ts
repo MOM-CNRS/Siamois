@@ -3,23 +3,51 @@ import {scopeProjectId} from "../../entities/shared/scope";
 import type {ColumnDef, EntityTypeConfig, FieldCatalog, ListScope} from "../../entities/shared/types";
 import type {ColumnTogglerOption} from "../../components/table/ColumnToggler";
 import type {FilterSpec} from "../../components/table/FilterChipBar";
+import {defaultOnly, OPERATOR_PROFILES, type OperatorProfile, profileOf} from "../../components/table/filterOperators";
+import type {FilterKind} from "../../fields/optionSources";
+import {isTypeField} from "../../fields/typeField";
+import {isRelationField} from "./bulk/bulkSelection";
 import {renderAnswerCell} from "../../fields/display";
 import {filterKindForField, optionSourceFor} from "../../fields/optionSources";
 import {type FieldResource, isOwningProjectField, resolveValueBinding} from "../../fields/types";
 import type {RowRecord} from "./useEntityListData";
 import {pinnedColumnsOf} from "./validationStatusColumn";
 
+const FIELD_KEY = /^-?\d+$/;
+
 /**
- * A pinned column's filter: picking among its fixed values when it has some, else a plain "contains".
+ * The operators a datatable filter on `key` offers: its kind's for a field-keyed filter (f.<fieldId>,
+ * FieldQueryService), the kind's default only for a named key, whose list-specific parser compares one way.
+ */
+function profileFor(key: string, kind: FilterKind): OperatorProfile {
+  return FIELD_KEY.test(key) ? profileOf(kind) : defaultOnly(profileOf(kind));
+}
+
+/**
+ * A catalog field's operators: those of its kind, narrowed for a type (every fiche has one) and named for
+ * a relation (its links contain the picked entities or not).
+ */
+function fieldProfile(field: FieldResource, kind: FilterKind): OperatorProfile {
+  if (isTypeField(field)) return OPERATOR_PROFILES.type;
+  if (isRelationField(field)) return OPERATOR_PROFILES.relation;
+  return profileFor(field.id, kind);
+}
+
+/**
+ * A pinned column's filter, keyed by its filterKey when it has one: picking among its fixed values when it
+ * has some, else a text.
  */
 function pinnedFilterSpec(column: ColumnDef<RowRecord>): FilterSpec {
+  const key = column.filterKey ?? column.key;
   const options = column.filterOptions;
-  if (!options) return { key: column.key, label: column.header, kind: "contains" };
+  const kind: FilterKind = options ? "in" : "contains";
+  const spec: FilterSpec = { key, label: column.header, kind, operators: profileFor(key, kind) };
+  if (!options) return spec;
   const loadOptions = async (q?: string) => {
     const needle = (q ?? "").trim().toLocaleLowerCase();
     return options.filter((o) => o.label.toLocaleLowerCase().includes(needle));
   };
-  return { key: column.key, label: column.header, kind: "in", loadOptions, options };
+  return { ...spec, loadOptions, options };
 }
 
 
@@ -125,7 +153,7 @@ export function useListColumns({ config, catalog, visibleColumns, pinnedFieldIds
         if (!kind) return [];
         const loadOptions =
           organizationId != null ? (optionSourceFor(field, organizationId, scopeProjectId(scope)) ?? undefined) : undefined;
-        return [{ key: field.id, label: field.label, kind, loadOptions } satisfies FilterSpec];
+        return [{ key: field.id, label: field.label, kind, loadOptions, operators: fieldProfile(field, kind) } satisfies FilterSpec];
       });
     return [...pinned, ...dynamic];
   }, [config, catalog, pinnedFieldIds, organizationId, scope]);

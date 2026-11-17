@@ -122,7 +122,7 @@ describe("EntityMapView data", () => {
 
     expect(host.querySelector(".entity-map-loading")).toBeNull();
     const notices = [...host.querySelectorAll(".entity-map-notice")].map((n) => n.textContent);
-    expect(notices.some((n) => n?.includes("2 sans géométrie"))).toBe(true);
+    expect(notices.some((n) => n?.includes("2 non placé(s)"))).toBe(true);
     expect(notices.some((n) => n?.includes("Seuls les 3 premiers éléments sur 5"))).toBe(true);
   });
 

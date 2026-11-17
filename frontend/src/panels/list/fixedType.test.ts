@@ -11,6 +11,7 @@ describe("fixedTypeOf", () => {
     expect(fixedTypeOf({ type: { op: "in", v: ["1", "2"] } }, undefined)).toBeUndefined();
     expect(fixedTypeOf({ status: { op: "in", v: ["1"] } }, { fields: { status: { valueBinding: "status" } } })).toBeUndefined();
     expect(fixedTypeOf({ type: { op: "contains", v: "x" } }, undefined)).toBeUndefined();
+    expect(fixedTypeOf({ type: { op: "in", v: ["412"], operator: "notIn" } }, undefined)).toBeUndefined();
     expect(fixedTypeOf(undefined, undefined)).toBeUndefined();
   });
 });

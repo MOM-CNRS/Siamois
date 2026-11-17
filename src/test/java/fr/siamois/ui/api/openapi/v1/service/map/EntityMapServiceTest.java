@@ -124,13 +124,13 @@ class EntityMapServiceTest {
      */
     @Test
     void build_PlacesRowsWithAGeometryAndExaminesTheOthers() {
-        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)), FakeSource.ofOwn(Map.of(1L, POINT)), null);
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, limit, query) -> pageOf(List.of(1L, 2L)), FakeSource.ofOwn(Map.of(1L, POINT)), null);
 
         assertEquals(1, response.features().size());
         assertEquals("1", response.features().get(0).id());
         assertEquals("UE-1", response.features().get(0).label());
         assertEquals("Point", response.features().get(0).geometry().get("type").asText());
-        assertEquals(new EntityMapResponse.Meta(2, 2), response.meta());
+        assertEquals(new EntityMapResponse.Meta(2, 2, 2), response.meta());
     }
 
     /**
@@ -141,10 +141,10 @@ class EntityMapServiceTest {
         int pageSize = EntityMapService.PAGE_SIZE;
         List<Long> full = Collections.nCopies(pageSize, 7L);
 
-        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) ->
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, limit, query) ->
                 new PageImpl<>(full, PageRequest.of(offset / pageSize, pageSize), 5000), FakeSource.ofOwn(Map.of()), null);
 
-        assertEquals(new EntityMapResponse.Meta(5000, EntityMapService.MAX_FEATURES), response.meta());
+        assertEquals(new EntityMapResponse.Meta(5000, EntityMapService.MAX_FEATURES, 5000), response.meta());
         assertEquals(0, response.features().size());
     }
 
@@ -153,7 +153,7 @@ class EntityMapServiceTest {
      */
     @Test
     void build_LeavesOutAnUnreadableGeometry() {
-        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)),
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, limit, query) -> pageOf(List.of(1L, 2L)),
                 FakeSource.ofOwn(Map.of(1L, POINT, 2L, "{not json")), null);
 
         assertEquals(List.of("1"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
@@ -166,7 +166,7 @@ class EntityMapServiceTest {
     void build_ByAnAdditionalGeometryField_PlacesTheRowsByItsAnswers() {
         FakeSource source = new FakeSource(Map.of(OWN, Map.of(1L, POINT), ADDITIONAL, Map.of(2L, LINE)));
 
-        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L, 2L)), source, ADDITIONAL);
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, limit, query) -> pageOf(List.of(1L, 2L)), source, ADDITIONAL);
 
         assertEquals(List.of("2"), response.features().stream().map(EntityMapResponse.Feature::id).toList());
         assertEquals("LineString", response.features().get(0).geometry().get("type").asText());
@@ -180,7 +180,7 @@ class EntityMapServiceTest {
         FakeSource source = FakeSource.ofOwn(Map.of());
         List<FieldQuery> queried = new ArrayList<>();
 
-        service().build(FieldQuery.NONE, (offset, query) -> {
+        service().build(FieldQuery.NONE, (offset, limit, query) -> {
             queried.add(query);
             return pageOf(List.of(1L));
         }, source, ADDITIONAL);
@@ -191,13 +191,31 @@ class EntityMapServiceTest {
     }
 
     /**
+     * The rows of the list the map's narrowing leaves out (no geometry) are counted, from the list's own query.
+     */
+    @Test
+    void build_CountsTheRowsOfTheListWithoutAGeometry() {
+        List<Integer> limits = new ArrayList<>();
+
+        EntityMapResponse response = service().build(FieldQuery.NONE, (offset, limit, query) -> {
+            limits.add(limit);
+            // The narrowed query keeps 2 rows; the list itself holds 7.
+            return query.filtered() ? pageOf(List.of(1L, 2L)) : new PageImpl<>(List.of(1L), PageRequest.of(0, 1), 7);
+        }, FakeSource.ofOwn(Map.of(1L, POINT, 2L, POINT)), null);
+
+        assertEquals(new EntityMapResponse.Meta(2, 2, 7), response.meta());
+        // Only the total of the list is read: a page of one row.
+        assertEquals(List.of(EntityMapService.PAGE_SIZE, 1), limits);
+    }
+
+    /**
      * A field that is no geometry column of the collection is refused.
      */
     @Test
     void build_UnknownGeometryColumn_IsABadRequest() {
         FakeSource source = FakeSource.ofOwn(Map.of());
         var service = service();
-        assertThrows(ResponseStatusException.class, () -> service.build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L)), source, -99L));
+        assertThrows(ResponseStatusException.class, () -> service.build(FieldQuery.NONE, (offset, limit, query) -> pageOf(List.of(1L)), source, -99L));
     }
 
     /**
