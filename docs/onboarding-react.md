@@ -16,8 +16,6 @@ Pile : React 18, PrimeReact 10.9, TanStack Query 5, Vite, Vitest, TypeScript str
 
 **Ce qui reste en JSF :** le shell (`template.xhtml`, barre latérale, topbar, connexion), les pages de paramètres (dont l'éditeur de configuration des champs/formulaires), la gestion de session. React ne remplace pas l'application, seulement le contenu du panneau principal et la barre de recherche du haut.
 
-Historique et reste-à-faire : [react-migration-apres-merge.md](react-migration-apres-merge.md). Plan d'origine : [react-main-panel-migration-plan.md](react-main-panel-migration-plan.md).
-
 ---
 
 ## 2. Vue d'ensemble
@@ -63,7 +61,7 @@ C'est la zone la plus piégeuse, parce que deux mondes se partagent la page.
 
 **Le pont inverse (`PanelBridge`).** React n'appelle JSF que via cinq `p:remoteCommand` (`reactPanelActions.xhtml`) : `setOverview`, `closeOverview`, `setMain`, `refreshBookmarks`, `refreshViews`. Ils servent uniquement à garder la session JSF synchrone (F5, historique de la barre latérale, favoris) ; tous prennent leur cible en paramètre, donc restent valides après une navigation côté client. Du côté React, ils arrivent par `panels/pane/bridge.tsx`.
 
-**Authentification.** React n'utilise jamais le cookie de session pour l'API. `auth/sessionAuth.ts` échange la session JSF contre un JWT (`POST /api/auth/session-token`, avec le CSRF rendu par JSF), stocké par `tokenStore`, renouvelé sur 401. Les appels `/api/v1` partent avec `credentials: "omit"`. Côté serveur, la chaîne `/api/v1` est `STATELESS` avec `sessionFixation(none())` : **ne pas y toucher** (c'est le correctif du bug « renvoyé à la connexion au F5 », voir `react-migration-apres-merge.md` §6).
+**Authentification.** React n'utilise jamais le cookie de session pour l'API. `auth/sessionAuth.ts` échange la session JSF contre un JWT (`POST /api/auth/session-token`, avec le CSRF rendu par JSF), stocké par `tokenStore`, renouvelé sur 401. Les appels `/api/v1` partent avec `credentials: "omit"`. Côté serveur, la chaîne `/api/v1` est `STATELESS` avec `sessionFixation(none())` : **ne pas y toucher** (c'est le correctif du bug « renvoyé à la connexion au F5 », verrouillé par `ApiV1SessionSafetyTest`). SonarCloud le signale à tort : la chaîne ne crée aucune session, c'est un faux positif.
 
 **Mode écriture.** Le bouton lecture/écriture du topbar est dans `FlowBean` (JSF). Il arrive en `data-write-mode` et alimente `WriteModeProvider` ; tout contrôle d'édition en dépend. Défaut : lecture seule.
 
@@ -209,9 +207,9 @@ npm run api:pull     # re-synchronise openapi.json + schema.d.ts depuis un backe
 
 À ne pas toucher : reducer de navigation et codec d'URL, `rules/` et sa fixture, la règle de couches ESLint, le principe « registre, pas de `switch` », la stabilité de `PaneSplit`.
 
-Dette (détail et chiffres dans [react-patterns.md](react-patterns.md) et [react-architecture-review.md](react-architecture-review.md)) : gros composants à relire, suppressions `exhaustive-deps`, pas de code splitting (un seul chunk, poids non remesuré), `entities/shared/types.ts` (≈ 500 lignes) à découper, `registerEntityType` qui ne vérifie pas que la config correspond à la clé, instantané OpenAPI non comparé automatiquement au backend.
+Dette (détail et chiffres dans [react-patterns.md](react-patterns.md)) : gros composants à relire, suppressions `exhaustive-deps`, pas de code splitting (un seul chunk, poids non remesuré), `entities/shared/types.ts` (≈ 500 lignes) à découper, `registerEntityType` qui ne vérifie pas que la config correspond à la clé, instantané OpenAPI non comparé automatiquement au backend.
 
-Fonctionnalités non faites : carte, révélation d'une entité dans la liste ou l'arbre (plan mis de côté). La stratigraphie (onglet de fiche UE, `entities/recordingUnit/graph/`) et la vue arbre du mobilier sont faites.
+Fonctionnalités non faites : révélation d'une entité dans la liste ou l'arbre (plan mis de côté). La stratigraphie (onglet de fiche UE, `entities/recordingUnit/graph/`), la vue arbre du mobilier et la vue carte des listes (`panels/list/map/`) sont faites.
 
 ---
 
@@ -220,9 +218,6 @@ Fonctionnalités non faites : carte, révélation d'une entité dans la liste ou
 | Sujet | Doc |
 |---|---|
 | Patterns jugés, points faibles, organisation des dossiers | [react-patterns.md](react-patterns.md) |
-| Revue d'architecture et améliorations proposées | [react-architecture-review.md](react-architecture-review.md) |
-| Bilan architecture React et API | [bilan-architecture-react-et-api.md](bilan-architecture-react-et-api.md) |
-| Reste-à-faire après le merge, vérifs en live | [react-migration-apres-merge.md](react-migration-apres-merge.md) |
 | Changements d'API par rapport à `main` | [api-changes-vs-main.md](api-changes-vs-main.md) |
 | Règles conditionnelles des champs | [regles-conditionnelles-champs.md](regles-conditionnelles-champs.md) |
 | Vue arbre, vues sauvegardées, recherche en overlay | [vue-arbre-listes.md](vue-arbre-listes.md), [vues-et-etat-utilisateur.md](vues-et-etat-utilisateur.md), [recherche-listes-overlay.md](recherche-listes-overlay.md) |
