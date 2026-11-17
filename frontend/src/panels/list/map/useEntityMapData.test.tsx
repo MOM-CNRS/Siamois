@@ -60,14 +60,14 @@ afterEach(() => {
 const base: ListParams = { organizationId: 3, search: "fosse", offset: 0, limit: 50, sort: "identifier,asc" };
 
 describe("useEntityMapData", () => {
-  it("fetches the map of the list's result set only, without its page or order", async () => {
+  it("fetches the map of the list's result set in the list's order, without its page", async () => {
     render({ params: base });
 
     await flush();
     expect(latest.data).toBe(mapData);
     expect(fetchMap).toHaveBeenCalledWith(
       "recording-units",
-      { organizationId: 3, search: "fosse", filters: undefined, scope: undefined },
+      { organizationId: 3, search: "fosse", filters: undefined, scope: undefined, sort: "identifier,asc" },
       undefined,
     );
   });
@@ -77,8 +77,8 @@ describe("useEntityMapData", () => {
 
     await flush();
     expect(latest.isSuccess).toBe(true);
-    const resultSet = { organizationId: 3, search: "fosse", filters: undefined, scope: undefined };
-    expect(client.getQueryData(queryKeys.entityListMap("recordingUnit", resultSet, "-4"))).toBe(mapData);
+    const request = { organizationId: 3, search: "fosse", filters: undefined, scope: undefined, sort: "identifier,asc" };
+    expect(client.getQueryData(queryKeys.entityListMap("recordingUnit", request, "-4"))).toBe(mapData);
   });
 
   it("asks for an additional geometry column when one is chosen", async () => {
@@ -89,15 +89,26 @@ describe("useEntityMapData", () => {
     expect(vi.mocked(fetchMap).mock.calls[0][2]).toBe("-4");
   });
 
-  it("does not refetch when only the page or the order of the list changes", async () => {
+  it("does not refetch when only the page of the list changes", async () => {
     render({ params: base });
     await flush();
     expect(latest.isSuccess).toBe(true);
 
-    render({ params: { ...base, offset: 50, sort: "identifier,desc" } });
+    render({ params: { ...base, offset: 50, limit: 100 } });
 
     expect(latest.data).toBe(mapData);
     expect(fetchMap).toHaveBeenCalledTimes(1);
+  });
+
+  it("refetches when the order of the list changes, the features coming in it", async () => {
+    render({ params: base });
+    await flush();
+    expect(latest.isSuccess).toBe(true);
+
+    render({ params: { ...base, sort: "identifier,desc" } });
+
+    await flush();
+    expect(fetchMap).toHaveBeenCalledTimes(2);
   });
 
   it("refetches when what selects the rows changes", async () => {

@@ -9,7 +9,7 @@ import {useLeafletMap} from "./useLeafletMap";
 
 vi.mock("./leafletMap", () => ({ createBaseMap: vi.fn() }));
 
-const maps: { remove: ReturnType<typeof vi.fn>; container: HTMLElement }[] = [];
+const maps: { remove: ReturnType<typeof vi.fn>; invalidateSize: ReturnType<typeof vi.fn>; container: HTMLElement }[] = [];
 let latest: L.Map | null;
 let renders: (L.Map | null)[];
 let root: Root | undefined;
@@ -33,7 +33,7 @@ beforeEach(() => {
   maps.length = 0;
   renders = [];
   vi.mocked(createBaseMap).mockReset().mockImplementation((container) => {
-    const map = { remove: vi.fn(), container };
+    const map = { remove: vi.fn(), invalidateSize: vi.fn(), container };
     maps.push(map);
     return map as unknown as L.Map;
   });
@@ -99,5 +99,48 @@ describe("useLeafletMap", () => {
     } finally {
       consoleError.mockRestore();
     }
+  });
+
+  describe("following the container's size", () => {
+    let observers: { callback: () => void; observed: Element[]; disconnect: () => void }[];
+
+    beforeEach(() => {
+      observers = [];
+      vi.stubGlobal(
+        "ResizeObserver",
+        class {
+          private readonly entry: (typeof observers)[number];
+          constructor(callback: () => void) {
+            this.entry = { callback, observed: [], disconnect: vi.fn() };
+            observers.push(this.entry);
+          }
+          observe(element: Element) {
+            this.entry.observed.push(element);
+          }
+          disconnect() {
+            this.entry.disconnect();
+          }
+        },
+      );
+    });
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("tells the map when its container is resized (the overview opening beside it)", () => {
+      act(() => root!.render(<WithContainer />));
+
+      expect(observers[0].observed).toEqual([maps[0].container]);
+      observers[0].callback();
+      expect(maps[0].invalidateSize).toHaveBeenCalledTimes(1);
+    });
+
+    it("stops watching the container on unmount", () => {
+      act(() => root!.render(<WithContainer />));
+
+      act(() => root!.unmount());
+      root = undefined;
+
+      expect(observers[0].disconnect).toHaveBeenCalledTimes(1);
+    });
   });
 });

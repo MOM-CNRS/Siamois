@@ -3,17 +3,21 @@ import type {MapFeature} from "../entities/shared/listApi";
 import {t} from "../i18n";
 import {featureOptions, type FeatureLook} from "./featureLook";
 
-const OSM = { url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "© OpenStreetMap" };
+// `maxNativeZoom`: the last zoom the provider has tiles for. Past it Leaflet enlarges that zoom's tiles
+// instead of asking for tiles that do not exist (a blank map), so the map can zoom in as far as MAX_ZOOM.
+const OSM = { url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "© OpenStreetMap", maxNativeZoom: 19 };
 const SATELLITE = {
   url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   attribution: "Tiles © Esri",
+  maxNativeZoom: 19,
 };
 
-// Tiles stop at zoom 19 (OSM) — past it they are enlarged rather than missing, so a small
-// excavation unit can still be looked at closely.
-const MAX_NATIVE_ZOOM = 19;
-export const MAX_ZOOM = 22;
+// Far past the tiles' own levels, on enlarged tiles, so a small excavation unit can still be looked at closely.
+export const MAX_ZOOM = 25;
 const PADDING = L.point(24, 24);
+// How close a map comes to the one feature it focuses on by itself: a point, whose bounds have no size,
+// would otherwise be framed at MAX_ZOOM, on enlarged tiles with nothing around it.
+const FOCUS_MAX_ZOOM = OSM.maxNativeZoom;
 // Mainland France, until the features say where to look.
 const INITIAL_VIEW: L.LatLngTuple = [46.6, 2.4];
 
@@ -21,8 +25,8 @@ const INITIAL_VIEW: L.LatLngTuple = [46.6, 2.4];
 export function createBaseMap(container: HTMLElement): L.Map {
   const map = L.map(container, { zoomControl: true, maxZoom: MAX_ZOOM, zoomSnap: 0.5, zoomDelta: 0.5, wheelPxPerZoomLevel: 90 })
     .setView(INITIAL_VIEW, 5);
-  const osm = L.tileLayer(OSM.url, { attribution: OSM.attribution, maxNativeZoom: MAX_NATIVE_ZOOM, maxZoom: MAX_ZOOM }).addTo(map);
-  const satellite = L.tileLayer(SATELLITE.url, { attribution: SATELLITE.attribution, maxNativeZoom: MAX_NATIVE_ZOOM, maxZoom: MAX_ZOOM });
+  const osm = L.tileLayer(OSM.url, { attribution: OSM.attribution, maxNativeZoom: OSM.maxNativeZoom, maxZoom: MAX_ZOOM }).addTo(map);
+  const satellite = L.tileLayer(SATELLITE.url, { attribution: SATELLITE.attribution, maxNativeZoom: SATELLITE.maxNativeZoom, maxZoom: MAX_ZOOM });
   L.control.layers({ [t("list.mapOsm")]: osm, [t("list.mapSatellite")]: satellite }).addTo(map);
   return map;
 }
@@ -48,10 +52,15 @@ export function createFeatureLayer(features: readonly MapFeature[], look: Featur
  * the framed view; animated when the user asked for it. Says whether there was anything to frame.
  */
 export function fitLayer(map: L.Map, layer: L.GeoJSON, animate = false): boolean {
-  const bounds = layer.getBounds();
-  if (!bounds.isValid()) return false;
-  map.fitBounds(bounds, { padding: PADDING, maxZoom: MAX_ZOOM, animate });
-  return true;
+  return frameLayer(map, layer, MAX_ZOOM, animate);
+}
+
+/**
+ * Zooms onto the layer, at once, but no closer than the tiles' own levels: the feature a map focuses
+ * on by itself (the first result), seen with its surroundings. Says whether there was anything to focus on.
+ */
+export function focusLayer(map: L.Map, layer: L.GeoJSON): boolean {
+  return frameLayer(map, layer, FOCUS_MAX_ZOOM, false);
 }
 
 /**
@@ -60,7 +69,34 @@ export function fitLayer(map: L.Map, layer: L.GeoJSON, animate = false): boolean
  */
 export function revealLayer(map: L.Map, layer: L.GeoJSON): void {
   const bounds = layer.getBounds();
-  if (!bounds.isValid() || map.getBounds().contains(bounds)) return;
+  if (!bounds.isValid()) return;
+  map.invalidateSize();
+  if (map.getBounds().contains(bounds)) return;
+  moveToCenter(map, layer, bounds);
+}
+
+/**
+ * Puts the layer in the middle of the map, even when the map already shows it (unlike revealLayer):
+ * panned to when it fits at the current zoom, zoomed out to otherwise, animated either way.
+ */
+export function centerLayer(map: L.Map, layer: L.GeoJSON): void {
+  const bounds = layer.getBounds();
+  if (!bounds.isValid()) return;
+  map.invalidateSize();
+  moveToCenter(map, layer, bounds, true);
+}
+
+// Each move first reads the container's current size: a pane resized in the same render as the move
+// (the overview opening on the first result) has not been reported to the map by its observer yet.
+function frameLayer(map: L.Map, layer: L.GeoJSON, maxZoom: number, animate: boolean): boolean {
+  const bounds = layer.getBounds();
+  if (!bounds.isValid()) return false;
+  map.invalidateSize();
+  map.fitBounds(bounds, { padding: PADDING, maxZoom, animate });
+  return true;
+}
+
+function moveToCenter(map: L.Map, layer: L.GeoJSON, bounds: L.LatLngBounds, animateZoomOut = false): void {
   if (map.getBoundsZoom(bounds, false, PADDING) >= map.getZoom()) map.panTo(bounds.getCenter());
-  else fitLayer(map, layer);
+  else fitLayer(map, layer, animateZoomOut);
 }

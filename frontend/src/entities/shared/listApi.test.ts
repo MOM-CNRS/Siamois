@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {apiFetch} from "../../api/client";
-import {fetchList, fetchMap, fetchMapFeature, resultSetOf} from "./listApi";
+import {fetchList, fetchMap, fetchMapFeature, mapRequestOf, resultSetOf} from "./listApi";
 import {registerEntityType} from "../registry";
 import type {EntityTypeConfig} from "./types";
 
@@ -134,6 +134,14 @@ describe("fetchMap", () => {
     expect(path).not.toContain("limit");
   });
 
+  it("asks for the features in the list's order", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { organizationId: 7, sort: "identifier:asc" });
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("sort=identifier%3Aasc");
+  });
+
   it("asks for the chosen geometry column", async () => {
     mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
 
@@ -160,6 +168,17 @@ describe("resultSetOf", () => {
   });
 });
 
+describe("mapRequestOf", () => {
+  it("keeps the result set and its order, and drops the paging", () => {
+    expect(mapRequestOf({ search: "UE", organizationId: 7, sort: "x:asc", offset: 20, limit: 50 } as never))
+      .toEqual({ search: "UE", organizationId: 7, filters: undefined, scope: undefined, sort: "x:asc" });
+  });
+
+  it("adds no order when the list has none", () => {
+    expect(mapRequestOf({ organizationId: 7 })).not.toHaveProperty("sort");
+  });
+});
+
 describe("fetchMapFeature", () => {
   it("asks the entity's own /map and unwraps its feature", async () => {
     const feature = { id: "12", label: "UE-12", geometry: { type: "Point", coordinates: [2, 48] } };
@@ -167,6 +186,14 @@ describe("fetchMapFeature", () => {
 
     await expect(fetchMapFeature("recording-units", 12)).resolves.toEqual(feature);
     expect(mockedApiFetch.mock.calls[0][0]).toBe("/api/v1/recording-units/12/map");
+  });
+
+  it("asks for the features in the list's order", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { organizationId: 7, sort: "identifier:asc" });
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("sort=identifier%3Aasc");
   });
 
   it("asks for the chosen geometry column", async () => {

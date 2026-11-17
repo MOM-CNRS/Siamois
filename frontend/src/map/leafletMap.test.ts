@@ -3,7 +3,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import type {MapFeature} from "../entities/shared/listApi";
 import {setLocale} from "../i18n";
 import {LIST_LOOK, SELECTED_LOOK} from "./featureLook";
-import {createBaseMap, createFeatureLayer, fitLayer, MAX_ZOOM, revealLayer} from "./leafletMap";
+import {centerLayer, createBaseMap, createFeatureLayer, fitLayer, focusLayer, MAX_ZOOM, revealLayer} from "./leafletMap";
 
 // Real Leaflet over jsdom for building the map and its layers; the framing logic is checked against a
 // map stand-in, since jsdom lays nothing out and Leaflet's own bounds math would see a 0×0 map.
@@ -47,7 +47,17 @@ describe("createBaseMap", () => {
     map = createBaseMap(container);
 
     expect(map.getMaxZoom()).toBe(MAX_ZOOM);
-    expect(MAX_ZOOM).toBe(22);
+    expect(MAX_ZOOM).toBe(25);
+  });
+
+  it("asks OpenStreetMap for no tile past zoom 19, enlarging those beyond so that any zoom shows a map", () => {
+    map = createBaseMap(container);
+
+    const tiles: L.TileLayer[] = [];
+    map.eachLayer((layer) => {
+      if (layer instanceof L.TileLayer) tiles.push(layer);
+    });
+    expect(tiles[0].options).toEqual(expect.objectContaining({ maxNativeZoom: 19, maxZoom: MAX_ZOOM }));
   });
 
   it("shows OpenStreetMap at first and offers the satellite view, in the page language", () => {
@@ -122,6 +132,7 @@ function fakeMap({ shows = false, boundsZoom = 10, zoom = 10 } = {}) {
   return {
     fitBounds: vi.fn(),
     panTo: vi.fn(),
+    invalidateSize: vi.fn(),
     getZoom: vi.fn(() => zoom),
     getBoundsZoom: vi.fn(() => boundsZoom),
     getBounds: vi.fn(() => ({ contains: () => shows })),
@@ -209,5 +220,78 @@ describe("revealLayer", () => {
     expect(map.getBounds).not.toHaveBeenCalled();
     expect(map.panTo).not.toHaveBeenCalled();
     expect(map.fitBounds).not.toHaveBeenCalled();
+  });
+});
+
+describe("focusLayer", () => {
+  it("zooms onto the layer at once, no closer than the tiles' own levels", () => {
+    const map = fakeMap();
+
+    expect(focusLayer(asMap(map), createFeatureLayer([point("1", 2, 48)], SELECTED_LOOK, vi.fn()))).toBe(true);
+
+    const [bounds, options] = map.fitBounds.mock.calls[0];
+    expect((bounds as L.LatLngBounds).equals(L.latLngBounds([48, 2], [48, 2]))).toBe(true);
+    expect(options).toEqual({ padding: L.point(24, 24), maxZoom: 19, animate: false });
+  });
+
+  it("says there was nothing to focus on for an empty layer, leaving the map alone", () => {
+    const map = fakeMap();
+
+    expect(focusLayer(asMap(map), createFeatureLayer([], SELECTED_LOOK, vi.fn()))).toBe(false);
+    expect(map.fitBounds).not.toHaveBeenCalled();
+  });
+});
+
+describe("centerLayer", () => {
+  const layer = () => createFeatureLayer([point("1", 2, 48), point("2", 3, 49)], SELECTED_LOOK, vi.fn());
+
+  it("pans to the layer even when the map already shows it", () => {
+    const map = fakeMap({ shows: true });
+
+    centerLayer(asMap(map), layer());
+
+    expect(map.panTo).toHaveBeenCalledWith(L.latLngBounds([48, 2], [49, 3]).getCenter());
+    expect(map.fitBounds).not.toHaveBeenCalled();
+  });
+
+  it("zooms out, animated, to a layer too large for the current zoom", () => {
+    const map = fakeMap({ boundsZoom: 9, zoom: 10 });
+
+    centerLayer(asMap(map), layer());
+
+    expect(map.panTo).not.toHaveBeenCalled();
+    expect(map.fitBounds.mock.calls[0][1]).toEqual(expect.objectContaining({ animate: true }));
+  });
+
+  it("does nothing for an empty layer", () => {
+    const map = fakeMap();
+
+    centerLayer(asMap(map), createFeatureLayer([], SELECTED_LOOK, vi.fn()));
+
+    expect(map.panTo).not.toHaveBeenCalled();
+    expect(map.fitBounds).not.toHaveBeenCalled();
+  });
+});
+
+describe("moving a map whose container was resized", () => {
+  const layer = () => createFeatureLayer([point("1", 2, 48)], SELECTED_LOOK, vi.fn());
+
+  it("measures the container before framing, focusing, revealing or centring", () => {
+    for (const move of [fitLayer, focusLayer, revealLayer, centerLayer]) {
+      const map = fakeMap();
+      map.invalidateSize.mockImplementation(() => expect(map.fitBounds).not.toHaveBeenCalled());
+
+      move(asMap(map), layer());
+
+      expect(map.invalidateSize).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("measures nothing for an empty layer", () => {
+    const map = fakeMap();
+
+    centerLayer(asMap(map), createFeatureLayer([], SELECTED_LOOK, vi.fn()));
+
+    expect(map.invalidateSize).not.toHaveBeenCalled();
   });
 });
