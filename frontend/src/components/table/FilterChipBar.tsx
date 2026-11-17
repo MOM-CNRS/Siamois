@@ -71,6 +71,9 @@ export function describeChip(spec: FilterSpec, value: FilterValue | undefined, o
 export interface FilterChipBarProps {
   specs: FilterSpec[];
   filters: Record<string, FilterValue>;
+  // The filters the list is defined by (a fiche's configured tab): shown first, neither edited nor removed,
+  // and not offered again. They come over the user's own filter on the same key.
+  lockedFilters?: Record<string, FilterValue>;
   // `options` carries the labels for an "in" filter, which FilterValue itself (ids only) cannot.
   onChange: (key: string, value: FilterValue | undefined, options?: FilterOption[]) => void;
   optionsByKey: Record<string, FilterOption[]>;
@@ -94,7 +97,26 @@ function filterOnAdd(spec: FilterSpec): FilterValue | undefined {
   return operator && !takesValue(operator) ? applyOperator(undefined, operator) : undefined;
 }
 
-export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readonly<FilterChipBarProps>) {
+interface ChipContentProps {
+  icon?: string;
+  label: string;
+  summary: string;
+}
+
+/**
+ * What a chip shows of its filter, editable or locked: an icon, the column, then the value.
+ */
+function ChipContent({ icon, label, summary }: Readonly<ChipContentProps>) {
+  return (
+    <>
+      {icon && <i className={`bi ${icon} filter-chip-icon`} aria-hidden="true" />}
+      <span className="filter-chip-label">{label}</span>
+      {summary && <span className="filter-chip-value">{summary}</span>}
+    </>
+  );
+}
+
+export function FilterChipBar({ specs, filters, lockedFilters, onChange, optionsByKey }: Readonly<FilterChipBarProps>) {
   // A chip the user added but hasn't given a value to yet. It has no entry in `filters` (an empty
   // filter must not reach the query), so it needs tracking here to stay on screen while being
   // filled in.
@@ -121,9 +143,11 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readon
     editPanel.current?.hide();
   };
 
-  const activeKeys = specs
-    .map((s) => s.key)
-    .filter((key) => filters[key] != null || pendingKeys.includes(key));
+  const isLocked = (key: string) => lockedFilters?.[key] != null;
+  const isUserActive = (key: string) => !isLocked(key) && (filters[key] != null || pendingKeys.includes(key));
+  const keys = specs.map((s) => s.key);
+  // The list's own filters lead: they say what the list is before what the user narrowed it to.
+  const activeKeys = [...keys.filter(isLocked), ...keys.filter(isUserActive)];
   // The first filters stay in the bar; a chip just added (still being filled in) always does, so it is never hidden under « +N ».
   const shownKeys = activeKeys.filter((key, i) => i < MAX_VISIBLE_CHIPS || pendingKeys.includes(key));
   const hiddenKeys = activeKeys.filter((key) => !shownKeys.includes(key));
@@ -250,6 +274,8 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readon
 
   function renderChip(key: string, anchorOverride?: () => HTMLElement | null) {
     const spec = specs.find((s) => s.key === key)!;
+    const lockedValue = lockedFilters?.[key];
+    if (lockedValue) return renderLockedChip(spec, lockedValue);
     const summary = describeChip(spec, filters[key], optionsByKey[key]);
     return (
       <span key={key} data-chip-key={key} className={`filter-chip${summary ? "" : " filter-chip-empty"}`}>
@@ -263,9 +289,7 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readon
             openEditor(e, key, anchor);
           }}
         >
-          {spec.operators && <i className={`bi ${KIND_ICONS[spec.kind]} filter-chip-icon`} aria-hidden="true" />}
-          <span className="filter-chip-label">{spec.label}</span>
-          {summary && <span className="filter-chip-value">{summary}</span>}
+          <ChipContent icon={spec.operators && KIND_ICONS[spec.kind]} label={spec.label} summary={summary} />
           {spec.operators && <i className="bi bi-chevron-down filter-chip-chevron" aria-hidden="true" />}
         </button>
         <button
@@ -276,6 +300,16 @@ export function FilterChipBar({ specs, filters, onChange, optionsByKey }: Readon
         >
           <i className="bi bi-x" />
         </button>
+      </span>
+    );
+  }
+
+  function renderLockedChip(spec: FilterSpec, value: FilterValue) {
+    return (
+      <span key={spec.key} data-chip-key={spec.key} className="filter-chip filter-chip-locked" title={t("filter.locked")}>
+        <span className="filter-chip-body">
+          <ChipContent icon="bi-lock" label={spec.label} summary={describeChip(spec, value, optionsByKey[spec.key])} />
+        </span>
       </span>
     );
   }

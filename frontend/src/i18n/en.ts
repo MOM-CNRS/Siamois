@@ -50,6 +50,7 @@ export const en: Record<MessageKey, string> = {
   "filter.from": "{label} (from)",
   "filter.to": "{label} (to)",
   "filter.remove": "Remove the {label} filter",
+  "filter.locked": "Filter of the tab, cannot be changed",
   "filter.more": "{n} more filters",
   "filter.add": "Add a filter",
   "filter.one": "Filter",

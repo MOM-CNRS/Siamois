@@ -50,6 +50,7 @@ export const fr = {
   "filter.from": "{label} (du)",
   "filter.to": "{label} (au)",
   "filter.remove": "Retirer le filtre {label}",
+  "filter.locked": "Filtre de l'onglet, non modifiable",
   "filter.more": "{n} autres filtres",
   "filter.add": "Ajouter un filtre",
   "filter.one": "Filtrer",
