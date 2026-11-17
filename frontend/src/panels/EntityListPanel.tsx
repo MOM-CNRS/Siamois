@@ -218,7 +218,7 @@ function EntityListPanelBody({
   const mapGeometry = resolveMapGeometry(prefs.mapGeometry, geometryOptions);
   // A tab filtered on exactly one type creates entities of that type.
   const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
-  let createPrefillWithType = prefillWithIdIfSet(fixedTypeId, createPrefill);
+  const createPrefillWithType = prefillWithIdIfSet(fixedTypeId, createPrefill);
 
   useFiltersListener(state.filters, onFiltersChange);
   useSeedSearch(seed, table);
