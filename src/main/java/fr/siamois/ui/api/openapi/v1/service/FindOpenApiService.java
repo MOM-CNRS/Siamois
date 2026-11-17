@@ -370,6 +370,20 @@ public class FindOpenApiService {
         }
     }
 
+    /**
+     * The find behind a key, after the same access check as the detail ({@code GET /api/v1/finds/{id}}).
+     *
+     * @param idOrKey                  numeric id or full identifier
+     * @param accessibleInstitutionIds the organizations the caller may read
+     * @return the find
+     * @throws ResponseStatusException 404 when the find does not exist or is out of the caller's organizations
+     */
+    @Transactional(readOnly = true)
+    public SpecimenDTO findViewableFind(String idOrKey, Set<Long> accessibleInstitutionIds) {
+        return specimenService.findAccessibleByKey(idOrKey, accessibleInstitutionIds)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, FIND_NOT_FOUND));
+    }
+
     /** Previous/next mobilier in the same project ({@code GET /api/v1/finds/{id}/siblings}). */
     @Transactional(readOnly = true)
     public SiblingsResource findSiblings(long specimenId, Set<Long> accessibleInstitutionIds) {

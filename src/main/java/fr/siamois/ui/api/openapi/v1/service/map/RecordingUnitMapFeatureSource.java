@@ -1,7 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service.map;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.dto.entity.RecordingUnitDTO;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
@@ -12,7 +11,6 @@ import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource
 import fr.siamois.ui.api.openapi.v1.response.map.EntityMapResponse;
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -57,10 +55,7 @@ public class RecordingUnitMapFeatureSource implements MapFeatureSource<Recording
      */
     @Override
     public boolean isGeometryColumn(long fieldId) {
-        return fieldId == OWN_GEOMETRY || customFieldRepository.findById(fieldId)
-                .map(Hibernate::unproxy)
-                .filter(CustomFieldGeometry.class::isInstance)
-                .isPresent();
+        return MapGeometryColumns.isGeometryColumn(OWN_GEOMETRY, fieldId, customFieldRepository);
     }
 
     /**

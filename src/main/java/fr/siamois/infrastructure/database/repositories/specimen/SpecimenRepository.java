@@ -13,6 +13,7 @@ import org.springframework.data.repository.history.RevisionRepository;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -320,4 +321,38 @@ public interface SpecimenRepository extends JpaRepository<Specimen, Long>, Revis
 
     @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM specimen_group_attribution WHERE fk_specimen_id = :specimenId")
     long countGroupAttributionsBySpecimenId(@Param("specimenId") long specimenId);
+
+    /**
+     * The geometry of each given find as GeoJSON in WGS84 (for the map view), whatever SRID it was
+     * stored in — PostGIS reprojects from the geometry's own SRID, which is never rewritten. Finds
+     * with no geometry, no SRID (0) or an SRID absent from spatial_ref_sys are left out: their
+     * coordinates can't be placed on a map without guessing the system.
+     */
+    @Query(value = """
+        SELECT s.specimen_id, ST_AsGeoJSON(ST_Transform(s.geom, 4326))
+        FROM specimen s
+        WHERE s.specimen_id IN (:ids)
+          AND s.geom IS NOT NULL
+          AND ST_SRID(s.geom) IN (SELECT srid FROM spatial_ref_sys)
+        """, nativeQuery = true)
+    List<Object[]> findGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids);
+
+    /**
+     * The answer of each given find to an additional geometry field, as GeoJSON in WGS84 (the map view
+     * by that column): the answer's text is read as WKT or EWKT and reprojected by PostGIS
+     * ({@code geojson_wgs84_or_null}). Finds whose answer is empty, unreadable, without SRID or with an
+     * unknown one are left out, like {@link #findGeoJsonWgs84ByIds}.
+     */
+    @Query(value = """
+        SELECT ranked.specimen_id, ranked.geojson FROM (
+            SELECT fca.fk_specimen_id AS specimen_id, geojson_wgs84_or_null(cfa.value_as_text) AS geojson
+            FROM form_config_answer fca
+            JOIN custom_field_answer cfa ON cfa.fk_form_config_answer_id = fca.form_config_answer_id
+            WHERE fca.fk_specimen_id IN (:ids)
+              AND cfa.fk_custom_field_id = :fieldId
+              AND cfa.value_as_text IS NOT NULL
+        ) ranked
+        WHERE ranked.geojson IS NOT NULL
+        """, nativeQuery = true)
+    List<Object[]> findAnswerGeoJsonWgs84ByIds(@Param("ids") Collection<Long> ids, @Param("fieldId") long fieldId);
 }

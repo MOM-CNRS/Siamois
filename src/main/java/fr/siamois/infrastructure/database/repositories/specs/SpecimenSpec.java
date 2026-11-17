@@ -1,6 +1,9 @@
 package fr.siamois.infrastructure.database.repositories.specs;
 
+import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.specimen.Specimen;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -73,5 +76,33 @@ public class SpecimenSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get(RECORDING_UNIT_FILTER).get("id"), recordingUnitId));
     }
 
+    /**
+     * Finds whose own geometry is set.
+     *
+     * @return the specification
+     */
+    @NonNull
+    public static Specification<Specimen> hasGeometry() {
+        return (root, query, cb) -> cb.isNotNull(root.get("geom"));
+    }
 
+    /**
+     * Finds with a non-blank answer to the additional text field {@code fieldId} (a geometry field's WKT
+     * or EWKT, for one). An {@code EXISTS} subquery, compatible with every sort.
+     *
+     * @param fieldId the additional field
+     * @return the specification
+     */
+    @NonNull
+    public static Specification<Specimen> hasTextAnswerTo(long fieldId) {
+        return (root, query, cb) -> {
+            Subquery<Integer> answers = query.subquery(Integer.class);
+            Root<CustomFieldAnswerText> answer = answers.from(CustomFieldAnswerText.class);
+            answers.select(cb.literal(1)).where(
+                    cb.equal(answer.get("formConfigAnswer").get("specimen"), root),
+                    cb.equal(answer.get("customField").get("id"), fieldId),
+                    cb.notEqual(cb.trim(answer.get("value")), ""));
+            return cb.exists(answers);
+        };
+    }
 }

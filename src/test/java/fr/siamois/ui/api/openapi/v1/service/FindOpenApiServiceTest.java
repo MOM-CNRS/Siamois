@@ -1230,4 +1230,42 @@ class FindOpenApiServiceTest {
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
     }
+
+    /**
+     * A find of the caller's organizations, by id or full identifier, is returned as resolved.
+     */
+    @Test
+    void findViewableFind_whenAccessible_returnsTheFind() {
+        SpecimenDTO find = new SpecimenDTO();
+        find.setId(7L);
+        when(specimenService.findAccessibleByKey("7", SCOPE)).thenReturn(java.util.Optional.of(find));
+        when(specimenService.findAccessibleByKey("MOB-007", SCOPE)).thenReturn(java.util.Optional.of(find));
+
+        assertThat(service.findViewableFind("7", SCOPE)).isSameAs(find);
+        assertThat(service.findViewableFind("MOB-007", SCOPE)).isSameAs(find);
+    }
+
+    /**
+     * A find that does not exist, or is out of the caller's organizations, answers 404.
+     */
+    @Test
+    void findViewableFind_whenNotAccessible_throws404() {
+        when(specimenService.findAccessibleByKey("9999", SCOPE)).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.findViewableFind("9999", SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Mobilier introuvable ou hors périmètre")
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * With no accessible organization, nothing is visible.
+     */
+    @Test
+    void findViewableFind_withoutAnyOrganization_throws404() {
+        when(specimenService.findAccessibleByKey("7", Set.of())).thenReturn(java.util.Optional.empty());
+
+        assertThatThrownBy(() -> service.findViewableFind("7", Set.of()))
+                .isInstanceOf(ResponseStatusException.class);
+    }
 }

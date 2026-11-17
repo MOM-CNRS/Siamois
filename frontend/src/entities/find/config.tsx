@@ -53,6 +53,9 @@ export const findEntityConfig: EntityTypeConfig<FindSummary, FindDetail> = {
     createForm: (ctx) => <FindCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "find",
+    // The organization-wide list and a project's, by the find's own geometry or an additional geometry field
+    // (GET /finds/map, /projects/{id}/finds/map).
+    mappable: true,
     card: {
       image: (r) => (r.firstImageDocumentId ? { documentId: r.firstImageDocumentId } : null),
       subtitle: (r) => r.type?.resolvedLabel,
