@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {apiBlob, ApiError, apiFetch} from "./client";
+import {apiBlob, ApiError, apiFetch, fetchExternalJson} from "./client";
+import {resetSession} from "../auth/sessionAuth";
 import {setLocale} from "../i18n";
 
 vi.mock("../auth/sessionAuth", () => ({
@@ -142,5 +143,127 @@ describe("apiBlob", () => {
 
     await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject(new ApiError(404, "Fichier introuvable"));
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("apiFetch retry and error edge cases", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+    vi.mocked(resetSession).mockClear();
+  });
+
+  it("mints a new session token and retries once after a 401", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response("", { status: 401 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 5 }), { status: 200 }));
+
+    await expect(apiFetch("/api/v1/projects/5")).resolves.toEqual({ id: 5 });
+    expect(resetSession).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up after a second 401 instead of looping", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response("", { status: 401, statusText: "Unauthorized" }))
+      .mockResolvedValueOnce(new Response("", { status: 401, statusText: "Unauthorized" }));
+
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(new ApiError(401, "Unauthorized"));
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the status text when the error body is empty", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("", { status: 503, statusText: "Service Unavailable" }));
+
+    await expect(apiFetch("/api/v1/projects")).rejects.toMatchObject(new ApiError(503, "Service Unavailable"));
+  });
+
+  it("uses the status text when the JSON error body has no message, and keeps the body and path", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: "conflict" }), { status: 409, statusText: "Conflict" }),
+    );
+
+    const error = await apiFetch("/api/v1/projects/5").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ status: 409, message: "Conflict", body: { error: "conflict" }, path: "/api/v1/projects/5" });
+    expect((error as ApiError).name).toBe("ApiError");
+  });
+
+  it("resolves to undefined on 204 No Content", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await expect(apiFetch("/api/v1/projects/5", { method: "DELETE" })).resolves.toBeUndefined();
+  });
+
+  it("lets the caller's headers override the defaults and sends no body when none is given", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("{}", { status: 200 }));
+
+    await apiFetch("/api/v1/projects", { headers: { "Accept-Language": "de" } });
+
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    const headers = init.headers as Record<string, string>;
+    expect(headers["Accept-Language"]).toBe("de");
+    expect(headers["Content-Type"]).toBeUndefined();
+    expect(init.body).toBeUndefined();
+  });
+});
+
+describe("fetchExternalJson", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  it("parses the JSON answer of the public service", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(JSON.stringify({ code: "75056" }), { status: 200 }));
+
+    await expect(fetchExternalJson("https://geo.api.gouv.fr/communes/75056")).resolves.toEqual({ code: "75056" });
+  });
+
+  it("sends nothing of the session: no cookie, no bearer token, no language", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("{}", { status: 200 }));
+
+    await fetchExternalJson("https://geo.api.gouv.fr/communes/75056");
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("https://geo.api.gouv.fr/communes/75056");
+    expect(init).toEqual({ credentials: "omit", headers: { Accept: "application/json" } });
+  });
+
+  it("throws an ApiError carrying the status and the URL on a non-2xx answer", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("not found", { status: 404, statusText: "Not Found" }));
+
+    const error = await fetchExternalJson("https://geo.api.gouv.fr/communes/00000").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 404,
+      message: "404 Not Found",
+      body: undefined,
+      path: "https://geo.api.gouv.fr/communes/00000",
+    });
+  });
+
+  it("accepts the last 2xx status as a success", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("[]", { status: 299 }));
+
+    await expect(fetchExternalJson("https://example.org/x")).resolves.toEqual([]);
+  });
+
+  it("treats a 3xx answer reaching the caller as a failure", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("", { status: 300, statusText: "Multiple Choices" }));
+
+    await expect(fetchExternalJson("https://example.org/x")).rejects.toMatchObject(new ApiError(300, "300 Multiple Choices"));
+  });
+
+  it("rejects when the answer is not JSON", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response("<html></html>", { status: 200 }));
+
+    await expect(fetchExternalJson("https://example.org/x")).rejects.toThrow(SyntaxError);
+  });
+
+  it("lets a network failure through", async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await expect(fetchExternalJson("https://example.org/x")).rejects.toThrow("Failed to fetch");
   });
 });
