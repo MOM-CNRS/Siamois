@@ -69,9 +69,9 @@ public class PlaceMapControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = placeOpenApiService.requireListOrganization(caller, organizationId);
         var fieldQuery = fieldQueryService.parse(SpatialUnit.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, limit, mapQuery) ->
                 placeOpenApiService.pagePlaces(institution,
-                        new ListWindow(offset, EntityMapService.PAGE_SIZE, sort, search), mapQuery),
+                        new ListWindow(offset, limit, sort, search), mapQuery),
                 placeMapFeatureSource, geometry));
     }
 

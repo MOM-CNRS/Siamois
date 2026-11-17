@@ -75,8 +75,8 @@ public class FindMapControllerApi {
         ProjectApiCaller caller = projectApiService.requireCaller();
         InstitutionDTO institution = organizationListService.requireListOrganization(caller, organizationId);
         var fieldQuery = fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
-                organizationListService.pageFinds(caller, institution, offset, EntityMapService.PAGE_SIZE,
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, limit, mapQuery) ->
+                organizationListService.pageFinds(caller, institution, offset, limit,
                         sort, search, mapQuery), findMapFeatureSource, geometry));
     }
 
@@ -98,8 +98,8 @@ public class FindMapControllerApi {
             @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         ProjectApiCaller caller = projectApiService.requireCaller();
         var fieldQuery = fieldQueryService.parse(Specimen.class, queryParams, sort, acceptLanguage);
-        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, mapQuery) ->
-                projectApiService.pageFindsForProject(caller, id, offset, EntityMapService.PAGE_SIZE,
+        return ResponseEntity.ok(entityMapService.build(fieldQuery, (offset, limit, mapQuery) ->
+                projectApiService.pageFindsForProject(caller, id, offset, limit,
                         sort, search, mapQuery), findMapFeatureSource, geometry));
     }
 

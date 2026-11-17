@@ -47,13 +47,14 @@ public class EntityMapService {
     public interface ListPager<D> {
 
         /**
-         * The page of the list starting at an offset (limit {@link #PAGE_SIZE}), by a field query.
+         * The page of the list starting at an offset, by a field query.
          *
-         * @param offset     the first row
-         * @param fieldQuery the list's field filters and sort, narrowed by the map
+         * @param offset     the first row, a multiple of {@code limit}
+         * @param limit      the page size: {@link #PAGE_SIZE}, or 1 when only the total is read
+         * @param fieldQuery the list's field filters and sort, narrowed by the map or not
          * @return the page
          */
-        Page<D> page(int offset, FieldQuery fieldQuery);
+        Page<D> page(int offset, int limit, FieldQuery fieldQuery);
     }
 
     /**
@@ -65,7 +66,8 @@ public class EntityMapService {
      * @param source          the collection's geometries and feature shape
      * @param geometryFieldId the geometry column to place the rows by; null for the collection's own geometry
      * @param <D>             the row type of the list
-     * @return the placed rows, how many have a geometry and how many of them were examined
+     * @return the placed rows, how many have a geometry, how many of them were examined, and how many rows
+     *         the list holds, with a geometry or not
      * @throws ResponseStatusException 400 when the field is no geometry column of the collection
      */
     @Transactional(readOnly = true)
@@ -76,7 +78,7 @@ public class EntityMapService {
         List<D> rows = new ArrayList<>();
         long total = 0;
         for (int offset = 0; rows.size() < MAX_FEATURES; offset += PAGE_SIZE) {
-            Page<D> page = pager.page(offset, withGeometry);
+            Page<D> page = pager.page(offset, PAGE_SIZE, withGeometry);
             total = page.getTotalElements();
             rows.addAll(page.getContent());
             if (!page.hasNext()) break;
@@ -87,7 +89,9 @@ public class EntityMapService {
                 .filter(row -> geometries.containsKey(source.idOf(row)))
                 .map(row -> source.toFeature(row, geometries.get(source.idOf(row))))
                 .toList();
-        return new EntityMapResponse(features, new EntityMapResponse.Meta(total, rows.size()));
+        // The list without the map's own narrowing: what it leaves out has no geometry to place. Counted only.
+        long listTotal = pager.page(0, 1, fieldQuery).getTotalElements();
+        return new EntityMapResponse(features, new EntityMapResponse.Meta(total, rows.size(), listTotal));
     }
 
     /**

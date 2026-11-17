@@ -22,9 +22,11 @@ public record EntityMapResponse(List<Feature> features, Meta meta) {
             @Schema(description = "GeoJSON, EPSG:4326") JsonNode geometry) {
     }
 
-    @Schema(description = "total : éléments du filtre ; examined : éléments examinés (au plus le plafond). "
-            + "Ceux examinés mais absents de features n'ont pas de géométrie exploitable (absente, sans SRID "
-            + "ou SRID inconnu) ; total > examined signifie que la carte est tronquée.")
-    public record Meta(long total, int examined) {
+    @Schema(description = "total : éléments du filtre dont la géométrie affichée est renseignée ; examined : "
+            + "éléments examinés (au plus le plafond) ; listTotal : éléments du filtre, géométrie renseignée ou non. "
+            + "Ceux examinés mais absents de features n'ont pas de géométrie exploitable (illisible, sans SRID "
+            + "ou SRID inconnu) ; listTotal - total n'ont pas de géométrie ; total > examined signifie que la "
+            + "carte est tronquée.")
+    public record Meta(long total, int examined, long listTotal) {
     }
 }
