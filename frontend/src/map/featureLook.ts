@@ -21,7 +21,12 @@ export const SELECTED_LOOK: FeatureLook = { weight: 4, radius: 9, fillOpacity: 0
 export function typeColor(label: string | null | undefined): string {
   if (!label) return "#6c757d";
   let hash = 0;
-  for (const ch of label) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  for (const ch of label) {
+    const code = ch.codePointAt(0);
+    if (code) {
+      hash = (hash * 31 + code) >>> 0
+    }
+  }
   return `hsl(${hash % 360}, 65%, 45%)`;
 }
 

@@ -1,6 +1,6 @@
 import {type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState} from "react";
 import {PaneStateScope, usePaneState} from "./pane/paneState";
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {type QueryClient, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Skeleton} from "primereact/skeleton";
 import {Panel} from "primereact/panel";
 import {Chip} from "primereact/chip";
@@ -25,11 +25,11 @@ import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
 import {EntityMapView} from "./list/EntityMapView";
-import {mapGeometryOptions, resolveMapGeometry} from "./list/map/mapGeometry";
+import {mapGeometryOptions, type MapGeometryOption, resolveMapGeometry} from "./list/map/mapGeometry";
 import {EntityTable} from "./list/EntityTable";
-import {useTreeRows} from "./list/useTreeRows";
-import {EntityTableSettings} from "./list/EntityTableSettings";
-import {viewOptions} from "./list/listViews";
+import {type EntityTableTree, useTreeRows} from "./list/useTreeRows";
+import {EntityTableSettings, type EntityTableSettingsProps} from "./list/EntityTableSettings";
+import {type ListViewMode, viewOptions} from "./list/listViews";
 import {ViewActions} from "./list/ViewActions";
 import {ViewTitle} from "./list/ViewTitle";
 import {fixedTypeOf} from "./list/fixedType";
@@ -41,8 +41,8 @@ import {listPath} from "../navigation/paths";
 import {ListSearchOverlayBox} from "./list/ListSearchOverlay";
 import {ListToolbar} from "./list/ListToolbar";
 import {BulkActionBar} from "./list/bulk/BulkActionBar";
-import {useListSelection} from "./list/bulk/useListSelection";
-import {useSelectionGuard} from "./list/bulk/useSelectionGuard";
+import {type ListSelection, useListSelection} from "./list/bulk/useListSelection";
+import {type SelectionGuard, useSelectionGuard} from "./list/bulk/useSelectionGuard";
 import {type RowRecord, useEntityListData} from "./list/useEntityListData";
 import {useListColumns} from "./list/useListColumns";
 import {defaultOpenMode, listPrefsKey, loadListPrefs, type OpenMode, saveListPrefs} from "./list/listPreferences";
@@ -113,6 +113,24 @@ export interface EntityListPanelProps {
   onFiltersChange?: (filters: Record<string, FilterValue>) => void;
 }
 
+type ListConfig = EntityTypeConfig;
+type ListData = ReturnType<typeof useEntityListData>;
+type TableControls = ListData["table"];
+type ListColumns = ReturnType<typeof useListColumns>;
+type RowActions = ReturnType<typeof useRowActions>;
+type FilterControls = ReturnType<typeof useFilterControls>;
+type Filters = Record<string, FilterValue>;
+type FilterOptionsByKey = Record<string, FilterOption[]>;
+type ListPrefsPatch = Parameters<typeof saveListPrefs>[1];
+type SavePrefs = (patch: ListPrefsPatch) => void;
+type NavigateFn = NonNullable<EntityListPanelProps["onNavigate"]>;
+type OpenOverviewFn = NonNullable<EntityListPanelProps["onOpenOverview"]>;
+// Set when the create form needs a project picked and none accepts this kind: "Créer" is disabled.
+type CreateBlocked = { loading: boolean } | null;
+
+// *ListPanelHeader.xhtml's count chip: inline transparent background and main-color text.
+const COUNT_CHIP_STYLE: CSSProperties = { background: "transparent", color: "var(--main-color)" };
+
 /**
  * Generic entity list — entirely driven by the registry (plan §3) plus, where supplied, an
  * entity's field catalog (`config.list.schema`). No entity-specific branching here:
@@ -133,6 +151,14 @@ export function EntityListPanel(props: EntityListPanelProps) {
   );
 }
 
+function prefillWithIdIfSet(fixedTypeId: string | undefined, createPrefill: CreatePrefill | undefined) {
+  return fixedTypeId ? {...createPrefill, typeId: fixedTypeId} : createPrefill;
+}
+
+/**
+ * Wires the list's data, preferences and selection together, then lays out the toolbar, the bulk
+ * action bar and the current view (map, cards or table), inside a panel unless embedded.
+ */
 function EntityListPanelBody({
   entityType,
   organizationId,
@@ -155,34 +181,14 @@ function EntityListPanelBody({
   volatile,
   initialFilters,
   onFiltersChange,
-}: EntityListPanelProps) {
-  const config = getEntityType(entityType) as
-    EntityTypeConfig<unknown, unknown> | undefined;
+}: Readonly<EntityListPanelProps>) {
+  const config = getEntityType(entityType) as ListConfig | undefined;
   // Where this list's column and action-bar arrangement is remembered (listPreferences.ts).
   const prefsKey = listPrefsKey(entityType, scope, organizationId);
   const queryClient = useQueryClient();
   const writeMode = useWriteMode();
 
-  const {
-    table,
-    onScrollWindow,
-    catalog,
-    hasSchema,
-    pinnedFieldIds,
-    params,
-    page,
-    rowRules,
-    collectionTotal,
-    views,
-    viewMode,
-    listReady,
-    userState,
-    view,
-    viewMissing,
-    modified,
-    hasUserState,
-    resetToBase,
-  } = useEntityListData({
+  const listData = useEntityListData({
     entityType,
     config,
     organizationId,
@@ -195,49 +201,28 @@ function EntityListPanelBody({
     volatile,
     initialFilters,
   });
+  const { table, catalog, params, page, viewMode, listReady, viewMissing } = listData;
+  const { state } = table;
   const showTree = viewMode === "tree";
-  const showCards = viewMode === "cards";
-  const showMap = viewMode === "map";
-  // What is remembered for the kind of list in this browser (listPreferences): a change re-renders.
-  const [, setPrefsTick] = useState(0);
-  function savePrefs(patch: Parameters<typeof saveListPrefs>[1]) {
-    saveListPrefs(prefsKey, patch);
-    setPrefsTick((n) => n + 1);
-  }
+
+  const { prefs, savePrefs } = useListPrefs(prefsKey);
   // How a row opens a page: in the side overview, or in the main pane (focus) by leaving the overview out.
   // Project lists start in focus, the others in the overview.
-  const openMode: OpenMode = loadListPrefs(prefsKey).openMode ?? defaultOpenMode(entityType);
-  const setOpenMode = (mode: OpenMode) => savePrefs({ openMode: mode });
+  const openMode = prefs.openMode ?? defaultOpenMode(entityType);
+  const rowOpenOverview = openMode === "focus" ? undefined : onOpenOverview;
+  // Created and duplicated entities, and rows opened from the search overlay, open where a row's own
+  // identifier would (the overview), whatever the open mode.
+  const openEntity: OpenOverviewFn | undefined = onOpenOverview ?? onNavigate;
   // The geometry column the map places the rows by: one of the catalog's geometry columns, the entity's own by default.
   const geometryOptions = useMemo(() => mapGeometryOptions(catalog?.fields), [catalog]);
-  const mapGeometry = resolveMapGeometry(loadListPrefs(prefsKey).mapGeometry, geometryOptions);
-  const rowOpenOverview = openMode === "focus" ? undefined : onOpenOverview;
+  const mapGeometry = resolveMapGeometry(prefs.mapGeometry, geometryOptions);
   // A tab filtered on exactly one type creates entities of that type.
   const fixedTypeId = fixedTypeOf(fixedFilters, catalog);
-  const createPrefillWithType = fixedTypeId ? { ...createPrefill, typeId: fixedTypeId } : createPrefill;
-  const { state, setPage, setSort, setSearch, setVisibleColumns, setFilters, setViewMode } =
-    table;
-  // A preview being configured hears its filters; a list that is a tab of a fiche the user may configure can be
-  // kept, filters included, as a tab of the project.
-  const filtersListener = useRef(onFiltersChange);
-  filtersListener.current = onFiltersChange;
-  useEffect(() => {
-    filtersListener.current?.(state.filters);
-  }, [state.filters]);
-  const ficheTabs = useFicheTabsActions();
-  const filtersOfTab = params.filters;
-  const saveAsTabButton =
-    ficheTabs && embedded && scope && !volatile && filtersOfTab ? (
-      <Button
-        icon="bi bi-pin-angle"
-        text
-        rounded
-        size="large"
-        aria-label={t("tabs.saveAsTab")}
-        tooltip={t("tabs.saveAsTab")}
-        onClick={() => ficheTabs.saveAsTab(entityType, filtersOfTab)}
-      />
-    ) : null;
+  let createPrefillWithType = prefillWithIdIfSet(fixedTypeId, createPrefill);
+
+  useFiltersListener(state.filters, onFiltersChange);
+  useSeedSearch(seed, table);
+
   const treeRows = useTreeRows({
     entityType,
     config,
@@ -248,119 +233,36 @@ function EntityListPanelBody({
     limit: state.limit,
     enabled: showTree && listReady,
   });
-  const { rows, totalCount, isLoading, error } = showTree
-    ? treeRows
-    : page;
-
-  // Keyed on the nonce alone: the seed object is rebuilt by its owner, the search it carries is not
-  // a reason to apply it again (the user may have edited it since).
-  const seedNonce = seed?.nonce;
-  const seedSearch = seed?.search;
-  useEffect(() => {
-    if (seedNonce == null) return;
-    setFilters({});
-    setSearch(seedSearch ?? "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seedNonce]);
-  const { columns, fieldByColumn, togglerOptions, filterSpecs } =
-    useListColumns({
-      config,
-      catalog,
-      visibleColumns: state.visibleColumns,
-      pinnedFieldIds,
-      organizationId,
-      scope,
-    });
-
+  // The tree view fetches its own rows; every other view shows the flat page.
+  const { rows, totalCount, isLoading, error } = showTree ? treeRows : page;
+  const listColumns = useListColumns({
+    config,
+    catalog,
+    visibleColumns: state.visibleColumns,
+    pinnedFieldIds: listData.pinnedFieldIds,
+    organizationId,
+    scope,
+  });
   // The rows ticked, or the whole result set but the rows unticked since (the header's box): what
   // the bulk action bar acts on.
   const selection = useListSelection({ config, params, rows, totalCount });
   // A search or a filter changes the rows: applied over a selection only once the user agrees to lose it.
   const selectionGuard = useSelectionGuard(selection);
-
-  // Created and duplicated entities open where a row's own identifier would (the overview).
+  const filterControls = useFilterControls(table, selectionGuard);
   const rowActions = useRowActions({
     entityType,
     config,
     organizationId,
     writeMode,
-    onOpen: onOpenOverview ?? onNavigate,
+    onOpen: openEntity,
     prefsKey,
     extraRowActions,
   });
+  const createBlocked = useCreateBlocked({ config, scope, organizationId, creatable });
 
-  // An organization-wide list of a kind created inside a project: its create form picks the project,
-  // so "Créer" needs at least one project where the caller may create this kind.
-  const createNeedsPickedProject =
-    config?.list.createProjectKind != null && scopeProjectId(scope) == null;
-  const creatableProjects = useQuery({
-    queryKey: queryKeys.creatableProjects(
-      config?.list.createProjectKind,
-      organizationId,
-    ),
-    queryFn: () =>
-      searchCreatableProjects(
-        organizationId!,
-        config!.list.createProjectKind!,
-        undefined,
-        1,
-      ),
-    enabled:
-      createNeedsPickedProject && organizationId != null && creatable !== false,
-  });
-  const canCreateInSomeProject = (creatableProjects.data?.totalCount ?? 0) > 0;
-
-  // Labels for the ids an "in" filter carries — FilterValue itself is ids-only (the wire shape),
-  // so the chip bar needs this to print "Statut: En cours" rather than "Statut: 4711".
-  const [filterOptionsByKey, setFilterOptionsByKey] = usePaneState<
-    Record<string, FilterOption[]>
-  >("filterOptions", {});
-  function onFilterChange(
-    key: string,
-    value: FilterValue | undefined,
-    options?: FilterOption[],
-  ) {
-    selectionGuard.guard(() => {
-      const next = { ...state.filters };
-      if (value) next[key] = withLabels(value, options);
-      else delete next[key];
-      setFilters(next);
-      if (options)
-        setFilterOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
-    });
-  }
-
-  // Re-fetches the list (so the saved row's new value shows without a full page reload) and, in
-  // case the same entity is open in a detail view or the overview pane, that too — the overlay
-  // itself doesn't know which other views might be showing this row.
-  function onCellSaved(row: RowRecord) {
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.entityList(entityType),
-    });
-    if (row.id != null)
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.entityDetail(entityType, row.id),
-      });
-  }
-
-  // On a view, the pane's bookmark is the view's: its address carries ?viewId=, its title is the view's.
-  // Whether it is bookmarked is not known from the page that mounted (that was the list's): asked afresh.
-  const viewListPath = listPath(entityType, viewId);
-  const viewToolbar: PanelToolbarSlot | undefined =
-    toolbar && viewId != null && viewListPath != null
-      ? { ...toolbar, chrome: { resourceUri: viewListPath, title: view?.title ?? toolbar.chrome.title } }
-      : toolbar;
-
-  // A view that no longer exists (deleted since a bookmark or a link to it was made): the default list.
-  const notify = useNotify();
   useToastOnChange(error ? (error as Error).message : null);
   useToastOnChange(showTree ? treeRows.notice : null, "info");
-  useEffect(() => {
-    if (viewId == null || !viewMissing) return;
-    notify.error(t("views.missing"));
-    onViewChange?.(undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewId, viewMissing]);
+  useMissingViewFallback(viewId, viewMissing, onViewChange);
 
   if (!config) {
     return (
@@ -370,135 +272,57 @@ function EntityListPanelBody({
     );
   }
 
-  // Views are of the organization-wide list, in a pane that can open another view.
-  const showViews = !embedded && scope == null && organizationId != null && onViewChange != null;
-  // Changed since it was opened: on a view, from the view's state; on the default list, anything the user kept.
-  const viewsDirty = viewId != null ? modified : hasUserState;
   // A preview being configured has no row actions to arrange.
   const hasActionBarSettings = rowActions.items.length > 0 && !volatile;
-  const hasGear = hasSchema || hasActionBarSettings;
   // Relation tabs pass `toolbarExtra`; the entity's own list may declare `config.list.toolbarExtra`.
   const resolvedToolbarExtra = toolbarExtra ?? config.list.toolbarExtra;
+  const showToolbar = hasToolbarContent({
+    config,
+    onCreate,
+    hasGear: listData.hasSchema || hasActionBarSettings,
+    filterCount: listColumns.filterSpecs.length,
+    toolbarExtra: resolvedToolbarExtra,
+  });
+  const tableSettings = buildTableSettings({
+    openMode: onOpenOverview && onNavigate ? openMode : null,
+    mapGeometry: viewMode === "map" ? mapGeometry : undefined,
+    geometryOptions,
+    listData,
+    listColumns,
+    rowActions: hasActionBarSettings ? rowActions : null,
+    savePrefs,
+  });
 
   const body = (
     <>
-      {(config.list.searchable ||
-        onCreate ||
-        config.list.createForm ||
-        hasGear ||
-        filterSpecs.length > 0 ||
-        resolvedToolbarExtra) && (
-        <ListToolbar
+      {showToolbar && (
+        <EntityListToolbar
           entityType={entityType}
           config={config}
           organizationId={organizationId}
           scope={scope}
+          listData={listData}
+          filterSpecs={listColumns.filterSpecs}
+          filterControls={filterControls}
+          tableSettings={tableSettings}
           isLoading={isLoading}
           totalCount={showTree ? treeRows.matchCount : totalCount}
-          selectedCount={selection.count}
-          onClearSelection={selection.clear}
+          selection={selection}
           creatable={creatable}
           createPrefill={createPrefillWithType}
+          createBlocked={createBlocked}
           endExtra={
-            resolvedToolbarExtra || saveAsTabButton ? (
-              <>
-                {resolvedToolbarExtra}
-                {saveAsTabButton}
-              </>
-            ) : undefined
-          }
-          createBlocked={
-            createNeedsPickedProject && !canCreateInSomeProject
-              ? { loading: creatableProjects.isLoading }
-              : null
-          }
-          onCreate={onCreate}
-          // Opens in the overview, so the list stays where it was; the full fiche is one click away
-          // (the overview's focus button).
-          onCreated={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id, { tab: "fiche" })}
-          // Gear (table settings) then search then the filter chips on the left, create on the
-          // right. The gear leads because it acts on the table's shape, which the search box and
-          // filters do not.
-          startFilters={
-            filterSpecs.length > 0 ? (
-              <FilterChipBar
-                specs={filterSpecs}
-                filters={state.filters}
-                optionsByKey={filterOptionsByKey}
-                onChange={onFilterChange}
-              />
-            ) : undefined
-          }
-          start={
             <>
-              <EntityTableSettings
-                openMode={onOpenOverview && onNavigate ? { value: openMode, onChange: setOpenMode } : null}
-                mapGeometry={
-                  // Shown even for a single column: it says which geometry the map draws.
-                  showMap && mapGeometry
-                    ? {
-                        options: geometryOptions.map((o) => ({ mode: o.value, label: o.label, icon: o.icon })),
-                        value: mapGeometry.value,
-                        onChange: (value) => savePrefs({ mapGeometry: value }),
-                      }
-                    : null
-                }
-                views={
-                  views.length > 1
-                    ? {
-                        options: viewOptions(views),
-                        value: viewMode,
-                        onChange: (mode) => {
-                          setViewMode(mode);
-                          // A page of roots is not a page of the flat list: back to the first.
-                          setPage(0, state.limit);
-                        },
-                      }
-                    : null
-                }
-                columns={
-                  hasSchema
-                    ? {
-                        options: togglerOptions,
-                        visible: state.visibleColumns,
-                        onChange: setVisibleColumns,
-                      }
-                    : null
-                }
-                actionBar={
-                  hasActionBarSettings
-                    ? {
-                        items: rowActions.items,
-                        layout: rowActions.actionBar,
-                        onChange: rowActions.setActionBar,
-                      }
-                    : null
-                }
+              {resolvedToolbarExtra}
+              <SaveAsTabButton
+                entityType={entityType}
+                filters={params.filters}
+                enabled={Boolean(embedded && scope && !volatile)}
               />
-              {config.list.searchable && (
-                <ListSearchOverlayBox
-                  entityType={entityType}
-                  config={config}
-                  params={params}
-                  filters={state.filters}
-                  filterSpecs={filterSpecs}
-                  optionsByKey={filterOptionsByKey}
-                  value={state.search ?? ""}
-                  onApply={(search, filters, options) =>
-                    selectionGuard.guard(() => {
-                      setFilters(
-                        Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, withLabels(value, options[key])])),
-                      );
-                      setSearch(search);
-                      if (Object.keys(options).length > 0) setFilterOptionsByKey((byKey) => ({ ...byKey, ...options }));
-                    })
-                  }
-                  onFilterRemove={(key) => onFilterChange(key, undefined)}
-                  onOpenRow={(id) => (onOpenOverview ?? onNavigate)?.(entityType, id)}
-                />
-              )}
             </>
           }
+          onCreate={onCreate}
+          onOpen={openEntity}
         />
       )}
       {/* Laid over the top of the table while rows are ticked (only to someone who may write). */}
@@ -509,79 +333,35 @@ function EntityListPanelBody({
           organizationId={organizationId}
           catalog={catalog}
           selection={selection}
-          rowRules={rowRules}
+          rowRules={listData.rowRules}
         />
       )}
-      {showMap ? (
-        <EntityMapView
-          entityType={entityType}
-          config={config}
-          params={params}
-          onNavigate={onNavigate}
-          onOpenOverview={rowOpenOverview}
-          // In focus mode a row replaces the list: there is no overview beside the map to mirror.
-          selectedId={rowOpenOverview ? overviewEntityId : undefined}
-          geometry={mapGeometry?.value}
-        />
-      ) : showCards ? (
-        <EntityCardGrid
-          entityType={entityType}
-          config={config}
-          rows={rows}
-          isLoading={isLoading}
-          totalCount={totalCount}
-          params={params}
-          offset={state.offset}
-          limit={state.limit}
-          onPage={setPage}
-          renderRowActions={rowActions.render}
-          onNavigate={onNavigate}
-          onOpenOverview={rowOpenOverview}
-          overviewEntityId={overviewEntityId}
-          selectedRows={selection.rows}
-          onSelectionChange={selection.setRows}
-        />
-      ) : (
-      <EntityTable
+      <ListLayout
         entityType={entityType}
         config={config}
         organizationId={organizationId}
-        columns={columns}
-        fieldByColumn={fieldByColumn}
-        visibleColumns={state.visibleColumns}
-        setVisibleColumns={setVisibleColumns}
+        viewMode={viewMode}
+        listData={listData}
         rows={rows}
         isLoading={isLoading}
         totalCount={totalCount}
-        params={params}
-        offset={state.offset}
-        limit={state.limit}
-        search={state.search}
-        sort={state.sort}
-        onPage={setPage}
-        onScrollWindow={onScrollWindow}
-        onSort={setSort}
-        rowRules={rowRules}
-        renderRowActions={rowActions.render}
-        selectedRows={selection.rows}
-        onSelectionChange={selection.setRows}
-        allSelected={selection.all}
-        onSelectAllChange={selection.setAll}
+        listColumns={listColumns}
+        selection={selection}
+        rowActions={rowActions}
+        tree={showTree ? treeRows.tree : undefined}
+        geometry={mapGeometry?.value}
         onNavigate={onNavigate}
         onOpenOverview={rowOpenOverview}
         overviewEntityId={overviewEntityId}
-        onCellSaved={onCellSaved}
+        onCellSaved={(row) => refreshSavedRow(queryClient, entityType, row)}
         readOnly={volatile}
-        tree={showTree ? treeRows.tree : undefined}
       />
-      )}
       {rowActions.dialog}
       {selectionGuard.dialog}
     </>
   );
 
-  const rowEntityColor = entityColor(entityType);
-  const rowEntityStyle = rowEntityColor ? ({ "--row-entity-color": rowEntityColor } as CSSProperties) : undefined;
+  const rowEntityStyle = rowEntityStyleOf(entityType);
 
   if (embedded) {
     // No <Panel>/PanelHeaderBar — the flex chain that gives scrollHeight="flex" its bound
@@ -602,61 +382,631 @@ function EntityListPanelBody({
       className="entity-list-panel"
       style={rowEntityStyle}
       header={
-        <PanelHeaderBar
-          title={
-            <div className="entity-list-panel-header sia-hstack">
-              <i className={`${config.icon} sia-list-title-icon`} />
-              {viewId != null && view && organizationId != null ? (
-                <ViewTitle view={view} organizationId={organizationId} />
-              ) : (
-                <span className="sia-list-title-text">
-                  {config.labels.plural}
-                </span>
-              )}
-              {/* *ListPanelHeader.xhtml's count chip: `<entity>-count-chip` (themed-panel's chip rule),
-                  with the same inline transparent background/main-color text. */}
-              {isLoading || collectionTotal == null ? (
-                <Skeleton
-                  width="2.5rem"
-                  height="1.75rem"
-                  borderRadius="16px"
-                  className="loading-skeleton"
-                />
-              ) : (
-                <Chip
-                  label={String(collectionTotal)}
-                  className={
-                    config.panelClass
-                      ? config.panelClass.replace(/-panel$/, "-count-chip")
-                      : undefined
-                  }
-                  style={{
-                    background: "transparent",
-                    color: "var(--main-color)",
-                  }}
-                />
-              )}
-            </div>
-          }
-          toolbar={viewToolbar}
-          // The old titlebar's view button, at the right of the toolbar before the bookmark: only once the list has been changed.
-          toolbarExtra={
-            showViews && viewsDirty ? (
-              <ViewActions
-                entityType={entityType}
-                organizationId={organizationId}
-                activeView={view}
-                currentViewState={() => toViewState(state, table.columnsSeeded)}
-                onOpen={onViewChange}
-                onReset={resetToBase}
-                onUpdated={userState.reset}
-              />
-            ) : undefined
-          }
+        <ListPanelHeader
+          entityType={entityType}
+          config={config}
+          organizationId={organizationId}
+          scope={scope}
+          viewId={viewId}
+          listData={listData}
+          isLoading={isLoading}
+          toolbar={toolbar}
+          onViewChange={onViewChange}
         />
       }
     >
       {body}
     </Panel>
+  );
+}
+
+// ─── Hooks ──────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * What is remembered for the kind of list in this browser (listPreferences), and how to change it.
+ * The preferences live in localStorage, which React does not watch: a tick forces the re-render.
+ */
+function useListPrefs(prefsKey: string) {
+  const [, setPrefsTick] = useState(0);
+  const savePrefs: SavePrefs = (patch) => {
+    saveListPrefs(prefsKey, patch);
+    setPrefsTick((n) => n + 1);
+  };
+  return { prefs: loadListPrefs(prefsKey), savePrefs };
+}
+
+/**
+ * Tells `onFiltersChange` every change of the list's filters (a tab preview being configured hears its
+ * filters). The listener is read through a ref so a new callback identity does not re-fire the effect.
+ */
+function useFiltersListener(filters: Filters, onFiltersChange?: (filters: Filters) => void) {
+  const filtersListener = useRef(onFiltersChange);
+  filtersListener.current = onFiltersChange;
+  useEffect(() => {
+    filtersListener.current?.(filters);
+  }, [filters]);
+}
+
+/**
+ * Applies the search the list was opened with (the top search bar's « Voir tout »), replacing any filter.
+ */
+function useSeedSearch(seed: ListSeed | undefined, table: TableControls) {
+  // Keyed on the nonce alone: the seed object is rebuilt by its owner, the search it carries is not
+  // a reason to apply it again (the user may have edited it since).
+  const seedNonce = seed?.nonce;
+  const seedSearch = seed?.search;
+  useEffect(() => {
+    if (seedNonce == null) return;
+    table.setFilters({});
+    table.setSearch(seedSearch ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedNonce]);
+}
+
+/**
+ * The list's filter changes (a chip, or the search overlay's « Appliquer »), each applied through the
+ * selection guard, and the labels of the ids an "in" filter carries.
+ */
+function useFilterControls(table: TableControls, selectionGuard: SelectionGuard) {
+  // FilterValue itself is ids-only (the wire shape), so the chip bar needs these labels to print
+  // "Statut: En cours" rather than "Statut: 4711". Kept in the pane store to survive a remount.
+  const [optionsByKey, setOptionsByKey] = usePaneState<FilterOptionsByKey>("filterOptions", {});
+
+  const changeFilter = (key: string, value: FilterValue | undefined, options?: FilterOption[]) =>
+    selectionGuard.guard(() => {
+      table.setFilters(withFilter(table.state.filters, key, value, options));
+      if (options) setOptionsByKey((byKey) => ({ ...byKey, [key]: options }));
+    });
+
+  const applySearch = (search: string, filters: Filters, options: FilterOptionsByKey) =>
+    selectionGuard.guard(() => {
+      table.setFilters(withLabelsByKey(filters, options));
+      table.setSearch(search);
+      if (Object.keys(options).length > 0) setOptionsByKey((byKey) => ({ ...byKey, ...options }));
+    });
+
+  return { optionsByKey, changeFilter, applySearch };
+}
+
+/**
+ * Whether "Créer" must be disabled. An organization-wide list of a kind created inside a project has
+ * a create form that picks the project, so it needs at least one project where the caller may create
+ * this kind; only one result is fetched, the count is all that matters.
+ */
+function useCreateBlocked({
+  config,
+  scope,
+  organizationId,
+  creatable,
+}: {
+  config: ListConfig | undefined;
+  scope?: ListScope;
+  organizationId?: number;
+  creatable?: boolean;
+}): CreateBlocked {
+  const createProjectKind = config?.list.createProjectKind;
+  const needsPickedProject = createProjectKind != null && scopeProjectId(scope) == null;
+  const creatableProjects = useQuery({
+    queryKey: queryKeys.creatableProjects(createProjectKind, organizationId),
+    queryFn: () => searchCreatableProjects(organizationId!, createProjectKind!, undefined, 1),
+    enabled: needsPickedProject && organizationId != null && creatable !== false,
+  });
+  const canCreateInSomeProject = (creatableProjects.data?.totalCount ?? 0) > 0;
+  return needsPickedProject && !canCreateInSomeProject ? { loading: creatableProjects.isLoading } : null;
+}
+
+/**
+ * A view that no longer exists (deleted since a bookmark or a link to it was made): says so and falls
+ * back to the default list.
+ */
+function useMissingViewFallback(
+  viewId: number | undefined,
+  viewMissing: boolean,
+  onViewChange?: (viewId?: number) => void,
+) {
+  const notify = useNotify();
+  useEffect(() => {
+    if (viewId == null || !viewMissing) return;
+    notify.error(t("views.missing"));
+    onViewChange?.(undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewId, viewMissing]);
+}
+
+// ─── Pure helpers ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The filters with `key` set to `value` (labelled from `options`), or removed when `value` is absent.
+ */
+function withFilter(
+  filters: Filters,
+  key: string,
+  value: FilterValue | undefined,
+  options?: FilterOption[],
+): Filters {
+  const next = { ...filters };
+  if (value) next[key] = withLabels(value, options);
+  else delete next[key];
+  return next;
+}
+
+/**
+ * Each filter labelled from the options picked for its own key.
+ */
+function withLabelsByKey(filters: Filters, options: FilterOptionsByKey): Filters {
+  return Object.fromEntries(Object.entries(filters).map(([key, value]) => [key, withLabels(value, options[key])]));
+}
+
+/**
+ * Re-fetches the list (so the saved row's new value shows without a full page reload) and, in case
+ * the same entity is open in a detail view or the overview pane, that too — the overlay itself
+ * doesn't know which other views might be showing this row.
+ */
+function refreshSavedRow(queryClient: QueryClient, entityType: string, row: RowRecord) {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
+  if (row.id != null) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetail(entityType, row.id) });
+}
+
+/**
+ * Whether the toolbar has anything to show: a search box, a create button, the gear, filter chips or
+ * a control added by the embedding place.
+ */
+function hasToolbarContent({
+  config,
+  onCreate,
+  hasGear,
+  filterCount,
+  toolbarExtra,
+}: {
+  config: ListConfig;
+  onCreate?: () => void;
+  hasGear: boolean;
+  filterCount: number;
+  toolbarExtra: ReactNode;
+}): boolean {
+  return Boolean(
+    config.list.searchable || onCreate || config.list.createForm || hasGear || filterCount > 0 || toolbarExtra,
+  );
+}
+
+/**
+ * The gear's sections; each is null when the list has nothing to set there.
+ */
+function buildTableSettings({
+  openMode,
+  mapGeometry,
+  geometryOptions,
+  listData,
+  listColumns,
+  rowActions,
+  savePrefs,
+}: {
+  // Null when a row cannot open both in the overview and in the main pane.
+  openMode: OpenMode | null;
+  // Undefined when the list is not shown as a map or has no geometry column.
+  mapGeometry: MapGeometryOption | undefined;
+  geometryOptions: MapGeometryOption[];
+  listData: ListData;
+  listColumns: ListColumns;
+  // Null when there are no row actions to arrange.
+  rowActions: RowActions | null;
+  savePrefs: SavePrefs;
+}): EntityTableSettingsProps {
+  const { table, views, viewMode, hasSchema } = listData;
+  return {
+    openMode: openMode ? { value: openMode, onChange: (mode) => savePrefs({ openMode: mode }) } : null,
+    // Shown even for a single column: it says which geometry the map draws.
+    mapGeometry: mapGeometry ? mapGeometrySetting(mapGeometry, geometryOptions, savePrefs) : null,
+    views: views.length > 1 ? viewsSetting(views, viewMode, table) : null,
+    columns: hasSchema
+      ? { options: listColumns.togglerOptions, visible: table.state.visibleColumns, onChange: table.setVisibleColumns }
+      : null,
+    actionBar: rowActions
+      ? { items: rowActions.items, layout: rowActions.actionBar, onChange: rowActions.setActionBar }
+      : null,
+  };
+}
+
+/**
+ * The gear's "Géométrie affichée" section: the chosen column is remembered in the list preferences.
+ */
+function mapGeometrySetting(
+  mapGeometry: MapGeometryOption,
+  geometryOptions: MapGeometryOption[],
+  savePrefs: SavePrefs,
+): EntityTableSettingsProps["mapGeometry"] {
+  return {
+    options: geometryOptions.map((o) => ({ mode: o.value, label: o.label, icon: o.icon })),
+    value: mapGeometry.value,
+    onChange: (value) => savePrefs({ mapGeometry: value }),
+  };
+}
+
+/**
+ * The gear's view switch (list, tree, cards, map).
+ */
+function viewsSetting(
+  views: ListViewMode[],
+  viewMode: ListViewMode,
+  table: TableControls,
+): EntityTableSettingsProps["views"] {
+  return {
+    options: viewOptions(views),
+    value: viewMode,
+    onChange: (mode) => {
+      table.setViewMode(mode);
+      // A page of roots is not a page of the flat list: back to the first.
+      table.setPage(0, table.state.limit);
+    },
+  };
+}
+
+/**
+ * The pane's toolbar. On a view, the pane's bookmark is the view's: its address carries ?viewId=, its
+ * title is the view's. Whether it is bookmarked is not known from the page that mounted (that was the
+ * list's): it is asked afresh.
+ */
+function viewToolbarOf(
+  toolbar: PanelToolbarSlot | undefined,
+  entityType: string,
+  viewId: number | undefined,
+  viewTitle: string | undefined,
+): PanelToolbarSlot | undefined {
+  const viewListPath = listPath(entityType, viewId);
+  if (!toolbar || viewId == null || viewListPath == null) return toolbar;
+  return { ...toolbar, chrome: { resourceUri: viewListPath, title: viewTitle ?? toolbar.chrome.title } };
+}
+
+/**
+ * Exposes the entity type's color to the rows' CSS (`--row-entity-color`), when it has one.
+ */
+function rowEntityStyleOf(entityType: string): CSSProperties | undefined {
+  const rowEntityColor = entityColor(entityType);
+  return rowEntityColor ? ({ "--row-entity-color": rowEntityColor } as CSSProperties) : undefined;
+}
+
+/**
+ * `<entity>-count-chip` (themed-panel's chip rule), derived from the entity's `<entity>-panel` class.
+ */
+function countChipClassOf(panelClass: string | undefined): string | undefined {
+  return panelClass ? panelClass.replace(/-panel$/, "-count-chip") : undefined;
+}
+
+// ─── Components ─────────────────────────────────────────────────────────────────────────────────
+
+interface EntityListToolbarProps {
+  entityType: string;
+  config: ListConfig;
+  organizationId?: number;
+  scope?: ListScope;
+  listData: ListData;
+  filterSpecs: ListColumns["filterSpecs"];
+  filterControls: FilterControls;
+  tableSettings: EntityTableSettingsProps;
+  isLoading: boolean;
+  totalCount: number;
+  selection: ListSelection;
+  creatable?: boolean;
+  createPrefill?: CreatePrefill;
+  createBlocked: CreateBlocked;
+  endExtra: ReactNode;
+  onCreate?: () => void;
+  onOpen?: OpenOverviewFn;
+}
+
+/**
+ * The list's toolbar: gear (table settings) then search then the filter chips on the left, create on
+ * the right. The gear leads because it acts on the table's shape, which the search box and filters do not.
+ */
+function EntityListToolbar({
+  entityType,
+  config,
+  organizationId,
+  scope,
+  listData,
+  filterSpecs,
+  filterControls,
+  tableSettings,
+  isLoading,
+  totalCount,
+  selection,
+  creatable,
+  createPrefill,
+  createBlocked,
+  endExtra,
+  onCreate,
+  onOpen,
+}: Readonly<EntityListToolbarProps>) {
+  const { state } = listData.table;
+  return (
+    <ListToolbar
+      entityType={entityType}
+      config={config}
+      organizationId={organizationId}
+      scope={scope}
+      isLoading={isLoading}
+      totalCount={totalCount}
+      selectedCount={selection.count}
+      onClearSelection={selection.clear}
+      creatable={creatable}
+      createPrefill={createPrefill}
+      endExtra={endExtra}
+      createBlocked={createBlocked}
+      onCreate={onCreate}
+      // Opens in the overview, so the list stays where it was; the full fiche is one click away
+      // (the overview's focus button).
+      onCreated={(id) => onOpen?.(entityType, id, { tab: "fiche" })}
+      startFilters={
+        filterSpecs.length > 0 ? (
+          <FilterChipBar
+            specs={filterSpecs}
+            filters={state.filters}
+            optionsByKey={filterControls.optionsByKey}
+            onChange={filterControls.changeFilter}
+          />
+        ) : undefined
+      }
+      start={
+        <>
+          <EntityTableSettings {...tableSettings} />
+          {config.list.searchable && (
+            <ListSearchOverlayBox
+              entityType={entityType}
+              config={config}
+              params={listData.params}
+              filters={state.filters}
+              filterSpecs={filterSpecs}
+              optionsByKey={filterControls.optionsByKey}
+              value={state.search ?? ""}
+              onApply={filterControls.applySearch}
+              onFilterRemove={(key) => filterControls.changeFilter(key, undefined)}
+              onOpenRow={(id) => onOpen?.(entityType, id)}
+            />
+          )}
+        </>
+      }
+    />
+  );
+}
+
+interface SaveAsTabButtonProps {
+  entityType: string;
+  filters: Filters | undefined;
+  // Only an embedded, scoped list that is not a tab preview can become a tab of its own.
+  enabled: boolean;
+}
+
+/**
+ * Keeps a list shown as a tab of a fiche, filters included, as a tab of the project. Renders nothing
+ * when the user may not configure the fiche (no FicheTabs context) or the list has no filters to keep.
+ */
+function SaveAsTabButton({ entityType, filters, enabled }: Readonly<SaveAsTabButtonProps>) {
+  const ficheTabs = useFicheTabsActions();
+  if (!ficheTabs || !enabled || !filters) return null;
+  return (
+    <Button
+      icon="bi bi-pin-angle"
+      text
+      rounded
+      size="large"
+      aria-label={t("tabs.saveAsTab")}
+      tooltip={t("tabs.saveAsTab")}
+      onClick={() => ficheTabs.saveAsTab(entityType, filters)}
+    />
+  );
+}
+
+interface ListLayoutProps {
+  entityType: string;
+  config: ListConfig;
+  organizationId?: number;
+  viewMode: ListViewMode;
+  listData: ListData;
+  rows: RowRecord[];
+  isLoading: boolean;
+  totalCount: number;
+  listColumns: ListColumns;
+  selection: ListSelection;
+  rowActions: RowActions;
+  // Set in tree mode only: the table then draws the rows as a tree.
+  tree?: EntityTableTree;
+  geometry?: string;
+  onNavigate?: NavigateFn;
+  // Undefined in focus mode: a row then replaces the list instead of opening in the overview.
+  onOpenOverview?: OpenOverviewFn;
+  overviewEntityId?: string | number;
+  onCellSaved: (row: RowRecord) => void;
+  readOnly?: boolean;
+}
+
+/**
+ * The rows, drawn the way the user chose: on a map, as cards, or as a table (flat or tree).
+ */
+function ListLayout({
+  entityType,
+  config,
+  organizationId,
+  viewMode,
+  listData,
+  rows,
+  isLoading,
+  totalCount,
+  listColumns,
+  selection,
+  rowActions,
+  tree,
+  geometry,
+  onNavigate,
+  onOpenOverview,
+  overviewEntityId,
+  onCellSaved,
+  readOnly,
+}: Readonly<ListLayoutProps>) {
+  const { table, params } = listData;
+  const { state } = table;
+
+  if (viewMode === "map") {
+    return (
+      <EntityMapView
+        entityType={entityType}
+        config={config}
+        params={params}
+        onNavigate={onNavigate}
+        onOpenOverview={onOpenOverview}
+        // In focus mode a row replaces the list: there is no overview beside the map to mirror.
+        selectedId={onOpenOverview ? overviewEntityId : undefined}
+        geometry={geometry}
+      />
+    );
+  }
+
+  if (viewMode === "cards") {
+    return (
+      <EntityCardGrid
+        entityType={entityType}
+        config={config}
+        rows={rows}
+        isLoading={isLoading}
+        totalCount={totalCount}
+        params={params}
+        offset={state.offset}
+        limit={state.limit}
+        onPage={table.setPage}
+        renderRowActions={rowActions.render}
+        onNavigate={onNavigate}
+        onOpenOverview={onOpenOverview}
+        overviewEntityId={overviewEntityId}
+        selectedRows={selection.rows}
+        onSelectionChange={selection.setRows}
+      />
+    );
+  }
+
+  return (
+    <EntityTable
+      entityType={entityType}
+      config={config}
+      organizationId={organizationId}
+      columns={listColumns.columns}
+      fieldByColumn={listColumns.fieldByColumn}
+      visibleColumns={state.visibleColumns}
+      setVisibleColumns={table.setVisibleColumns}
+      rows={rows}
+      isLoading={isLoading}
+      totalCount={totalCount}
+      params={params}
+      offset={state.offset}
+      limit={state.limit}
+      search={state.search}
+      sort={state.sort}
+      onPage={table.setPage}
+      onScrollWindow={listData.onScrollWindow}
+      onSort={table.setSort}
+      rowRules={listData.rowRules}
+      renderRowActions={rowActions.render}
+      selectedRows={selection.rows}
+      onSelectionChange={selection.setRows}
+      allSelected={selection.all}
+      onSelectAllChange={selection.setAll}
+      onNavigate={onNavigate}
+      onOpenOverview={onOpenOverview}
+      overviewEntityId={overviewEntityId}
+      onCellSaved={onCellSaved}
+      readOnly={readOnly}
+      tree={tree}
+    />
+  );
+}
+
+interface ListPanelHeaderProps {
+  entityType: string;
+  config: ListConfig;
+  organizationId?: number;
+  scope?: ListScope;
+  viewId?: number;
+  listData: ListData;
+  isLoading: boolean;
+  toolbar?: PanelToolbarSlot;
+  onViewChange?: (viewId?: number) => void;
+}
+
+/**
+ * The panel's title bar: title and count chip, the pane's toolbar, and the saved views' button.
+ */
+function ListPanelHeader({
+  entityType,
+  config,
+  organizationId,
+  scope,
+  viewId,
+  listData,
+  isLoading,
+  toolbar,
+  onViewChange,
+}: Readonly<ListPanelHeaderProps>) {
+  const { view, table, collectionTotal, modified, hasUserState, resetToBase, userState } = listData;
+  // Changed since it was opened: on a view, from the view's state; on the default list, anything the user kept.
+  const viewsDirty = viewId != null ? modified : hasUserState;
+  // Views are of the organization-wide list (the header is never shown on an embedded one), in a pane
+  // that can open another view. Their button only shows once the list has been changed.
+  const showViewActions = scope == null && organizationId != null && onViewChange != null && viewsDirty;
+
+  return (
+    <PanelHeaderBar
+      title={
+        <ListPanelTitle
+          config={config}
+          view={viewId != null ? view : undefined}
+          organizationId={organizationId}
+          isLoading={isLoading}
+          collectionTotal={collectionTotal}
+        />
+      }
+      toolbar={viewToolbarOf(toolbar, entityType, viewId, view?.title)}
+      // The old titlebar's view button, at the right of the toolbar before the bookmark.
+      toolbarExtra={
+        showViewActions ? (
+          <ViewActions
+            entityType={entityType}
+            organizationId={organizationId}
+            activeView={view}
+            currentViewState={() => toViewState(table.state, table.columnsSeeded)}
+            onOpen={onViewChange}
+            onReset={resetToBase}
+            onUpdated={userState.reset}
+          />
+        ) : undefined
+      }
+    />
+  );
+}
+
+interface ListPanelTitleProps {
+  config: ListConfig;
+  // The saved view the list is on, if any: its name replaces the type's plural label.
+  view: ListData["view"];
+  organizationId?: number;
+  isLoading: boolean;
+  collectionTotal: ListData["collectionTotal"];
+}
+
+/**
+ * The entity type's icon, the list's name (the view's, or the type's plural label) and its count chip.
+ */
+function ListPanelTitle({ config, view, organizationId, isLoading, collectionTotal }: Readonly<ListPanelTitleProps>) {
+  return (
+    <div className="entity-list-panel-header sia-hstack">
+      <i className={`${config.icon} sia-list-title-icon`} />
+      {view && organizationId != null ? (
+        <ViewTitle view={view} organizationId={organizationId} />
+      ) : (
+        <span className="sia-list-title-text">{config.labels.plural}</span>
+      )}
+      {isLoading || collectionTotal == null ? (
+        <Skeleton width="2.5rem" height="1.75rem" borderRadius="16px" className="loading-skeleton" />
+      ) : (
+        <Chip label={String(collectionTotal)} className={countChipClassOf(config.panelClass)} style={COUNT_CHIP_STYLE} />
+      )}
+    </div>
   );
 }

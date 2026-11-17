@@ -36,7 +36,7 @@ const NO_FEATURES: readonly MapFeature[] = [];
  * the result set left it out). Units the server could not
  * place are counted in a banner above the map, not guessed at.
  */
-export function EntityMapView({ entityType, config, params, onNavigate, onOpenOverview, selectedId, geometry }: EntityMapViewProps) {
+export function EntityMapView({ entityType, config, params, onNavigate, onOpenOverview, selectedId, geometry }: Readonly<EntityMapViewProps>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const map = useLeafletMap(containerRef);
   const { data, isLoading, error } = useEntityMapData(entityType, config.collectionPath, params, true, geometry);

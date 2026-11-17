@@ -196,7 +196,8 @@ class EntityMapServiceTest {
     @Test
     void build_UnknownGeometryColumn_IsABadRequest() {
         FakeSource source = FakeSource.ofOwn(Map.of());
-        assertThrows(ResponseStatusException.class, () -> service().build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L)), source, -99L));
+        var service = service();
+        assertThrows(ResponseStatusException.class, () -> service.build(FieldQuery.NONE, (offset, query) -> pageOf(List.of(1L)), source, -99L));
     }
 
     /**
