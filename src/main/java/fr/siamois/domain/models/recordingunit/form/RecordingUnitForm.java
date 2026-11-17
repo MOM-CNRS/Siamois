@@ -636,6 +636,6 @@ public abstract class RecordingUnitForm {
             SystemFieldSpec.of(CLOSING_DATE_FIELD),
             SystemFieldSpec.of(AUTHOR_FIELD),
             SystemFieldSpec.of(CONTRIBUTORS_FIELD),
-            SystemFieldSpec.readOnly(GEOM_FIELD));
+            SystemFieldSpec.of(GEOM_FIELD));
     }
 }
