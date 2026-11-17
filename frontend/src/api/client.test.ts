@@ -27,15 +27,17 @@ describe("apiFetch error handling", () => {
       }),
     );
 
-    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(
-      new ApiError(400, "identifier est obligatoire"),
-    );
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject({
+      name: "ApiError",
+      status: 400,
+      message: "identifier est obligatoire",
+    });
   });
 
   it("falls back to the raw text when the error body isn't JSON", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response("plain text failure", { status: 500 }));
 
-    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(new ApiError(500, "plain text failure"));
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject({ name: "ApiError", status: 500, message: "plain text failure" });
   });
 });
 
@@ -141,7 +143,7 @@ describe("apiBlob", () => {
       .mockResolvedValueOnce(new Response("", { status: 401 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ message: "Fichier introuvable" }), { status: 404 }));
 
-    await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject(new ApiError(404, "Fichier introuvable"));
+    await expect(apiBlob("/api/v1/documents/1/file")).rejects.toMatchObject({ name: "ApiError", status: 404, message: "Fichier introuvable" });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
@@ -167,14 +169,14 @@ describe("apiFetch retry and error edge cases", () => {
       .mockResolvedValueOnce(new Response("", { status: 401, statusText: "Unauthorized" }))
       .mockResolvedValueOnce(new Response("", { status: 401, statusText: "Unauthorized" }));
 
-    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject(new ApiError(401, "Unauthorized"));
+    await expect(apiFetch("/api/v1/projects/5")).rejects.toMatchObject({ name: "ApiError", status: 401, message: "Unauthorized" });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it("uses the status text when the error body is empty", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response("", { status: 503, statusText: "Service Unavailable" }));
 
-    await expect(apiFetch("/api/v1/projects")).rejects.toMatchObject(new ApiError(503, "Service Unavailable"));
+    await expect(apiFetch("/api/v1/projects")).rejects.toMatchObject({ name: "ApiError", status: 503, message: "Service Unavailable" });
   });
 
   it("uses the status text when the JSON error body has no message, and keeps the body and path", async () => {
@@ -252,7 +254,7 @@ describe("fetchExternalJson", () => {
   it("treats a 3xx answer reaching the caller as a failure", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response("", { status: 300, statusText: "Multiple Choices" }));
 
-    await expect(fetchExternalJson("https://example.org/x")).rejects.toMatchObject(new ApiError(300, "300 Multiple Choices"));
+    await expect(fetchExternalJson("https://example.org/x")).rejects.toMatchObject({ name: "ApiError", status: 300, message: "300 Multiple Choices" });
   });
 
   it("rejects when the answer is not JSON", async () => {

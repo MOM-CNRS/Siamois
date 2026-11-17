@@ -1,10 +1,10 @@
-import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
+import {afterEach, beforeEach, describe, expect, it, type Mock, vi} from "vitest";
 import {act} from "react";
 import {createRoot, type Root} from "react-dom/client";
 import {registerDefaultFieldRenderers} from "../../fields/registerDefaultRenderers";
 import {registerFieldRenderer} from "../../fields/registry";
 import {ApiError} from "../../api/client";
-import {CellEditOverlay, type CellEditTarget} from "./CellEditOverlay";
+import {CellEditOverlay, type CellEditOverlayProps, type CellEditTarget} from "./CellEditOverlay";
 import type {FieldResource} from "../../fields/types";
 import {registerEntityType} from "../../entities/registry";
 import type {EntityTypeConfig} from "../../entities/shared/types";
@@ -111,13 +111,13 @@ function type(input: HTMLInputElement, value: string) {
 
 function renderOverlay(opts: {
   target: CellEditTarget<Row> | null;
-  onSave?: ReturnType<typeof vi.fn>;
-  onSaved?: ReturnType<typeof vi.fn>;
-  onClose?: ReturnType<typeof vi.fn>;
+  onSave?: Mock<CellEditOverlayProps<Row>["onSave"]>;
+  onSaved?: Mock<() => void>;
+  onClose?: Mock<() => void>;
 }) {
-  const onSave = opts.onSave ?? vi.fn().mockResolvedValue(undefined);
-  const onSaved = opts.onSaved ?? vi.fn();
-  const onClose = opts.onClose ?? vi.fn();
+  const onSave = opts.onSave ?? vi.fn<CellEditOverlayProps<Row>["onSave"]>().mockResolvedValue(undefined);
+  const onSaved = opts.onSaved ?? vi.fn<() => void>();
+  const onClose = opts.onClose ?? vi.fn<() => void>();
   act(() => {
     root.render(
       <CellEditOverlay target={opts.target} onSave={onSave} onSaved={onSaved} onClose={onClose} />,
