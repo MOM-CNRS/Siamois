@@ -26,6 +26,8 @@ import fr.siamois.ui.api.openapi.v1.response.spatialunit.PlaceListResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.GeometryDTO;
+import fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -371,6 +373,69 @@ class PlaceOpenApiServiceTest {
         service.updatePlace(caller, 5L, patch, "fr");
 
         verify(spatialUnitService, never()).updatePlaceDetails(anyLong(), any());
+    }
+
+    @Test
+    void updatePlace_geomWkt_isWrittenAsTheGeometry_keepingTheCurrentSrid() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        MultiPolygonDTO current = new MultiPolygonDTO();
+        current.srid = 2154;
+        existing.setGeom(current);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setGeomWkt("MULTIPOLYGON (((0 0, 10 0, 10 10, 0 0)))");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(5L);
+        ArgumentCaptor<GeometryDTO> written = ArgumentCaptor.forClass(GeometryDTO.class);
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), isNull(), isNull(), isNull(), isNull(), eq(false),
+                written.capture(), eq(true))).thenReturn(saved);
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        assertThat(written.getValue()).isInstanceOf(MultiPolygonDTO.class);
+        assertThat(written.getValue().srid).isEqualTo(2154);
+    }
+
+    @Test
+    void updatePlace_geomWkt_blankClearsTheGeometry() throws SpatialUnitAlreadyExistsException {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setGeomWkt("");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+        SpatialUnitDTO saved = new SpatialUnitDTO();
+        saved.setId(5L);
+        when(spatialUnitService.updatePlace(any(UserInfo.class), eq(5L), isNull(), isNull(), isNull(), isNull(), eq(false),
+                isNull(), eq(true))).thenReturn(saved);
+
+        service.updatePlace(caller, 5L, patch, "fr");
+
+        verify(spatialUnitService).updatePlace(any(UserInfo.class), eq(5L), isNull(), isNull(), isNull(), isNull(), eq(false),
+                isNull(), eq(true));
+    }
+
+    @Test
+    void updatePlace_geomWkt_unreadable_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setGeomWkt("MULTIPOLYGON (((0 0");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value())
+                        .isEqualTo(HttpStatus.BAD_REQUEST.value()));
     }
 
     @Test

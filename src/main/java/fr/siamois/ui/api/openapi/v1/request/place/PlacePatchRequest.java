@@ -51,6 +51,20 @@ public class PlacePatchRequest {
         this.geomPresent = true;
     }
 
+    @Schema(description = "Géométrie du lieu en WKT, ou en EWKT (SRID=…;) pour nommer son SRID ; un WKT sans SRID "
+            + "garde celui de la géométrie actuelle. Doit être un MultiPolygon. Ignoré quand geom est fourni. "
+            + "Champ absent = inchangé ; null explicite ou chaîne vide = supprime la géométrie")
+    private String geomWkt;
+
+    @JsonIgnore
+    private boolean geomWktPresent;
+
+    @JsonSetter("geomWkt")
+    public void setGeomWkt(String geomWkt) {
+        this.geomWkt = geomWkt;
+        this.geomWktPresent = true;
+    }
+
     @Schema(description = "Code INSEE de la commune; null explicite supprime la valeur")
     private String inseeCode;
 

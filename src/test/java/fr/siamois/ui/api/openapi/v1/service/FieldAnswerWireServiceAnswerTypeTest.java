@@ -31,13 +31,13 @@ class FieldAnswerWireServiceAnswerTypeTest {
     }
 
     @Test
-    void aGeometryIsItsOwnReadOnlyType_answeredWithItsWkt() {
+    void aGeometryIsItsOwnEditableType_answeredWithItsWkt() {
         CustomFieldGeometry geometry = CustomFieldGeometry.builder().id(-332L).isSystemField(true).valueBinding("geom").build();
 
         FieldResource resource = FieldAnswerWireService.fieldResourceOf(geometry, "Géométrie", null);
 
         assertThat(resource.answerType()).isEqualTo("GEOMETRY");
-        assertThat(resource.readOnly()).isTrue();
+        assertThat(resource.readOnly()).isNull();
         assertThat(FieldType.fromDiscriminator("GEOMETRY")).isEqualTo(FieldType.GEOMETRY);
     }
 

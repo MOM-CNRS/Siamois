@@ -8,9 +8,9 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
- * A record's geometry, shown as its WKT in the SRID it carries. It is displayed by the form, never edited
- * through it: the geometry comes from the API or an import. A text field otherwise, so everything that reads
- * a text value (lists, exports) reads its WKT.
+ * A record's geometry, shown as its WKT in the SRID it carries and edited as a WKT, or an EWKT to name its
+ * SRID (see {@code GeometryText}). A text field otherwise, so everything that reads a text value (lists,
+ * exports) reads its WKT.
  */
 @Entity
 @DiscriminatorValue("GEOMETRY")

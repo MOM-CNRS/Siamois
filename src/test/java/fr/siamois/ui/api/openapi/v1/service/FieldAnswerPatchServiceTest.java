@@ -5,6 +5,7 @@ import fr.siamois.domain.models.form.customfield.CustomField;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldBoolean;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDateTime;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldDecimal;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldText;
 import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiplePhase;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
@@ -110,6 +111,50 @@ class FieldAnswerPatchServiceTest {
         assertThat(result).containsOnlyKeys(additional);
         assertThat(result.get(additional)).isSameAs(additionalVm);
         verify(formService).updateJpaEntityFromResponse(response, entity);
+    }
+
+    @Test
+    void apply_writesAGeometryAsItsTrimmedText_forFormServiceToTurnIntoTheEntitysGeometry() {
+        CustomFieldGeometry geometry = CustomFieldGeometry.of(-332L, null);
+        givenResponse(Map.of(geometry, new CustomFieldAnswerTextViewModel()));
+
+        service.apply(entity, form(geometry), Map.of("-332", new AnswerInput(" SRID=2154;POINT (650000 6860000) ", null)), PROJECT_ID);
+
+        verify(formService).applyTypedValueToAnswer(any(), eq("SRID=2154;POINT (650000 6860000)"));
+    }
+
+    @Test
+    void apply_refusesAGeometryThatIsNoWkt() {
+        CustomFieldGeometry geometry = CustomFieldGeometry.of(-332L, null);
+        givenResponse(Map.of(geometry, new CustomFieldAnswerTextViewModel()));
+        Map<String, AnswerInput> answers = Map.of("-332", new AnswerInput("POINT (650000", null));
+        FormUiDto form = form(geometry);
+
+        assertThatThrownBy(() -> service.apply(entity, form, answers, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(formService, never()).applyTypedValueToAnswer(any(), any());
+    }
+
+    @Test
+    void apply_refusesARecordGeometryOfATypeTheApiDoesNotCarry_butKeepsItInAnAdditionalField() {
+        CustomFieldGeometry system = CustomFieldGeometry.of(-332L, null);
+        CustomFieldGeometry additional = new CustomFieldGeometry();
+        additional.setId(9L);
+        additional.setIsSystemField(false);
+        CustomFieldAnswerTextViewModel additionalVm = new CustomFieldAnswerTextViewModel();
+        givenResponse(Map.of(system, new CustomFieldAnswerTextViewModel(), additional, additionalVm));
+        String lines = "MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))";
+        FormUiDto form = form(system, additional);
+        Map<String, AnswerInput> onTheRecord = Map.of("-332", new AnswerInput(lines, null));
+
+        assertThatThrownBy(() -> service.apply(entity, form, onTheRecord, PROJECT_ID))
+                .isInstanceOf(ResponseStatusException.class);
+
+        Map<CustomField, CustomFieldAnswerViewModel> result =
+                service.apply(entity, form, Map.of("9", new AnswerInput(lines, null)), PROJECT_ID);
+        assertThat(result).containsOnlyKeys(additional);
+        verify(formService).applyTypedValueToAnswer(additionalVm, lines);
     }
 
     @Test

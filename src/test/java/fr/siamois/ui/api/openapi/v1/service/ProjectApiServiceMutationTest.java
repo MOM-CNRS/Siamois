@@ -300,6 +300,47 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void patchProject_answers_writesTheExtentFromItsWkt_keepingItsSrid() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        var current = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        current.srid = 2154;
+        au.setGeom(current);
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+        when(actionUnitService.save(any(), same(au), any())).thenReturn(au);
+
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.getAnswers().put("-140", new AnswerInput("POLYGON ((0 0, 10 0, 10 10, 0 0))", null)); // GEOM_FIELD
+
+        service.patchProject(caller, "7", patch, "fr");
+
+        assertThat(au.getGeom()).isInstanceOf(fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO.class);
+        assertThat(au.getGeom()).isNotSameAs(current);
+        assertThat(au.getGeom().srid).isEqualTo(2154);
+    }
+
+    @Test
+    void patchProject_answers_refusesAnExtentThatIsNoAreaOrNoWkt() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        for (String text : List.of("POINT (1 2)", "POLYGON ((0 0")) {
+            ProjectPatchRequest patch = new ProjectPatchRequest();
+            patch.getAnswers().put("-140", new AnswerInput(text, null));
+
+            assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        }
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
     void patchProject_answers_unknownDocument_throws404() {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);

@@ -2,6 +2,7 @@ package fr.siamois.domain.services.form;
 
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.basetypes.CustomFieldGeometry;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.dto.PlaceSuggestionDTO;
 import fr.siamois.dto.StratigraphicRelationshipDTO;
@@ -19,6 +20,7 @@ import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
@@ -205,11 +207,26 @@ public class FormService {
                 setStratigraphyFieldValue(stratiAnswer, ru);
             } else if (isBindableSystemField(field, answer, bindableFields)) {
                 Object value = extractValueFromAnswer(answer);
-                if (value != null) {
+                if (Hibernate.unproxy(field) instanceof CustomFieldGeometry && value instanceof String text) {
+                    updateGeometry(jpaEntity, field, text);
+                } else if (value != null) {
                     setFieldValue(jpaEntity, field.getValueBinding(), value);
                 }
             }
         }
+    }
+
+    /**
+     * Writes the geometry a geometry field's text stands for, unless it is the text the current geometry
+     * reads as (an untouched answer, rewritten as is). A WKT naming no SRID keeps the current one; a blank
+     * text clears the geometry.
+     */
+    private static void updateGeometry(Object jpaEntity, CustomField field, String text) {
+        Object current = getFieldValue(jpaEntity, field.getValueBinding());
+        GeometryDTO currentGeometry = current instanceof GeometryDTO geometry ? geometry : null;
+        if (text.equals(GeometryText.of(currentGeometry))) return;
+        Integer currentSrid = currentGeometry == null ? null : currentGeometry.srid;
+        setFieldValue(jpaEntity, field.getValueBinding(), GeometryText.parse(text, currentSrid));
     }
 
     /**

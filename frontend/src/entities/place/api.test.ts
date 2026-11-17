@@ -101,6 +101,17 @@ describe("patchPlaceAnswers", () => {
     });
   });
 
+  it("translates the geometry field id into the WKT text `geomWkt`", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ data: {} });
+
+    await patchPlaceAnswers(5, { "-210": { value: "SRID=2154;MULTIPOLYGON (((0 0, 1 0, 1 1, 0 0)))" } });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith("/api/v1/places/5", {
+      method: "PATCH",
+      body: { geomWkt: "SRID=2154;MULTIPOLYGON (((0 0, 1 0, 1 1, 0 0)))" },
+    });
+  });
+
   it("refuses an unmapped field id (e.g. the address field, read-only for now) instead of reporting a save that did not happen", async () => {
     await expect(patchPlaceAnswers(5, { "-204": { value: { city: "Paris" } } })).rejects.toThrow("-204");
 

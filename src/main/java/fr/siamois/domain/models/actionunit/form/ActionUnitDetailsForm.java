@@ -96,7 +96,7 @@ public class ActionUnitDetailsForm extends ActionUnitForm {
                                 .addRow(
                                         new CustomRowUiDto.Builder()
                                                 .addColumn(new CustomColUiDto.Builder()
-                                                        .readOnly(true)
+                                                        .readOnly(false)
                                                         .width(ColumnWidth.STANDARD)
                                                         .field(GEOM_FIELD)
                                                         .build())

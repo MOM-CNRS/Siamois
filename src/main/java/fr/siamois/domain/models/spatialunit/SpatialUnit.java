@@ -426,7 +426,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
             .concept(PARCEL_NUMBER_CONCEPT)
             .build();
 
-    /** The place's geometry, shown as WKT: it is displayed by the form, never edited through it. */
+    /** The place's geometry, shown and edited as WKT (a MultiPolygon). */
     @Transient
     @JsonIgnore
     public static final CustomFieldGeometry GEOM_FIELD = CustomFieldGeometry.of(-210L, GEOM_CONCEPT);
@@ -545,12 +545,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
                                             .build()
                             ).addRow(
                                     new CustomRowUiDto.Builder()
-                                            .addColumn(new CustomColUiDto.Builder()
-                                                    .readOnly(true)
-                                                    .isRequired(false)
-                                                    .className(COLUMN_CLASS_NAME)
-                                                    .field(GEOM_FIELD)
-                                                    .build())
+                                            .addColumn(textColumn(GEOM_FIELD))
                                             .build()
                             ).build()
             )
@@ -582,9 +577,7 @@ public class SpatialUnit extends TraceableEntity implements ArkEntity {
     private static CustomRowUiDto rowOf(CustomField... fields) {
         CustomRowUiDto.Builder row = new CustomRowUiDto.Builder();
         for (CustomField field : fields) {
-            row.addColumn(field == GEOM_FIELD
-                    ? new CustomColUiDto.Builder().readOnly(true).isRequired(false).className(COLUMN_CLASS_NAME).field(field).build()
-                    : textColumn(field));
+            row.addColumn(textColumn(field));
         }
         return row.build();
     }

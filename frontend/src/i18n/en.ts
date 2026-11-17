@@ -217,6 +217,7 @@ export const en: Record<MessageKey, string> = {
   "concept.openInThesaurus": "Open in the thesaurus",
   "field.comment": "Comment",
   "field.value": "Value",
+  "field.geometryPlaceholder": "WKT, or EWKT to give the SRID: SRID=2154;POINT (652000 6862000)",
   "field.yes": "Yes",
   "field.no": "No",
   "field.noAnswer": "No answer",

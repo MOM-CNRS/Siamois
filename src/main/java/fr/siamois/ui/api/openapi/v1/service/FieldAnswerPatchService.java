@@ -49,6 +49,8 @@ import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUn
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import fr.siamois.mapper.*;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.InvalidGeometryTextException;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.FieldAnswerMaps;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.FormUiDto;
@@ -270,8 +272,8 @@ public class FieldAnswerPatchService {
             field = requireField(patch.fieldSource, entry.getKey());
             // A column the form marks readOnly — the project the entity belongs to, a generated
             // identifier — is never written: moving a recording unit to another project is not
-            // an edit. Nor is a geometry, whatever the layout says: it is displayed, never edited.
-            if (isReadOnlyIn(patch.effectiveForm, field) || Hibernate.unproxy(field) instanceof CustomFieldGeometry) {
+            // an edit.
+            if (isReadOnlyIn(patch.effectiveForm, field)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Champ non modifiable : " + field.getId());
             }
             viewModel = viewModelOf(patch.response, field);
@@ -588,7 +590,7 @@ public class FieldAnswerPatchService {
             Object value = coerceScalar(f, raw, columnUnits);
             if (value == UNHANDLED) value = coerceReference(f, raw, projectId);
             if (value != UNHANDLED) return value;
-        } catch (NumberFormatException | DateTimeParseException e) {
+        } catch (NumberFormatException | DateTimeParseException | InvalidGeometryTextException e) {
             // Only a value that does not parse; any other failure is a bug and must surface.
             throw new InvalidAnswerValueException("Valeur invalide pour le champ " + field.getId() + " : " + e.getMessage(), e);
         }
@@ -598,6 +600,7 @@ public class FieldAnswerPatchService {
 
 
     private Object coerceScalar(Object f, Object raw, FieldUnits columnUnits) {
+        if (f instanceof CustomFieldGeometry geometry) return toGeometryText(geometry, raw);
         if (f instanceof CustomFieldText) return String.valueOf(raw);
         if (f instanceof CustomFieldInteger) return raw instanceof Number n ? n.intValue() : Integer.parseInt(String.valueOf(raw).trim());
         if (f instanceof CustomFieldDecimal) return toDouble(raw);
@@ -605,6 +608,21 @@ public class FieldAnswerPatchService {
         if (f instanceof CustomFieldDateTime) return toOffsetDateTime(raw);
         if (f instanceof CustomFieldMeasurement measurement) return toMeasurement(raw, measurement, columnUnits);
         return UNHANDLED;
+    }
+
+    /**
+     * A geometry's WKT or EWKT, checked: the record's own geometry must be of a type the API carries
+     * (FormService turns it into one, keeping the current SRID when the text names none), an additional
+     * geometry field is kept as its text, so it only has to be readable.
+     */
+    private static String toGeometryText(CustomFieldGeometry field, Object raw) {
+        String text = String.valueOf(raw).strip();
+        if (Boolean.TRUE.equals(field.getIsSystemField())) {
+            GeometryText.parse(text, null);
+        } else {
+            GeometryText.requireReadable(text);
+        }
+        return text;
     }
 
     private Object coerceReference(Object f, Object raw, Long projectId) {
