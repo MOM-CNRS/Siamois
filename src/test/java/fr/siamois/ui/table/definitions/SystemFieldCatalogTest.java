@@ -97,8 +97,8 @@ class SystemFieldCatalogTest {
                 assertThat(other).as("field %s of %s", field.getId(), table).isIn(null, what);
             }
         }
-        assertThat(fieldById.get(-332L)).isNotEqualTo(null);
-        assertThat(fieldById.get(-438L)).isNotEqualTo(null);
+        assertThat(fieldById.get(-332L)).isNotNull();
+        assertThat(fieldById.get(-438L)).isNotNull();
     }
 
     /**
@@ -108,10 +108,10 @@ class SystemFieldCatalogTest {
      */
     @Test
     void fieldsOf_shouldHandOutFreshFieldsSoACallerCannotAlterTheDefinition() {
-        CustomField first = byLabel(ConfigurableTable.MOBILIER).get("specimen.field.type");
+        CustomField first = byLabel().get("specimen.field.type");
         first.setLabel("Modifié");
 
-        assertThat(byLabel(ConfigurableTable.MOBILIER)).containsKey("specimen.field.type");
+        assertThat(byLabel()).containsKey("specimen.field.type");
     }
 
     @Test
@@ -120,8 +120,8 @@ class SystemFieldCatalogTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
-    private Map<String, CustomField> byLabel(ConfigurableTable table) {
-        return SystemFieldCatalog.fieldsOf(table).stream()
+    private Map<String, CustomField> byLabel() {
+        return SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
                 .collect(Collectors.toMap(CustomField::getLabel, Function.identity(), (first, second) -> first));
     }
 }
