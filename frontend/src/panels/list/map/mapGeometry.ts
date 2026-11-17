@@ -42,3 +42,20 @@ export function mapGeometryFilter(
   if (fields?.[geometry.value]?.query?.filterOp !== "presence") return undefined;
   return { op: "notEmpty" };
 }
+
+/**
+ * The filters once the map draws `to` instead of `from`: the « not empty » filter of the column it drew moves
+ * to the new one. Undefined when nothing moves — that filter was taken off, or the column carries another
+ * filter (the user's own, left where it is).
+ */
+export function filtersForGeometryChange(
+  filters: Record<string, FilterValue>,
+  from: MapGeometryOption | undefined,
+  to: MapGeometryOption | undefined,
+  fields: Record<string, FieldResource> | undefined,
+): Record<string, FilterValue> | undefined {
+  if (!from || !to || from.value === to.value || filters[from.value]?.op !== "notEmpty") return undefined;
+  const rest = Object.fromEntries(Object.entries(filters).filter(([key]) => key !== from.value));
+  const added = mapGeometryFilter(rest, to, fields);
+  return added ? { ...rest, [to.value]: added } : rest;
+}

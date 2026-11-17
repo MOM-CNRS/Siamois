@@ -272,6 +272,30 @@ describe("EntityListPanel as a map", () => {
       expect(mapStub()).not.toBeNull();
     });
 
+    it("moves the filter to the geometry picked in the gear", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      await pickTile("Disposition", "Liste");
+      await pickTile("Disposition", "Carte");
+
+      await pickTile("Géométrie affichée", "Emprise fouillée");
+
+      expect(lastMap().geometry).toBe("-9");
+      expect(lastMap().params.filters).toEqual({ "-9": { op: "notEmpty" } });
+    });
+
+    it("adds nothing on picking another geometry once the filter was taken off", async () => {
+      schemaLoadMock.mockResolvedValue(filterableGeometries);
+      await renderPanel();
+      await pickTile("Disposition", "Liste");
+      await pickTile("Disposition", "Carte");
+      await click(container.querySelector("[data-chip-key='-5'] .filter-chip-remove")!);
+
+      await pickTile("Géométrie affichée", "Emprise fouillée");
+
+      expect(lastMap().params.filters).toBeUndefined();
+    });
+
     it("keeps a filter the user already set on that geometry", async () => {
       schemaLoadMock.mockResolvedValue(filterableGeometries);
       await renderPanel({ initialFilters: { "-5": { op: "empty" } } });
