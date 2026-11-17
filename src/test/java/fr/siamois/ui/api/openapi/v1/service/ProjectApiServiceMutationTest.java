@@ -251,6 +251,25 @@ class ProjectApiServiceMutationTest {
     }
 
     @Test
+    void patchProject_geomWithAnUnclosedRing_throws400AndDoesNotSave() throws Exception {
+        ActionUnitDTO au = projectWithInstitution();
+        au.setId(7L);
+        au.setType(new ConceptDTO());
+        when(actionUnitService.findAccessibleProjectByKey("7", SCOPE)).thenReturn(new AccessibleProjectForApi(au, 0L, 0L));
+        when(profilePermissionService.hasActionUnitWritePermission(any(), any())).thenReturn(true);
+
+        var polygon = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        polygon.coordinates = new double[][][]{{{0, 0}, {10, 0}, {10, 10}, {0, 5}}};
+        ProjectPatchRequest patch = new ProjectPatchRequest();
+        patch.setGeom(polygon);
+
+        assertThatThrownBy(() -> service.patchProject(caller, "7", patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(actionUnitService, never()).save(any(), any(), any());
+    }
+
+    @Test
     void patchProject_geomPolygonOrNull_isAccepted() throws Exception {
         ActionUnitDTO au = projectWithInstitution();
         au.setId(7L);
@@ -261,12 +280,14 @@ class ProjectApiServiceMutationTest {
 
         ProjectPatchRequest withPolygon = new ProjectPatchRequest();
         var polygon = new fr.siamois.ui.api.openapi.v1.generic.response.geom.PolygonDTO();
+        polygon.coordinates = new double[][][]{{{0, 0}, {10, 0}, {10, 10}, {0, 0}}};
         withPolygon.setGeom(polygon);
         service.patchProject(caller, "7", withPolygon, "fr");
         assertThat(au.getGeom()).isSameAs(polygon);
 
         ProjectPatchRequest withMulti = new ProjectPatchRequest();
         var multi = new fr.siamois.ui.api.openapi.v1.generic.response.geom.MultiPolygonDTO();
+        multi.coordinates = new double[][][][]{{{{0, 0}, {10, 0}, {10, 10}, {0, 0}}}};
         withMulti.setGeom(multi);
         service.patchProject(caller, "7", withMulti, "fr");
         assertThat(au.getGeom()).isSameAs(multi);

@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.request.list.SearchMode;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
@@ -772,7 +773,7 @@ public class ProjectApiService {
         }
         if (patch.isGeomPresent()) {
             requireSurface(patch.getGeom());
-            dto.setGeom(patch.getGeom());
+            dto.setGeom(GeometryInput.requireValid(patch.getGeom()));
         }
         applyAnswerPatch(dto, patch.getAnswers());
         checkAnswerRules(dto, patch.getAnswers());

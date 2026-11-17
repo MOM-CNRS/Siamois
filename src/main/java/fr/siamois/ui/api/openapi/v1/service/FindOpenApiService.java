@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
@@ -83,7 +84,7 @@ public class FindOpenApiService {
         shell.setCollectors(new ArrayList<>(List.of(personDto)));
         shell.setCollectionDate(OffsetDateTime.now(ZoneOffset.UTC));
         shell.setValidationStatus(ValidationStatus.INCOMPLETE);
-        shell.setGeom(request.getGeom());
+        shell.setGeom(GeometryInput.requireValid(request.getGeom()));
         IdentifierPatch.applyChosen(request.getIdentifier(), identifier -> {
             shell.setFullIdentifier(identifier);
             // Generation is what sets the project otherwise — and the uniqueness check is scoped to it.
@@ -246,7 +247,7 @@ public class FindOpenApiService {
             IdentifierPatch.requireFree(specimenService.fullIdentifierAlreadyExistInAction(dto));
         }
         if (request.isGeomPresent()) {
-            dto.setGeom(request.getGeom());
+            dto.setGeom(GeometryInput.requireValid(request.getGeom()));
         }
         if (!answers.isEmpty() || identifierChange || request.isGeomPresent()) {
             writeAnswers(dto, ru, answers, userInfo);

@@ -24,6 +24,7 @@ import fr.siamois.dto.entity.SpatialUnitSummaryDTO;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
 import fr.siamois.infrastructure.database.repositories.specs.SpatialUnitSpec;
 import fr.siamois.mapper.ConceptMapper;
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.generic.response.ListMeta;
 import fr.siamois.ui.api.openapi.v1.mapper.PlaceOpenApiMapper;
 import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryText;
@@ -416,7 +417,7 @@ public class PlaceOpenApiService {
         toSave.setName(name);
         toSave.setType(category);
         toSave.setPlaceNumber(request.getPlaceNumber());
-        toSave.setGeom(request.getGeom());
+        toSave.setGeom(GeometryInput.requireMultiPolygon(request.getGeom()));
         if (request.getAddress() != null) {
             toSave.setAddress(request.getAddress());
         }
@@ -473,7 +474,8 @@ public class PlaceOpenApiService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name ne peut pas être vide");
         }
 
-        GeometryDTO newGeom = patch.isGeomPresent() ? patch.getGeom() : geometryOfText(patch.getGeomWkt(), dto.getGeom());
+        GeometryDTO newGeom = GeometryInput.requireMultiPolygon(
+                patch.isGeomPresent() ? patch.getGeom() : geometryOfText(patch.getGeomWkt(), dto.getGeom()));
         try {
             SpatialUnitDTO saved = (patch.isPlaceNumberPresent() || geomChange)
                     ? spatialUnitService.updatePlace(userInfo, placeId, patch.getName(), category, patch.getAddress(),

@@ -422,6 +422,23 @@ class PlaceOpenApiServiceTest {
     }
 
     @Test
+    void updatePlace_geomWkt_ofAnotherShapeThanAMultiPolygon_throws400() {
+        SpatialUnitDTO existing = new SpatialUnitDTO();
+        existing.setId(5L);
+        existing.setCreatedByInstitution(institution);
+        PlacePatchRequest patch = new PlacePatchRequest();
+        patch.setGeomWkt("POLYGON ((0 0, 10 0, 10 10, 0 0))");
+
+        when(spatialUnitService.findById(5L)).thenReturn(existing);
+        when(profilePermissionService.hasOrganizationPermission(any(UserInfo.class), eq(PermissionConstants.ORGANIZATION_MANAGE_PLACES))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updatePlace(caller, 5L, patch, "fr"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("MultiPolygon est attendue");
+        verifyNoMoreInteractions(spatialUnitService);
+    }
+
+    @Test
     void updatePlace_geomWkt_unreadable_throws400() {
         SpatialUnitDTO existing = new SpatialUnitDTO();
         existing.setId(5L);

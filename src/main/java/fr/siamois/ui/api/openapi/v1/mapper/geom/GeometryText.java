@@ -83,15 +83,7 @@ public final class GeometryText {
             throw new InvalidGeometryTextException("Géométrie illisible (WKT ou EWKT attendu) : " + e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             // Well-formed text, but not a geometry JTS can build: a ring that is not closed, or has too few points.
-            throw new InvalidGeometryTextException("Géométrie invalide : " + reasonOf(e), e);
+            throw new InvalidGeometryTextException("Géométrie invalide : " + GeometryInput.reasonOf(e), e);
         }
-    }
-
-    /** What a user reads of JTS's refusal: its most frequent case in French, any other as JTS words it. */
-    private static String reasonOf(IllegalArgumentException e) {
-        String message = String.valueOf(e.getMessage());
-        return message.contains("closed linestring")
-                ? "chaque anneau d'un polygone doit se refermer (son dernier point doit répéter le premier)"
-                : message;
     }
 }

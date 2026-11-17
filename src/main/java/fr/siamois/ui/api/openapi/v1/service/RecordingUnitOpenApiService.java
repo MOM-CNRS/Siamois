@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.ui.api.openapi.v1.mapper.geom.GeometryInput;
 import fr.siamois.ui.api.openapi.v1.service.utils.OpenApiServiceUtils;
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.ValidationStatus;
@@ -979,7 +980,7 @@ public class RecordingUnitOpenApiService {
         }
 
         RecordingUnitDTO shell = initRecordingUnitShell(typeDto, au, institution, personDto);
-        shell.setGeom(request.getGeom());
+        shell.setGeom(GeometryInput.requireValid(request.getGeom()));
         // The parent is linked by the first save, before the identifier is generated: NUM_PARENT /
         // ID_PARENT and the PARENT_RU counter read it, as for the suggestion.
         attachParent(shell, parent);
@@ -1253,7 +1254,7 @@ public class RecordingUnitOpenApiService {
         }
         OpenApiExecutionContext.runWithUserInfo(userInfo, () -> {
             if (request.isGeomPresent()) {
-                dto.setGeom(request.getGeom());
+                dto.setGeom(GeometryInput.requireValid(request.getGeom()));
             }
             Map<CustomField, CustomFieldAnswerViewModel> additionalAnswers =
                     answers.isEmpty() ? Map.of() : applyFieldAnswers(dto, answers, projectId);
