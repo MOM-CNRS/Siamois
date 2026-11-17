@@ -151,7 +151,7 @@ export const fr = {
   "list.viewModeCards": "Vignettes",
   "list.viewModeMap": "Carte",
   "list.mapEmpty": "Aucune géométrie à afficher",
-  "list.mapWithoutGeometry": "{count} sans géométrie exploitable (illisible, sans SRID ou SRID inconnu)",
+  "list.mapWithoutGeometry": "{count} non placé(s) sur la carte : sans géométrie, géométrie illisible ou SRID inconnu",
   "list.mapTruncated": "Seuls les {shown} premiers éléments sur {total} sont examinés : affinez les filtres.",
   "list.mapOsm": "Fond OpenStreetMap",
   "list.mapSatellite": "Satellite",

@@ -40,12 +40,12 @@ describe("MapNotices", () => {
     const notices = renderNotices({ withoutGeometry: 3 });
 
     expect(notices).toHaveLength(1);
-    expect(notices[0].textContent).toContain("3 sans géométrie exploitable");
+    expect(notices[0].textContent).toContain("3 non placé(s) sur la carte");
     expect(notices[0].classList.contains("p-inline-message-info")).toBe(true);
   });
 
   it("shows the banner from a single row without geometry", () => {
-    expect(renderNotices({ withoutGeometry: 1 })[0].textContent).toContain("1 sans géométrie exploitable");
+    expect(renderNotices({ withoutGeometry: 1 })[0].textContent).toContain("1 non placé(s) sur la carte");
   });
 
   it("shows no banner for a negative count (nothing left out)", () => {
@@ -72,7 +72,7 @@ describe("MapNotices", () => {
     const notices = renderNotices({ withoutGeometry: 2, truncated: true, empty: true });
 
     expect(notices.map((n) => n.classList.contains("p-inline-message-warn"))).toEqual([false, true, false]);
-    expect(notices[0].textContent).toContain("2 sans géométrie");
+    expect(notices[0].textContent).toContain("2 non placé(s)");
     expect(notices[2].textContent).toContain("Aucune géométrie");
   });
 

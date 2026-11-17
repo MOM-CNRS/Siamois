@@ -73,8 +73,9 @@ export interface MapFeature {
 
 export interface MapData {
   features: MapFeature[];
-  // total: rows of the result set; examined: those looked at (up to the server's cap).
-  meta: { total: number; examined: number };
+  // examined: the rows with a geometry looked at (up to the server's cap).
+  // total: the rows with a geometry (the map only walks those); listTotal: the rows of the list, with one or not.
+  meta: { total: number; examined: number; listTotal?: number };
 }
 
 // `geometry`: the field id of the geometry column to place the rows by (their own geometry, or an
