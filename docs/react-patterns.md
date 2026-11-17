@@ -3,7 +3,6 @@
 **Périmètre :** `frontend/` (React 18, PrimeReact 10.9, TanStack Query 5, Vite, Vitest).
 **Date :** 2026-10-22, branche `main`.
 **Taille mesurée :** ≈ 24 800 lignes de TS/TSX (tests compris), 148 fichiers de test.
-**Complément de :** [react-architecture-review.md](react-architecture-review.md) (30/09, chiffres périmés : il annonce 12,7k lignes). Ce document dit *quels patterns tiennent et pourquoi* ; l'autre détaille les améliorations proposées, avec effort et risque.
 
 ---
 
@@ -71,8 +70,6 @@ Trois artefacts doivent évoluer ensemble : `reactPanelMount.xhtml` (attributs),
 | 2.7 | Fuite d'abstraction : `fields/display.tsx` et `fields/optionSources.ts` connaissent des noms d'entités (`"recording-units"`, types de réponse). Ajouter une entité oblige à toucher du code générique. Le respect de la règle de couches tient seulement parce que ce sont des chaînes et non des imports. | — | Faible |
 | 2.8 | Pont JSF : les `remoteCommand` sont résolues par `window[name]`, une faute de frappe est un non-événement silencieux. `MOUNT_CONTRACT_VERSION` est incrémenté à la main côté Java et côté TS. | — | Moyenne |
 | 2.9 | Aucune mesure : pas de Sonar ni de couverture sur `frontend/src`, pas d'axe pour l'accessibilité, pas de Prettier. | — | Moyenne |
-
-Pour chaque point, le détail de la correction proposée, l'effort et le risque figurent dans [react-architecture-review.md](react-architecture-review.md) (§2.1 à §2.13).
 
 Autres chiffres utiles : 203 `useState`, 57 `useEffect`, 128 usages de `useQuery`/`useMutation` hors tests. Le ratio effets/état est sain : les effets restent minoritaires parce que l'état serveur passe par TanStack Query.
 
