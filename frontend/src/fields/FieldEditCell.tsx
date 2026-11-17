@@ -103,7 +103,10 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
       <span
         className={`field-value-cell ${readOnly ? "field-value-cell-readonly" : "field-value-cell-editable"}${
           disabled ? " field-value-cell-disabled" : ""
-        }${incoherences.length > 0 ? " field-value-cell-incoherent" : ""}`}
+        }${incoherences.length > 0 ? " field-value-cell-incoherent" : ""}${
+          // A geometry's WKT can run to thousands of characters: folded on one line, read whole once opened.
+          field.answerType === "GEOMETRY" ? " field-value-cell-geometry" : ""
+        }`}
         role="button"
         tabIndex={0}
         // Same affordance as the table's own editable cell: the full value as the native tooltip,

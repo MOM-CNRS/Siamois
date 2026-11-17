@@ -1,5 +1,5 @@
 import type {ListScope} from "../../entities/shared/types";
-import type {ListViewMode} from "./listViews";
+import {isListViewMode, type ListViewMode} from "./listViews";
 
 // What a user arranged on one list — which columns, in which order, and how the row actions are
 // laid out — remembered in this browser (localStorage), per entity type and per context: the
@@ -31,6 +31,8 @@ export interface ListPrefs {
   actionBar?: ActionBarPrefs;
   viewMode?: ListViewMode;
   openMode?: OpenMode;
+  // The geometry column the map places the rows by (a field id, panels/list/map/mapGeometry.ts).
+  mapGeometry?: string;
 }
 
 /** Project lists open in focus, every other list in the overview, until the user chooses. */
@@ -55,8 +57,9 @@ export function loadListPrefs(key: string): ListPrefs {
     if (parsed?.v !== 1) return { v: 1 };
     const prefs: ListPrefs = { v: 1 };
     if (isStringArray(parsed.visibleColumns)) prefs.visibleColumns = parsed.visibleColumns;
-    if (parsed.viewMode === "list" || parsed.viewMode === "tree" || parsed.viewMode === "cards") prefs.viewMode = parsed.viewMode;
+    if (isListViewMode(parsed.viewMode)) prefs.viewMode = parsed.viewMode;
     if (parsed.openMode === "overview" || parsed.openMode === "focus") prefs.openMode = parsed.openMode;
+    if (typeof parsed.mapGeometry === "string" && parsed.mapGeometry) prefs.mapGeometry = parsed.mapGeometry;
     const bar = parsed.actionBar;
     if (bar && isStringArray(bar.order) && isStringArray(bar.inline)) prefs.actionBar = { order: bar.order, inline: bar.inline };
     return prefs;

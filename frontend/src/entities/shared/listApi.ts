@@ -28,25 +28,14 @@ export async function fetchList<T>(
   collectionPath: string,
   params: ListParams,
 ): Promise<PagedResult<T>> {
-  const query = new URLSearchParams();
+  const query = resultSetQuery(params);
+  if (params.sort) query.set("sort", params.sort);
   query.set("offset", String(params.offset));
   query.set("limit", String(params.limit));
-  if (params.search) query.set("search", params.search);
-  if (params.sort) query.set("sort", params.sort);
-  if (params.organizationId != null)
-    query.set("organizationId", String(params.organizationId));
   if (params.fields) query.set("fields", params.fields);
   if (params.tree) query.set("tree", "true");
   if (params.matchCount) query.set("matchCount", "true");
   if (params.parent != null) query.set("parent", String(params.parent));
-  if (params.filters) {
-    // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;
-    // filtersToQueryParams is the one place that owns the encoding, shared with the base64url
-    // ?s= state (panels/list/tableState.ts).
-    for (const [key, value] of filtersToQueryParams(params.filters).entries()) {
-      query.append(key, value);
-    }
-  }
 
   const path = `${basePath(collectionPath, params)}?${query.toString()}`;
   const body = await apiFetch<ListResponseBody<T>>(path);
@@ -61,7 +50,67 @@ export async function fetchList<T>(
   };
 }
 
-function basePath(collectionPath: string, params: ListParams): string {
+// The parameters that define a list's result set, without its order, paging or presentation — what
+// its map shows. The order is left out on purpose: a map has none, so sorting the list never refetches it.
+export type ResultSetParams = Pick<ListParams, "search" | "organizationId" | "filters" | "scope">;
+
+/** The result set of a list's parameters, so that only what changes the rows keys its map. */
+export function resultSetOf(params: ResultSetParams): ResultSetParams {
+  const { search, organizationId, filters, scope } = params;
+  return { search, organizationId, filters, scope };
+}
+
+// What the list's map view shows — GET .../{collection}/map (EntityMapResponse server side), the
+// same result set as the list answered with each row's geometry in WGS84 instead of a page. The server
+// only says what it alone knows; what is left out and how features look is derived client-side.
+export interface MapFeature {
+  id: string;
+  label: string;
+  type?: { resolvedLabel?: string | null } | null;
+  validationStatus?: string | null;
+  geometry: GeoJSON.Geometry;
+}
+
+export interface MapData {
+  features: MapFeature[];
+  // total: rows of the result set; examined: those looked at (up to the server's cap).
+  meta: { total: number; examined: number };
+}
+
+// `geometry`: the field id of the geometry column to place the rows by (their own geometry, or an
+// additional geometry field); the collection's own geometry when absent.
+export function fetchMap(collectionPath: string, params: ResultSetParams, geometry?: string): Promise<MapData> {
+  const query = resultSetQuery(params);
+  if (geometry) query.set("geometry", geometry);
+  return apiFetch<MapData>(`${basePath(collectionPath, params)}/map?${query.toString()}`);
+}
+
+// One element on a map, outside of any list — GET .../{collection}/{id}/map (EntityMapFeatureResponse):
+// the fiche open beside a map whose result set left it out. Null when it has no placeable geometry.
+export async function fetchMapFeature(collectionPath: string, id: string | number, geometry?: string): Promise<MapFeature | null> {
+  const query = geometry ? `?geometry=${encodeURIComponent(geometry)}` : "";
+  const body = await apiFetch<{ feature: MapFeature | null }>(`/api/v1/${collectionPath}/${encodeURIComponent(String(id))}/map${query}`);
+  return body.feature;
+}
+
+// The query parameters that define a result set — shared by the list and its map.
+function resultSetQuery(params: ResultSetParams): URLSearchParams {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.organizationId != null)
+    query.set("organizationId", String(params.organizationId));
+  if (params.filters) {
+    // f.<key>[.from|.to] — ProjectListFilter/RecordingUnitListFilter's own contract;
+    // filtersToQueryParams is the one place that owns the encoding, shared with the base64url
+    // ?s= state (panels/list/tableState.ts).
+    for (const [key, value] of filtersToQueryParams(params.filters).entries()) {
+      query.append(key, value);
+    }
+  }
+  return query;
+}
+
+function basePath(collectionPath: string, params: Pick<ListParams, "scope">): string {
   const { scope } = params;
   if (!scope) return `/api/v1/${collectionPath}`;
 

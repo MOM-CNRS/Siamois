@@ -163,6 +163,39 @@ class PlaceOpenApiServiceTest {
                         .isEqualTo(HttpStatus.NOT_FOUND.value()));
     }
 
+    /**
+     * The map walks the flat list's own query: its search, and the page the offset falls on — never only the roots.
+     */
+    @Test
+    void pagePlaces_isTheFlatListQueryAtTheOffset() {
+        Page<SpatialUnitDTO> page = new PageImpl<>(List.of(), PageRequest.of(2, 100), 0);
+        when(spatialUnitService.searchSpatialUnits(eq(institution), any(), any())).thenReturn(page);
+
+        Page<SpatialUnitDTO> result = service.pagePlaces(institution,
+                new fr.siamois.ui.api.openapi.v1.request.list.ListWindow(200, 100, "name:asc", "cave"),
+                fr.siamois.dto.FieldQuery.NONE);
+
+        assertThat(result).isSameAs(page);
+        ArgumentCaptor<FilterDTO> filter = ArgumentCaptor.forClass(FilterDTO.class);
+        ArgumentCaptor<PageRequest> pageable = ArgumentCaptor.forClass(PageRequest.class);
+        verify(spatialUnitService).searchSpatialUnits(eq(institution), filter.capture(), pageable.capture());
+        assertThat(filter.getValue().valueOfAsString(SpatialUnitSpec.NAME_FILTER)).isEqualTo("cave");
+        assertThat(filter.getValue().isRootOnly()).isFalse();
+        assertThat(pageable.getValue().getPageNumber()).isEqualTo(2);
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(100);
+    }
+
+    /**
+     * The organization of an organization-wide list is checked in the caller's scope.
+     */
+    @Test
+    void requireListOrganization_checksTheCallersScope() {
+        when(institutionService.findById(10L)).thenReturn(institution);
+
+        assertThat(service.requireListOrganization(caller, 10L)).isSameAs(institution);
+        verify(projectApiService).assertOrganizationInCallerScope(10L, SCOPE);
+    }
+
     @Test
     void createPlace_success() throws SpatialUnitAlreadyExistsException {
         PlaceCreateRequest request = new PlaceCreateRequest();

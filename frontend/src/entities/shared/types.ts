@@ -484,6 +484,9 @@ export interface EntityTypeConfig<TSummary = unknown, TDetail = unknown> {
     card?: CardDef<TSummary>;
     // The display mode a list starts in when the user has chosen none (the flat list when absent).
     defaultView?: "list" | "tree" | "cards";
+    // Present: the list can also be shown on a map (a « Carte » choice in the gear menu) — the entity's
+    // API serves GET .../{collection}/map with each row's geometry in WGS84 (see listApi's fetchMap).
+    mappable?: boolean;
   };
   detail: {
     tabs: DetailTabDef<TDetail>[];

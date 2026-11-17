@@ -1304,13 +1304,29 @@ public class RecordingUnitOpenApiService {
      */
     @Transactional(readOnly = true)
     public SiblingsResource findSiblings(String recordingUnitKey, PersonDTO personDto, Set<Long> accessibleInstitutionIds) {
+        RecordingUnitDTO dto = findViewableRecordingUnit(recordingUnitKey, personDto, accessibleInstitutionIds);
+        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
+        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.RECORDING_UNIT, projectId, dto.getId());
+    }
+
+    /**
+     * The recording unit behind a key, after the same access check as the detail.
+     *
+     * @param recordingUnitKey         numeric id or full identifier
+     * @param personDto                the caller
+     * @param accessibleInstitutionIds the organizations the caller may read
+     * @return the unit
+     * @throws ResponseStatusException 404 when the unit does not exist or is not visible to the caller
+     */
+    @Transactional(readOnly = true)
+    public RecordingUnitDTO findViewableRecordingUnit(String recordingUnitKey, PersonDTO personDto,
+                                                      Set<Long> accessibleInstitutionIds) {
         RecordingUnitDTO dto = recordingUnitService
                 .findAccessibleRecordingUnitWithEntity(recordingUnitKey, accessibleInstitutionIds, null)
                 .dto();
         if (!profilePermissionService.canViewRecordingUnit(personDto, dto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unité introuvable ou non accessible");
         }
-        Long projectId = dto.getActionUnit() != null ? dto.getActionUnit().getId() : null;
-        return entitySiblingsService.findSiblings(EntitySiblingsService.Kind.RECORDING_UNIT, projectId, dto.getId());
+        return dto;
     }
 }

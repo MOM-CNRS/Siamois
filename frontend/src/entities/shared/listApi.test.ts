@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {apiFetch} from "../../api/client";
-import {fetchList} from "./listApi";
+import {fetchList, fetchMap, fetchMapFeature, resultSetOf} from "./listApi";
 import {registerEntityType} from "../registry";
 import type {EntityTypeConfig} from "./types";
 
@@ -116,5 +116,70 @@ describe("fetchList", () => {
 
     const [path] = mockedApiFetch.mock.calls[0];
     expect(path).toContain("/api/v1/unregistered-thing/1/things?");
+  });
+});
+
+describe("fetchMap", () => {
+  it("asks the collection's /map for the same result set, without paging", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { organizationId: 7, search: "UE" });
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain("/api/v1/recording-units/map?");
+    expect(path).toContain("organizationId=7");
+    expect(path).toContain("search=UE");
+    expect(path).not.toContain("sort");
+    expect(path).not.toContain("offset");
+    expect(path).not.toContain("limit");
+  });
+
+  it("asks for the chosen geometry column", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { organizationId: 7 }, "40");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("geometry=40");
+  });
+
+  it("goes through the project's own sub-collection when scoped to a project", async () => {
+    registerEntityType(stubConfig("project", "projects"));
+    mockedApiFetch.mockResolvedValueOnce({ features: [], meta: { total: 0, examined: 0 } });
+
+    await fetchMap("recording-units", { scope: { entityType: "project", id: 5 } });
+
+    expect(mockedApiFetch.mock.calls[0][0]).toContain("/api/v1/projects/5/recording-units/map?");
+  });
+});
+
+describe("resultSetOf", () => {
+  it("keeps what selects the rows and drops their order and paging", () => {
+    const scope = { entityType: "project", id: 5 };
+    expect(resultSetOf({ search: "UE", organizationId: 7, filters: { a: 1 }, scope, sort: "x:asc", offset: 20 } as never))
+      .toEqual({ search: "UE", organizationId: 7, filters: { a: 1 }, scope });
+  });
+});
+
+describe("fetchMapFeature", () => {
+  it("asks the entity's own /map and unwraps its feature", async () => {
+    const feature = { id: "12", label: "UE-12", geometry: { type: "Point", coordinates: [2, 48] } };
+    mockedApiFetch.mockResolvedValueOnce({ feature });
+
+    await expect(fetchMapFeature("recording-units", 12)).resolves.toEqual(feature);
+    expect(mockedApiFetch.mock.calls[0][0]).toBe("/api/v1/recording-units/12/map");
+  });
+
+  it("asks for the chosen geometry column", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ feature: null });
+
+    await fetchMapFeature("recording-units", 12, "40");
+
+    expect(mockedApiFetch.mock.calls[0][0]).toBe("/api/v1/recording-units/12/map?geometry=40");
+  });
+
+  it("answers null for an entity with no placeable geometry", async () => {
+    mockedApiFetch.mockResolvedValueOnce({ feature: null });
+
+    await expect(fetchMapFeature("recording-units", "13")).resolves.toBeNull();
   });
 });

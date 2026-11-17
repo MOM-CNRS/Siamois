@@ -746,16 +746,18 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     }
 
     private List<FormField> systemFields(ConfigurableTable table) {
-        Map<String, CustomField> persisted = new HashMap<>();
+        // By id, the one thing that tells two tables' fields apart: the geometry of a unit and of a find share
+        // their label and binding, so a lookup by those would hand a find form the unit's geometry.
+        Map<Long, CustomField> persisted = new HashMap<>();
         customFieldRepository.findAllSystemFields()
-                .forEach(field -> persisted.putIfAbsent(SystemFieldCatalog.identityOf(field), field));
+                .forEach(field -> persisted.putIfAbsent(field.getId(), field));
 
         List<FormField> fields = new ArrayList<>();
         Set<Long> required = formLayoutSeeds.requiredFieldIds(table);
         for (CustomField declared : SystemFieldCatalog.sharedFieldsOf(table)) {
             // The owning project is set at creation and never configured (SystemFieldCatalog#isOwningProject).
             if (SystemFieldCatalog.isOwningProject(declared)) continue;
-            CustomField field = persisted.get(SystemFieldCatalog.identityOf(declared));
+            CustomField field = persisted.get(declared.getId());
             if (field == null) {
                 log.warn("System field '{}' of table {} has no row; it was defined after the last startup",
                         declared.getLabel(), table);
@@ -777,17 +779,19 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     @Transactional(readOnly = true)
     public FormLayout legacyLayout(Long projectId, ConfigurableTable table, String typeName) {
         Map<Long, EffectiveField> effective = effectiveFields(projectId, table, typeName);
-        Map<String, EffectiveField> systemByIdentity = new HashMap<>();
+        // By id, like systemFields: a field of another table that shares a label and binding (a unit's geometry in a
+        // find form) is not the seed's field.
+        Map<Long, EffectiveField> systemById = new HashMap<>();
         effective.values().stream()
                 .filter(field -> isSystemField(field.field()))
-                .forEach(field -> systemByIdentity.put(SystemFieldCatalog.identityOf(field.field()), field));
+                .forEach(field -> systemById.put(field.field().getId(), field));
 
         Set<Long> placed = new HashSet<>();
         List<FormLayout.Group> groups = new ArrayList<>();
         for (FormLayout.Group seedGroup : formLayoutSeeds.layoutOf(table).groups()) {
             List<FormLayout.Item> items = new ArrayList<>();
             for (FormLayout.Item seed : seedGroup.items()) {
-                EffectiveField field = systemByIdentity.get(SystemFieldCatalog.identityOf(seed.field()));
+                EffectiveField field = systemById.get(seed.field().getId());
                 if (field == null) continue;
                 placed.add(field.field().getId());
                 items.add(new FormLayout.Item(field.field(), seed.width(), field.active(), field.mandatory(),

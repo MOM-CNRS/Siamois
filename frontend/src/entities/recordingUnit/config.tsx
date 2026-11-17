@@ -105,6 +105,7 @@ export const recordingUnitEntityConfig: EntityTypeConfig<
     createForm: (ctx) => <RecordingUnitCreateForm {...ctx} />,
     // Created in a project: from the organization-wide list, the form picks it first.
     createProjectKind: "recordingUnit",
+    mappable: true,
     card: {
       image: (r) => (r.firstImageDocumentId ? { documentId: r.firstImageDocumentId } : null),
       subtitle: (r) => r.type?.resolvedLabel,

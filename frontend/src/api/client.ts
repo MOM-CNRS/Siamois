@@ -90,6 +90,16 @@ async function readError(response: Response): Promise<{ message: string; body?: 
  * A binary response (a stored file). The API accepts only the bearer token, so a plain link cannot
  * download it: the bytes are fetched with the token and handed to the browser as an object URL.
  */
+/**
+ * A public JSON service outside SIAMOIS (geo.api.gouv.fr…): no token, no cookie, nothing of the
+ * session sent. Throws ApiError on a non-2xx answer, like apiFetch.
+ */
+export async function fetchExternalJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { credentials: "omit", headers: { Accept: "application/json" } });
+  if (!response.ok) throw new ApiError(response.status, `${response.status} ${response.statusText}`, undefined, url);
+  return (await response.json()) as T;
+}
+
 export async function apiBlob(path: string, allowRetry = true): Promise<Blob> {
   const token = await getAccessToken();
   const response = await fetch(apiUrl(path), {

@@ -72,6 +72,7 @@ import fr.siamois.ui.api.openapi.v1.resource.form.TextFieldAnswer;
 import fr.siamois.ui.api.openapi.v1.resource.project.ProjectTableColumnResource;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitCreateFormData;
 import fr.siamois.ui.api.openapi.v1.resource.recordingunit.RecordingUnitResource;
+import fr.siamois.ui.api.openapi.v1.resource.sibling.SiblingsResource;
 import fr.siamois.ui.api.openapi.v1.response.project.type.*;
 import fr.siamois.ui.form.dto.CustomColUiDto;
 import fr.siamois.ui.form.dto.CustomFormPanelUiDto;
@@ -3714,5 +3715,110 @@ class RecordingUnitOpenApiServiceTest {
         request.setIdentifier("NEW-1");
         assertThatThrownBy(() -> service.patchRecordingUnit("1026", request, personDto, SCOPE, "fr"))
                 .isInstanceOf(IdentifierConflictException.class);
+    }
+
+    @Test
+    void findViewableRecordingUnit_whenVisible_returnsTheUnit() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+
+        assertThat(service.findViewableRecordingUnit("1026", personDto, SCOPE)).isSameAs(ruDto);
+    }
+
+    @Test
+    void findViewableRecordingUnit_whenNotVisible_throwsNotFound() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.findViewableRecordingUnit("1026", personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+    }
+
+    // ─── findViewableRecordingUnit / findSiblings ───────────────────────────────────────────────
+
+    /**
+     * A unit the caller may not see answers 404, as if it did not exist.
+     */
+    @Test
+    void findViewableRecordingUnit_whenNotVisible_throws404() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.findViewableRecordingUnit("1026", personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND))
+                .hasMessageContaining("Unité introuvable ou non accessible");
+    }
+
+    /**
+     * A unit outside the caller's organizations: the lookup's own 404 goes through untouched.
+     */
+    @Test
+    void findViewableRecordingUnit_whenUnknown_propagatesTheLookupError() {
+        ResponseStatusException notFound = new ResponseStatusException(HttpStatus.NOT_FOUND, "absent");
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("9999", SCOPE, null)).thenThrow(notFound);
+
+        assertThatThrownBy(() -> service.findViewableRecordingUnit("9999", personDto, SCOPE)).isSameAs(notFound);
+        verify(profilePermissionService, never()).canViewRecordingUnit(any(), any());
+    }
+
+    /**
+     * The unit's key may be its full identifier as well as its id.
+     */
+    @Test
+    void findViewableRecordingUnit_acceptsAFullIdentifier() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("UE-2024-001", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(true);
+
+        assertThat(service.findViewableRecordingUnit("UE-2024-001", personDto, SCOPE)).isSameAs(ruDto);
+    }
+
+    /**
+     * The siblings of a unit are those of its project.
+     */
+    @Test
+    void findSiblings_withProject_asksForTheProjectsSiblings() {
+        ActionUnitSummaryDTO project = new ActionUnitSummaryDTO();
+        project.setId(77L);
+        ruDto.setActionUnit(project);
+        SiblingsResource siblings = new SiblingsResource(null, null);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(entitySiblingsService.findSiblings(EntitySiblingsService.Kind.RECORDING_UNIT, 77L, 1026L)).thenReturn(siblings);
+
+        assertThat(service.findSiblings("1026", personDto, SCOPE)).isSameAs(siblings);
+    }
+
+    /**
+     * A unit with no project has no scope to look for siblings in.
+     */
+    @Test
+    void findSiblings_withoutProject_passesNoScope() {
+        ruDto.setActionUnit(null);
+        SiblingsResource none = new SiblingsResource(null, null);
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(entitySiblingsService.findSiblings(EntitySiblingsService.Kind.RECORDING_UNIT, null, 1026L)).thenReturn(none);
+
+        assertThat(service.findSiblings("1026", personDto, SCOPE)).isSameAs(none);
+    }
+
+    /**
+     * No sibling is looked up for a unit the caller may not see.
+     */
+    @Test
+    void findSiblings_whenNotVisible_throws404WithoutLookingUpSiblings() {
+        when(recordingUnitService.findAccessibleRecordingUnitWithEntity("1026", SCOPE, null))
+                .thenReturn(new RecordingUnitService.AccessibleRecordingUnit(ruEntity, ruDto));
+        when(profilePermissionService.canViewRecordingUnit(personDto, ruDto)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.findSiblings("1026", personDto, SCOPE))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND));
+        verifyNoInteractions(entitySiblingsService);
     }
 }

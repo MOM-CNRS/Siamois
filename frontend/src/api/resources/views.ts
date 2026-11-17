@@ -40,7 +40,7 @@ export interface ViewTableState {
   sort?: string;
   search?: string;
   limit?: number;
-  viewMode?: "list" | "tree" | "cards";
+  viewMode?: "list" | "tree" | "cards" | "map";
   typeSegment?: string;
   // Filters by column id, in the shape of the list's own filters (panels/list/tableState.ts's FilterValue).
   listFilters?: Record<string, unknown>;

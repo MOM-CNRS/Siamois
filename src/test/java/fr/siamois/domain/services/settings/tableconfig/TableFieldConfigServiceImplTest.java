@@ -78,7 +78,6 @@ class TableFieldConfigServiceImplTest {
     private static final String RECORDING_UNIT_FIELD = "specimen.field.recordingUnit";
     private static final String AUTHORS_FIELD = "specimen.field.authors";
     /** Kept clear of the ids the tests give their own fields, so the two never collide. */
-    private static final long SYSTEM_FIELD_FIRST_ID = 100L;
 
     @Mock
     private FieldConfigurationService fieldConfigurationService;
@@ -323,16 +322,33 @@ class TableFieldConfigServiceImplTest {
         CustomField ueIdentifier = SystemFieldCatalog.fieldsOf(ConfigurableTable.UE).stream()
                 .filter(field -> ueIdentifierLabel.equals(field.getLabel()))
                 .findFirst().orElseThrow();
-        ueIdentifier.setId(SYSTEM_FIELD_FIRST_ID);
         CustomField mobilierType = SystemFieldCatalog.fieldsOf(ConfigurableTable.MOBILIER).stream()
                 .filter(field -> CATEGORY_FIELD.equals(field.getLabel()))
                 .findFirst().orElseThrow();
-        mobilierType.setId(SYSTEM_FIELD_FIRST_ID + 1);
         when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(ueIdentifier, mobilierType));
         when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
 
         assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "Standard").getFields())
                 .extracting(TypeFieldFormConfig::getName).containsExactly(ueIdentifierLabel);
+    }
+
+    /**
+     * A find form holds the find's geometry (-438, « Géométrie du mobilier (point) »), never the unit's (-332):
+     * both share their label and binding, and the unit's row coming first must not take its place.
+     */
+    @Test
+    void getFieldsConfig_shouldHoldTheFindsOwnGeometryRatherThanTheUnitsSharingItsLabel() {
+        CustomField unitGeometry = SystemFieldCatalog.fieldBoundTo(ConfigurableTable.UE, "geom");
+        CustomField findGeometry = SystemFieldCatalog.fieldBoundTo(ConfigurableTable.MOBILIER, "geom");
+        when(customFieldRepository.findAllSystemFields()).thenReturn(List.of(unitGeometry, findGeometry));
+        when(fieldFormConfigRepository.findAllByFormConfigId(anyLong())).thenReturn(List.of());
+
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.MOBILIER, "Standard").getFields())
+                .extracting(TypeFieldFormConfig::getId)
+                .containsExactly(-438L);
+        assertThat(service.getFieldsConfig(PROJECT_ID, ConfigurableTable.UE, "Standard").getFields())
+                .extracting(TypeFieldFormConfig::getId)
+                .containsExactly(-332L);
     }
 
     @Test
@@ -2284,11 +2300,10 @@ class TableFieldConfigServiceImplTest {
 
     private Map<String, CustomField> givenSystemFieldsOf(ConfigurableTable table, String... labels) {
         Set<String> wanted = Set.of(labels);
+        // Each row keeps its definition's id: the rows are persisted under it (SystemFieldInitializer).
         Map<String, CustomField> rows = new LinkedHashMap<>();
-        long id = SYSTEM_FIELD_FIRST_ID;
         for (CustomField definition : SystemFieldCatalog.fieldsOf(table)) {
             if (!wanted.contains(definition.getLabel())) continue;
-            definition.setId(id++);
             rows.put(definition.getLabel(), definition);
         }
         assertThat(rows.keySet())

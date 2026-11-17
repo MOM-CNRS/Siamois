@@ -34,6 +34,13 @@ describe("listPreferences", () => {
     expect(loadListPrefs("k").openMode).toBeUndefined();
   });
 
+  it("remembers the geometry column of the map", () => {
+    saveListPrefs("k", { mapGeometry: "-332" });
+    expect(loadListPrefs("k").mapGeometry).toBe("-332");
+    window.localStorage.setItem("k", JSON.stringify({ v: 1, mapGeometry: 12 }));
+    expect(loadListPrefs("k").mapGeometry).toBeUndefined();
+  });
+
   it("ignores a display mode it does not know", () => {
     window.localStorage.setItem("k", JSON.stringify({ v: 1, viewMode: "carousel" }));
     expect(loadListPrefs("k").viewMode).toBeUndefined();

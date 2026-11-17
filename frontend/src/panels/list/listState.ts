@@ -1,6 +1,6 @@
 import type {ViewStateBody, ViewTableState} from "../../api/resources/views";
 import {type FilterValue, LEGACY_DEFAULT_LIMIT, PAGE_SIZE_OPTIONS, type TableState} from "./tableState";
-import type {ListViewMode} from "./listViews";
+import {isListViewMode, type ListViewMode} from "./listViews";
 
 // What of a list's TableState is kept for the user (GET/PUT /api/v1/view-states), and how it reads
 // back. The page (`offset`) and the search text are deliberately not: coming back to page 7 of
@@ -44,7 +44,7 @@ export function parsePersisted(raw: ViewStateBody | undefined): PersistedListSta
   if (typeof raw.limit === "number" && PAGE_SIZE_OPTIONS.includes(raw.limit) && raw.limit !== LEGACY_DEFAULT_LIMIT) parsed.limit = raw.limit;
   if (typeof raw.sort === "string" && raw.sort) parsed.sort = raw.sort;
   if (isStringArray(raw.visibleColumns)) parsed.visibleColumns = raw.visibleColumns;
-  if (raw.viewMode === "list" || raw.viewMode === "tree" || raw.viewMode === "cards") parsed.viewMode = raw.viewMode;
+  if (isListViewMode(raw.viewMode)) parsed.viewMode = raw.viewMode;
   if (raw.filters != null && typeof raw.filters === "object" && !Array.isArray(raw.filters)) {
     const filters: Record<string, FilterValue> = {};
     for (const [key, value] of Object.entries(raw.filters)) {

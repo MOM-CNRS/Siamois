@@ -65,40 +65,40 @@ class SystemFieldCatalogTest {
     }
 
     /**
-     * {@link SystemFieldCatalog#identityOf} is what a definition and its row are matched by, so a
-     * field missing either half of it would share an identity with every other field missing it —
-     * they would all collapse onto a single row.
+     * A definition and its row are matched by id (persisted as-is, see {@code SystemFieldInitializer}), so every
+     * system field carries one.
      */
     @ParameterizedTest
     @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
-    void identityOf_shouldBeBuiltOnALabelAndABindingEveryDefinedFieldCarries(ConfigurableTable table) {
-        assertThat(SystemFieldCatalog.fieldsOf(table)).allSatisfy(field -> {
-            assertThat(field.getLabel()).as("label of a system field of %s", table).isNotBlank();
-            assertThat(field.getValueBinding()).as("binding of %s", field.getLabel()).isNotBlank();
-        });
+    void everySystemFieldCarriesAnId(ConfigurableTable table) {
+        assertThat(SystemFieldCatalog.fieldsOf(table))
+                .allSatisfy(field -> assertThat(field.getId()).as("id of %s", field.getLabel()).isNotNull());
     }
 
     @ParameterizedTest
     @EnumSource(value = ConfigurableTable.class, mode = EnumSource.Mode.EXCLUDE, names = "PROJECT")
-    void identityOf_shouldTellTheFieldsOfATableApart(ConfigurableTable table) {
+    void theIdsTellTheFieldsOfATableApart(ConfigurableTable table) {
         assertThat(SystemFieldCatalog.fieldsOf(table))
-                .extracting(SystemFieldCatalog::identityOf)
+                .extracting(CustomField::getId)
                 .doesNotHaveDuplicates();
     }
 
     /**
-     * The definitions carry ids of their own that are local to the class declaring them — the same
-     * number stands for another field one definition over — so identity cannot be read from them.
+     * Across tables, one id never names two fields: the unit's and the find's geometry share their label and
+     * binding, and only their ids (-332, -438) tell a find form which one it holds.
      */
     @Test
-    void identityOf_shouldNotDependOnTheIdsTheDefinitionsCarry() {
-        Map<String, CustomField> fields = byLabel(ConfigurableTable.MOBILIER);
-        CustomField category = fields.get("specimen.field.type");
-        String identity = SystemFieldCatalog.identityOf(category);
-
-        category.setId(4321L);
-
-        assertThat(SystemFieldCatalog.identityOf(category)).isEqualTo(identity);
+    void anIdNamesOneFieldAcrossEveryTable() {
+        Map<Long, String> fieldById = new java.util.HashMap<>();
+        for (ConfigurableTable table : ConfigurableTable.values()) {
+            for (CustomField field : SystemFieldCatalog.sharedFieldsOf(table)) {
+                String what = field.getClass().getSimpleName() + " " + field.getLabel() + " " + field.getValueBinding();
+                String other = fieldById.putIfAbsent(field.getId(), what);
+                assertThat(other).as("field %s of %s", field.getId(), table).isIn(null, what);
+            }
+        }
+        assertThat(fieldById.get(-332L)).isNotEqualTo(null);
+        assertThat(fieldById.get(-438L)).isNotEqualTo(null);
     }
 
     /**

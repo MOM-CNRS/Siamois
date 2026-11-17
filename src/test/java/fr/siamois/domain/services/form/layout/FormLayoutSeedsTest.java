@@ -9,6 +9,7 @@ import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.TestForms;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -32,6 +33,33 @@ class FormLayoutSeedsTest {
             assertThat(group.label()).isNotBlank();
             assertThat(group.items()).isNotEmpty();
         });
+    }
+
+    /**
+     * Each table's geometry is its own field: a find form laid out with the unit's geometry (-332) would show
+     * « Géométrie de l'UE » in its « Détails » section.
+     */
+    @ParameterizedTest
+    @CsvSource({"UE, -332, 4291328", "MOBILIER, -438, 4291329"})
+    void eachTableLaysOutItsOwnGeometryField(ConfigurableTable table, long geometryFieldId, String conceptId) {
+        List<FormLayout.Item> geometries = TestForms.layoutOf(table).groups().stream()
+                .flatMap(group -> group.items().stream())
+                .filter(item -> "geom".equals(item.field().getValueBinding()))
+                .toList();
+
+        assertThat(geometries).singleElement().satisfies(item -> {
+            assertThat(item.field().getId()).isEqualTo(geometryFieldId);
+            assertThat(item.field().getConcept().getExternalId()).isEqualTo(conceptId);
+        });
+    }
+
+    @Test
+    void aFindFormNeverCitesTheRecordingUnitsGeometry() {
+        assertThat(TestForms.layoutOf(ConfigurableTable.MOBILIER).groups().stream()
+                .flatMap(group -> group.items().stream())
+                .map(item -> item.field().getId()))
+                .doesNotContain(-332L)
+                .contains(-438L);
     }
 
     @Test

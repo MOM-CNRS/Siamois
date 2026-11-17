@@ -58,6 +58,8 @@ export const placeEntityConfig: EntityTypeConfig<PlaceSummary, PlaceDetail> = {
     tree: true,
     // The places below a place: its "Lieux" tab as a tree.
     treeScopes: ["place:children"],
+    // The organization-wide list, by the place's own geometry (GET /places/map).
+    mappable: true,
     // Places belong to the organization, not a project: the one organization-wide list whose
     // creation is allowed (see CreateForm.tsx).
     createForm: (ctx) => <PlaceCreateForm {...ctx} />,

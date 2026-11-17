@@ -49,6 +49,16 @@ public class SpatialUnitSpec {
         return ((root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(PARENT_FILTER)));
     }
 
+    /**
+     * Places whose own geometry is set.
+     *
+     * @return the specification
+     */
+    @NonNull
+    public static Specification<SpatialUnit> hasGeometry() {
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isNotNull(root.get("geom"));
+    }
+
     @NonNull
     public static Specification<SpatialUnit> idIn(java.util.Collection<Long> ids) {
         return (root, query, criteriaBuilder) -> root.get("id").in(ids);

@@ -1,6 +1,8 @@
 import {describe, expect, it, vi} from "vitest";
 import {findEntityConfig} from "./config";
 import {apiFetch} from "../../api/client";
+import {availableViews} from "../../panels/list/listViews";
+import type {EntityTypeConfig} from "../shared/types";
 
 vi.mock("../../api/client", () => ({ apiFetch: vi.fn() }));
 const mockedApiFetch = vi.mocked(apiFetch);
@@ -26,6 +28,19 @@ describe("findEntityConfig", () => {
 
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {
     expect(findEntityConfig.list.createForm).toBeDefined();
+  });
+
+  // The list panel reads every config as an untyped one.
+  const anyConfig = findEntityConfig as unknown as EntityTypeConfig<unknown, unknown>;
+
+  it("is shown on a map from the organization-wide list and from a project's", () => {
+    expect(findEntityConfig.list.mappable).toBe(true);
+    expect(availableViews(anyConfig, undefined)).toContain("map");
+    expect(availableViews(anyConfig, { entityType: "project", id: 5 })).toContain("map");
+  });
+
+  it("offers no map inside another parent, whose sub-collection has no map endpoint", () => {
+    expect(availableViews(anyConfig, { entityType: "recordingUnit", id: 31 })).not.toContain("map");
   });
 
   // Created in a project: from the organization-wide list, the create form picks it.
