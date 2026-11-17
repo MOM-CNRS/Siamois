@@ -25,7 +25,7 @@ import type {PanelToolbarSlot} from "../mountOptions";
 import {queryKeys} from "../api/queryKeys";
 import {EntityCardGrid} from "./list/EntityCardGrid";
 import {EntityMapView} from "./list/EntityMapView";
-import {mapGeometryOptions, type MapGeometryOption, resolveMapGeometry} from "./list/map/mapGeometry";
+import {mapGeometryFilter, mapGeometryOptions, type MapGeometryOption, resolveMapGeometry} from "./list/map/mapGeometry";
 import {EntityTable} from "./list/EntityTable";
 import {type EntityTableTree, useTreeRows} from "./list/useTreeRows";
 import {EntityTableSettings, type EntityTableSettingsProps} from "./list/EntityTableSettings";
@@ -249,6 +249,11 @@ function EntityListPanelBody({
   // A search or a filter changes the rows: applied over a selection only once the user agrees to lose it.
   const selectionGuard = useSelectionGuard(selection);
   const filterControls = useFilterControls(table, selectionGuard);
+  // Switching to the map filters the geometry it draws on « n'est pas vide », a chip like any other.
+  const filterMapGeometry = () => {
+    const filter = mapGeometryFilter(state.filters, mapGeometry, catalog?.fields);
+    if (filter && mapGeometry) filterControls.changeFilter(mapGeometry.value, filter);
+  };
   const rowActions = useRowActions({
     entityType,
     config,
@@ -291,6 +296,7 @@ function EntityListPanelBody({
     listColumns,
     rowActions: hasActionBarSettings ? rowActions : null,
     savePrefs,
+    onShowMap: filterMapGeometry,
   });
 
   const body = (
@@ -580,6 +586,7 @@ function buildTableSettings({
   listColumns,
   rowActions,
   savePrefs,
+  onShowMap,
 }: {
   // Null when a row cannot open both in the overview and in the main pane.
   openMode: OpenMode | null;
@@ -591,13 +598,15 @@ function buildTableSettings({
   // Null when there are no row actions to arrange.
   rowActions: RowActions | null;
   savePrefs: SavePrefs;
+  // Called when the user switches to the map view.
+  onShowMap: () => void;
 }): EntityTableSettingsProps {
   const { table, views, viewMode, hasSchema } = listData;
   return {
     openMode: openMode ? { value: openMode, onChange: (mode) => savePrefs({ openMode: mode }) } : null,
     // Shown even for a single column: it says which geometry the map draws.
     mapGeometry: mapGeometry ? mapGeometrySetting(mapGeometry, geometryOptions, savePrefs) : null,
-    views: views.length > 1 ? viewsSetting(views, viewMode, table) : null,
+    views: views.length > 1 ? viewsSetting(views, viewMode, table, onShowMap) : null,
     columns: hasSchema
       ? { options: listColumns.togglerOptions, visible: table.state.visibleColumns, onChange: table.setVisibleColumns }
       : null,
@@ -623,12 +632,13 @@ function mapGeometrySetting(
 }
 
 /**
- * The gear's view switch (list, tree, cards, map).
+ * The gear's view switch (list, tree, cards, map); `onShowMap` runs when it switches to the map.
  */
 function viewsSetting(
   views: ListViewMode[],
   viewMode: ListViewMode,
   table: TableControls,
+  onShowMap: () => void,
 ): EntityTableSettingsProps["views"] {
   return {
     options: viewOptions(views),
@@ -637,6 +647,7 @@ function viewsSetting(
       table.setViewMode(mode);
       // A page of roots is not a page of the flat list: back to the first.
       table.setPage(0, table.state.limit);
+      if (mode === "map" && viewMode !== "map") onShowMap();
     },
   };
 }
