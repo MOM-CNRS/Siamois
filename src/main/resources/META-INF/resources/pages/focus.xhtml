@@ -69,7 +69,7 @@
 
                     <p:outputPanel id="sidebarContent" style="height: 100%; width: 100%; flex-grow: 1;">
 
-                        <p:outputPanel id="historyPanel" rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
+                        <p:outputPanel id="historyPanel" style="height: 100%" rendered="#{sidebarBean.currentMode == 'HISTORIQUE'}">
                             <div style="height: 100%">
                                 <p:dataTable id="historyTable"
                                              value="#{historyBean.items}"

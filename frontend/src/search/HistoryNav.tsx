@@ -33,14 +33,14 @@ function titleIn(history: HistoryShortcut[], entry: TrailEntry): string | undefi
 
 /**
  * The header's Back / Forward arrows, between the organisation select and the search: they walk the trail of
- * pages the user went through (navigation/navTrail). An arrow with no page behind it is greyed; its tooltip
- * names the page it leads to.
+ * pages the user went through in the active organisation (navigation/navTrail). An arrow with no page behind it
+ * is greyed; its tooltip names the page it leads to.
  */
 export function HistoryNav({ organizationId }: Readonly<{ organizationId?: number }>) {
-  useSyncExternalStore(subscribeTrail, trailVersion);
+  useSyncExternalStore(subscribeTrail, () => trailVersion(organizationId));
   const [history, setHistory] = useState<HistoryShortcut[]>([]);
-  const previous = previousEntry();
-  const next = nextEntry();
+  const previous = previousEntry(organizationId);
+  const next = nextEntry(organizationId);
 
   // The titles come from the server's history, read when the user points at an arrow (they are only wanted then).
   function loadTitles() {
@@ -51,7 +51,7 @@ export function HistoryNav({ organizationId }: Readonly<{ organizationId?: numbe
   }
 
   function go(delta: -1 | 1) {
-    const target = moveTrail(delta);
+    const target = moveTrail(organizationId, delta);
     if (!target) return;
     const navigation = getNavigation();
     if (navigation) navigation.restoreUrl(target.url);
