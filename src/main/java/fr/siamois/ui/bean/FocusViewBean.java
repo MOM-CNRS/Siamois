@@ -45,6 +45,7 @@ public class FocusViewBean implements Serializable {
     private final transient PageTargetService pageTargetService;
 
     private static final String FICHE_PANEL_KIND = "detail";
+    private static final String HOME_PANEL_KIND = "home";
 
 
     private AbstractPanel mainPanel;
@@ -116,16 +117,18 @@ public class FocusViewBean implements Serializable {
         }
 
         if (mainPanel != null) {
-            recordIfFiche(mainPanel);
+            String kind = mainPanel.reactPanelKind();
+            historyBean.addLoadedPage(historyItemOf(mainPanel), FICHE_PANEL_KIND.equals(kind) || HOME_PANEL_KIND.equals(kind));
         }
     }
 
     /**
      * Keeps the view's main panel in step with a client-side navigation of the React main pane
-     * (reactAction_setMain({path: "/action-unit/12", fullScreen: true})), which otherwise never reaches
+     * (reactAction_setMain({path: "/action-unit/12", record: true})), which otherwise never reaches
      * the server: a later overview opened through the bridge is paired with the main pane actually on
-     * screen, not the one the page loaded with. The history records the page only when {@code fullScreen}
-     * says a fiche was just opened there: scrolling through fiches or going Back/Forward adds nothing.
+     * screen, not the one the page loaded with. The history records the page only when {@code record}
+     * says so (a fiche opened full screen, a table opened from the home page): scrolling through fiches
+     * or going Back/Forward adds nothing.
      * The overview still open, if any, stays attached to the new main panel. A page deleted since (a
      * Back/Forward move can lead to one) is left to React, which shows it as such: the panel would
      * redirect the whole page to the 404.
@@ -158,24 +161,22 @@ public class FocusViewBean implements Serializable {
         }
         mainPanel = next;
 
-        if (Boolean.parseBoolean(params.get("fullScreen"))) {
-            recordIfFiche(next);
+        if (Boolean.parseBoolean(params.get("record"))) {
+            historyBean.addItem(historyItemOf(next));
         }
     }
 
     /**
-     * Whether this history entry is the fiche shown full screen in this view.
+     * Whether this history entry is the page shown in the main pane of this view.
      */
     public boolean isCurrentPage(HistoryBean.HistoryItem item) {
         return mainPanel != null && item.getMain().getUri().equals(mainPanel.reactResourceUri());
     }
 
-    private void recordIfFiche(AbstractPanel panel) {
-        if (FICHE_PANEL_KIND.equals(panel.reactPanelKind())) {
-            HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
-            item.setMain(historyComponentOf(panel));
-            historyBean.addItem(item);
-        }
+    private static HistoryBean.HistoryItem historyItemOf(AbstractPanel panel) {
+        HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
+        item.setMain(historyComponentOf(panel));
+        return item;
     }
 
     /** Opens the panel on a saved view: the view's name is then the panel's title (history, favorite, tab). */

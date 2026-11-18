@@ -32,14 +32,6 @@ public class PageTargetService {
     }
 
     /**
-     * Whether this page is the fiche of one entity.
-     */
-    public boolean isFiche(String uri) {
-        Matcher entityPage = ENTITY_PAGE.matcher(uri);
-        return entityPage.matches() && repository.isKnownKind(entityPage.group(1));
-    }
-
-    /**
      * Whether the entity or saved view this page is about was deleted.
      */
     @Transactional(readOnly = true)

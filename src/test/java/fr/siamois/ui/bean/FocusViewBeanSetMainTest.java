@@ -73,13 +73,13 @@ class FocusViewBeanSetMainTest {
     }
 
     @Test
-    void movesTheMainPanelAndRecordsTheFicheOpenedFullScreen() {
+    void movesTheMainPanelAndRecordsThePageWhenAskedTo() {
         AbstractPanel previous = panel("Projets", "/action-unit");
         bean.setMainPanel(previous);
         AbstractPanel next = fiche("UE-12", "/recording-unit/12");
         when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
         params.put("path", "/recording-unit/12");
-        params.put("fullScreen", "true");
+        params.put("record", "true");
 
         bean.setMainFromRequest();
 
@@ -163,12 +163,12 @@ class FocusViewBeanSetMainTest {
     }
 
     @Test
-    void recordsNothingWhenTheFicheWasNotOpenedFullScreen() {
+    void recordsNothingWhenNotAskedTo() {
         bean.setMainPanel(panel("Projets", "/action-unit"));
         AbstractPanel next = fiche("UE-12", "/recording-unit/12");
         when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
         params.put("path", "/recording-unit/12");
-        params.put("fullScreen", "false");
+        params.put("record", "false");
 
         bean.setMainFromRequest();
 
@@ -177,15 +177,52 @@ class FocusViewBeanSetMainTest {
     }
 
     @Test
-    void recordsNothingForAList() {
-        bean.setMainPanel(panel("Projets", "/action-unit"));
+    void recordsATableOpenedFromTheHomePage() {
+        bean.setMainPanel(panel("Accueil", "/welcome"));
         AbstractPanel list = panel("UE", "/recording-unit");
         when(list.reactPanelKind()).thenReturn("list");
         when(panelFactory.create("recording-unit", null)).thenReturn(list);
         params.put("path", "/recording-unit");
-        params.put("fullScreen", "true");
+        params.put("record", "true");
 
         bean.setMainFromRequest();
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/recording-unit");
+    }
+
+    private void loadPage(String path) {
+        bean.setMainToken(java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(path.getBytes()));
+        bean.beforeInit();
+    }
+
+    @Test
+    void loadingTheHomePageRecordsIt() {
+        AbstractPanel home = panel("Accueil", "/welcome");
+        when(home.reactPanelKind()).thenReturn("home");
+        when(panelFactory.create("welcome", null)).thenReturn(home);
+
+        loadPage("/welcome");
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/welcome");
+    }
+
+    @Test
+    void loadingAFicheRecordsIt() {
+        AbstractPanel fiche = fiche("UE-12", "/recording-unit/12");
+        when(panelFactory.create("recording-unit", 12L)).thenReturn(fiche);
+
+        loadPage("/recording-unit/12");
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/recording-unit/12");
+    }
+
+    @Test
+    void loadingAListRecordsNothing() {
+        AbstractPanel list = panel("UE", "/recording-unit");
+        when(list.reactPanelKind()).thenReturn("list");
+        when(panelFactory.create("recording-unit", null)).thenReturn(list);
+
+        loadPage("/recording-unit");
 
         assertThat(historyBean.getItems()).isEmpty();
     }

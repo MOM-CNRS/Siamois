@@ -50,13 +50,13 @@ async function flush() {
 }
 
 describe.each(CASES)("%s home card", (label, factory, count, entityType, order) => {
-  function renderCard(onNavigate = vi.fn()) {
-    const [widget] = factory({ organizationId: 7, onNavigate });
+  function renderCard(onOpenTable = vi.fn()) {
+    const [widget] = factory({ organizationId: 7, onOpenTable });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
       root.render(<QueryClientProvider client={queryClient}>{widget.render()}</QueryClientProvider>);
     });
-    return { widget, onNavigate };
+    return { widget, onOpenTable };
   }
 
   it("is a card widget placed in homePanel.xhtml's order", () => {
@@ -75,7 +75,7 @@ describe.each(CASES)("%s home card", (label, factory, count, entityType, order) 
   });
 
   it("opens its React list on click (no id, no page load)", async () => {
-    const { onNavigate } = renderCard();
+    const { onOpenTable } = renderCard();
     await flush();
 
     expect(container.querySelector("button")).toBeNull();
@@ -83,6 +83,6 @@ describe.each(CASES)("%s home card", (label, factory, count, entityType, order) 
       container.querySelector('[role="link"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(onNavigate).toHaveBeenCalledWith(entityType);
+    expect(onOpenTable).toHaveBeenCalledWith(entityType);
   });
 });

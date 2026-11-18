@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Objects;
 
 /*
-Bean managing the history shown in the sidebar: the fiches the user opened full screen lately in the active
-organisation. They are kept in base (UserHistoryService), so they outlive the session; the session holds the list to show,
+Bean managing the history shown in the sidebar: the pages the user opened lately in the active organisation (the
+fiches opened full screen, the home page and the tables opened from it). They are kept in base (UserHistoryService), so they outlive the session; the session holds the list to show,
 read from there each time the sidebar draws it.
  */
 @Slf4j
@@ -48,7 +48,7 @@ public class HistoryBean {
     private List<HistoryItem> items = new ArrayList<>();
     // The organisation the items belong to; null as long as none was read.
     private Long itemsInstitutionId;
-    // The entry the user just clicked on: reaching its fiche leaves it where it is in the list.
+    // The entry the user just clicked on: reaching its page leaves it where it is in the list.
     private HistoryItem clickedEntry;
 
     /**
@@ -205,8 +205,8 @@ public class HistoryBean {
     }
 
     /**
-     * Opens the fiche of a sidebar entry. Walking through the history does not reorder it: the entry stays
-     * where it is, and is the one highlighted once the fiche is loaded.
+     * Opens the page of a sidebar entry. Walking through the history does not reorder it: the entry stays
+     * where it is, and is the one highlighted once the page is loaded.
      */
     public void redirectToEntry(HistoryItem entry) throws IOException {
         clickedEntry = entry;
@@ -215,15 +215,22 @@ public class HistoryBean {
     }
 
     /**
-     * Records a fiche opened full screen, at the top of the list, unless the user reached it through its entry.
+     * A page was loaded in the browser: it is recorded when it is {@code recordable}, unless the user reached
+     * it through its entry.
+     */
+    public void addLoadedPage(HistoryItem item, boolean recordable) {
+        boolean clicked = clickedEntry != null && clickedEntry.getMain().getUri().equals(item.getMain().getUri());
+        clickedEntry = null;
+        if (recordable && !clicked) {
+            addItem(item);
+        }
+    }
+
+    /**
+     * Records a page the user opened, at the top of the list.
      */
     public void addItem(HistoryItem item) {
         if(item.getMain() == null) {
-            return;
-        }
-        boolean walked = clickedEntry != null && clickedEntry.getMain().getUri().equals(item.getMain().getUri());
-        clickedEntry = null;
-        if (walked) {
             return;
         }
         getItems();

@@ -48,6 +48,7 @@ function PanelContent({
   organizationId,
   onNavigate,
   onNavigateSibling,
+  onOpenTable,
   onOpenOverview,
   overview,
   onCreate,
@@ -61,6 +62,8 @@ function PanelContent({
   onNavigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // The fiche arrows of a "detail" view.
   onNavigateSibling: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // The cards of a "home" view's « Accès par table ».
+  onOpenTable: (entityType: string) => void;
   // Only meaningful for a "list" view — opens the entity in the overview pane instead of
   // navigating the main pane away from the list (plan §8 phase 5).
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
@@ -80,7 +83,7 @@ function PanelContent({
       // Assembled from every registered entity's own `home.widgets` (plan §8 phase 7) — not a
       // switch/import per entity, same "registry, not a switch" principle List/Detail already
       // follow. Most entities won't declare `home` at all yet, so this stays empty until they do.
-      const home = { organizationId, onNavigate, onOpenView, onOpenOverview };
+      const home = { organizationId, onNavigate, onOpenView, onOpenOverview, onOpenTable };
       const widgets = [
         ...getAllEntityTypes().flatMap((config) => config.home?.widgets(home) ?? []),
         ...homeShortcutWidgets(home),
@@ -169,7 +172,7 @@ export function App({ options }: { options: MountOptions }) {
   // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
-  const { state, navigate, navigateSibling, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  const { state, navigate, navigateSibling, openTable, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
   useRestoreFocus(overview != null);
@@ -277,6 +280,7 @@ export function App({ options }: { options: MountOptions }) {
       organizationId={options.organizationId}
       onNavigate={navigate}
       onNavigateSibling={navigateSibling}
+      onOpenTable={openTable}
       onOpenView={openView}
       onOpenOverview={openOverview}
       overview={overview}

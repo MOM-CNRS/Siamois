@@ -284,6 +284,8 @@ export interface HomeWidgetContext {
   // Opens a list on a saved view (a bookmark of a view), and a fiche in the overview pane.
   onOpenView?: (entityType: string, viewId?: number) => void;
   onOpenOverview?: (entityType: string, id: string | number) => void;
+  // Opens the list of a type from a card of « Accès par table »: the history records it.
+  onOpenTable?: (entityType: string) => void;
 }
 
 export interface HomeWidgetDef {

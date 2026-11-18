@@ -156,22 +156,27 @@ describe("decodeUrl", () => {
   });
 });
 
-describe("fullScreenOpened", () => {
+describe("recordsVisit", () => {
   const start = initialNavState(options);
   const detail = { panelKind: "detail" as const, entityType: "project", entityId: "1" };
 
   it("is set by a fiche opened in the main pane, and by focus mode", () => {
-    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail }).fullScreenOpened).toBe(true);
+    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail }).recordsVisit).toBe(true);
     const withOverview = navReducer(start, { type: "openOverview", overview: { entityType: "project", entityId: "1" } });
-    expect(navReducer(withOverview, { type: "enterFocus" }).fullScreenOpened).toBe(true);
+    expect(navReducer(withOverview, { type: "enterFocus" }).recordsVisit).toBe(true);
+  });
+
+  it("is set by a table opened from the home page", () => {
+    const table = { panelKind: "list" as const, entityType: "project" };
+    expect(navReducer(start, { type: "navigate", path: "/action-unit", view: table, record: true }).recordsVisit).toBe(true);
   });
 
   it("is not set by the fiche arrows, a list, or coming back out of focus mode", () => {
-    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail, sibling: true }).fullScreenOpened).toBe(false);
-    expect(navReducer(start, { type: "navigate", path: "/action-unit", view: { panelKind: "list", entityType: "project" } }).fullScreenOpened).toBe(false);
+    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail, record: false }).recordsVisit).toBe(false);
+    expect(navReducer(start, { type: "navigate", path: "/action-unit", view: { panelKind: "list", entityType: "project" } }).recordsVisit).toBe(false);
     const withOverview = navReducer(start, { type: "openOverview", overview: { entityType: "project", entityId: "1" } });
     const focused = navReducer(withOverview, { type: "enterFocus" });
-    expect(navReducer(focused, { type: "closeFocus" }).fullScreenOpened).toBe(false);
+    expect(navReducer(focused, { type: "closeFocus" }).recordsVisit).toBe(false);
   });
 });
 

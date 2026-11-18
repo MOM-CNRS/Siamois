@@ -14,7 +14,7 @@ export interface CountCardSpec {
   order: number;
 }
 
-function CountCard({ spec, organizationId, onNavigate }: HomeWidgetContext & { spec: CountCardSpec }) {
+function CountCard({ spec, organizationId, onOpenTable }: HomeWidgetContext & { spec: CountCardSpec }) {
   const { data } = useOrganizationCounts(organizationId);
   return (
     <EntityCountCard
@@ -24,7 +24,7 @@ function CountCard({ spec, organizationId, onNavigate }: HomeWidgetContext & { s
       count={data?.[spec.count]}
       className={spec.className}
       chipClassName={spec.chipClassName}
-      onOpen={() => onNavigate?.(spec.entityType)}
+      onOpen={() => onOpenTable?.(spec.entityType)}
     />
   );
 }

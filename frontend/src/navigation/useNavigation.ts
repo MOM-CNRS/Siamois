@@ -26,6 +26,8 @@ export interface Navigation {
   navigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
   // The fiche arrows of the main pane: the next fiche takes its place, without entering the history.
   navigateSibling: (entityType: string, id: string | number, preview?: EntityPreview) => void;
+  // A card of the home page's « Accès par table »: the type's list, which the history records.
+  openTable: (entityType: string) => void;
   openOverview: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // The entity type's list in the main pane, on a saved view (or, without one, its default list).
   openView: (entityType: string, viewId?: number) => void;
@@ -75,10 +77,18 @@ export function useNavigation(options: MountOptions): Navigation {
       if (!config) return;
       send({
         type: "navigate",
-        sibling: true,
+        record: false,
         path: config.routes.detail(id),
         view: { panelKind: "detail", entityType, entityId: id, preview },
       });
+    },
+    [send],
+  );
+  const openTable = useCallback<Navigation["openTable"]>(
+    (entityType) => {
+      const config = getEntityType(entityType);
+      if (!config) return;
+      send({ type: "navigate", record: true, path: config.routes.list, view: { panelKind: "list", entityType } });
     },
     [send],
   );
@@ -167,10 +177,10 @@ export function useNavigation(options: MountOptions): Navigation {
     const { bridge } = latest.current.options;
     const sync = serverSync(server.current, state);
     if (sync.closeOverview) bridge?.closeOverview?.();
-    if (sync.setMain) bridge?.setMain?.(sync.setMain, state.fullScreenOpened);
+    if (sync.setMain) bridge?.setMain?.(sync.setMain, state.recordsVisit);
     if (sync.setOverview) bridge?.setOverview?.(sync.setOverview.entityType, sync.setOverview.entityId);
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, navigateSibling, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, navigateSibling, openTable, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
 }

@@ -42,9 +42,9 @@
                           update="@none"/>
 
         <!--
-        A client-side navigation of the React main pane (reactAction_setMain({path: "/action-unit/12", fullScreen: true})):
-        FocusViewBean#setMainFromRequest moves the view's main panel to it and, when `fullScreen` says
-        a fiche was just opened there, records it in the history. Fire-and-forget, like the other two.
+        A client-side navigation of the React main pane (reactAction_setMain({path: "/action-unit/12", record: true})):
+        FocusViewBean#setMainFromRequest moves the view's main panel to it and, when `record` says so,
+        records it in the history. Fire-and-forget, like the other two.
 
         This refreshes the sidebar's history list (focus.xhtml, .sia-history-table) itself: a jQuery
         selector, so nothing happens while the sidebar shows the bookmarks instead.

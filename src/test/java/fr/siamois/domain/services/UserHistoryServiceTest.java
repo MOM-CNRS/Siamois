@@ -120,7 +120,6 @@ class UserHistoryServiceTest {
     @Test
     void latest_readsEverythingKeptAndBoundsTheResult() {
         List<UserHistoryEntry> kept = List.of(entry("/a", ""), entry("/b", ""));
-        when(pageTargetService.isFiche(anyString())).thenReturn(true);
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(kept);
 
@@ -141,22 +140,20 @@ class UserHistoryServiceTest {
         UserHistoryEntry next = entry("/recording-unit/3", "");
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(List.of(deleted, alive, next));
-        when(pageTargetService.isFiche(anyString())).thenReturn(true);
         when(pageTargetService.missingAmong(anySet())).thenReturn(Set.of("/recording-unit/2"));
 
         assertEquals(List.of(alive, next), service.latest(userInfo, 2));
     }
 
     @Test
-    void latest_keepsOnlyTheFichesOpenedFullScreen() {
+    void latest_leavesOutTheFichesOpenedInTheOverview() {
         UserHistoryEntry fiche = entry("/recording-unit/1", "");
-        UserHistoryEntry list = entry("/recording-unit", "");
+        UserHistoryEntry home = entry("/welcome", "");
+        UserHistoryEntry table = entry("/recording-unit", "");
         UserHistoryEntry inOverview = entry("/recording-unit", "/recording-unit/1");
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
-                .thenReturn(List.of(list, inOverview, fiche));
-        when(pageTargetService.isFiche("/recording-unit/1")).thenReturn(true);
-        when(pageTargetService.isFiche("/recording-unit")).thenReturn(false);
+                .thenReturn(List.of(table, inOverview, fiche, home));
 
-        assertEquals(List.of(fiche), service.latest(userInfo, 10));
+        assertEquals(List.of(table, fiche, home), service.latest(userInfo, 10));
     }
 }

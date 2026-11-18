@@ -18,8 +18,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The fiches a user opened full screen, per organisation: the last {@value #MAX_ENTRIES} are kept, whatever
- * the session or the browser they were opened from.
+ * The pages a user opened, per organisation (the fiches opened full screen, the home page and the tables opened
+ * from it): the last {@value #MAX_ENTRIES} are kept, whatever the session or the browser they were opened from.
  */
 @Service
 @RequiredArgsConstructor
@@ -79,9 +79,8 @@ public class UserHistoryService {
     }
 
     /**
-     * The fiches the user latest opened full screen in the organisation, the most recent first. What older
-     * versions recorded besides (lists, the home page, fiches opened in the overview) is left out, and so is a
-     * fiche deleted since.
+     * The pages the user latest opened in the organisation, the most recent first. The fiches older versions
+     * recorded as opened in the overview are left out, and so is a page whose entity or saved view was deleted.
      */
     @Transactional(readOnly = true)
     public List<UserHistoryEntry> latest(UserInfo userInfo, int limit) {
@@ -90,12 +89,10 @@ public class UserHistoryService {
         int size = Math.max(1, Math.min(limit, MAX_ENTRIES));
         List<UserHistoryEntry> kept = repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(
                 person, institution, PageRequest.of(0, MAX_ENTRIES));
-        List<UserHistoryEntry> fiches = kept.stream()
-                .filter(entry -> entry.getSecondaryUri().isEmpty() && pageTargetService.isFiche(entry.getMainUri()))
-                .toList();
+        List<UserHistoryEntry> pages = kept.stream().filter(entry -> entry.getSecondaryUri().isEmpty()).toList();
         Set<String> missing = pageTargetService.missingAmong(
-                fiches.stream().map(UserHistoryEntry::getMainUri).collect(Collectors.toSet()));
-        return fiches.stream()
+                pages.stream().map(UserHistoryEntry::getMainUri).collect(Collectors.toSet()));
+        return pages.stream()
                 .filter(entry -> !missing.contains(entry.getMainUri()))
                 .limit(size)
                 .toList();

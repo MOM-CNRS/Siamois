@@ -66,14 +66,15 @@ export interface NavState {
   // Who moved the address bar to this state: the app (push a history entry for it) or the browser
   // (Back/Forward: the address is already right).
   urlOwner: "app" | "browser";
-  // The main pane's fiche was just opened full screen: the history sidebar records it. Not when the
-  // user scrolls through fiches with the arrows, goes Back/Forward or comes back out of focus mode.
-  fullScreenOpened: boolean;
+  // The history sidebar records the main pane's page: a fiche opened full screen, or a table opened from
+  // the home page. Not when the user scrolls through fiches with the arrows, goes Back/Forward or comes
+  // back out of focus mode.
+  recordsVisit: boolean;
 }
 
 export type NavAction =
-  // `sibling`: the fiche arrows' jump to the previous or next fiche.
-  | { type: "navigate"; view: NavigationView; path: string; sibling?: boolean }
+  // `record`: whether the history records the page; by default, only a fiche is.
+  | { type: "navigate"; view: NavigationView; path: string; record?: boolean }
   | { type: "openOverview"; overview: OverviewState }
   | { type: "closeOverview" }
   | { type: "enterFocus" }
@@ -103,7 +104,7 @@ export function initialNavState(options: MountOptions): NavState {
     focusStack: [],
     navigatedAway: false,
     urlOwner: "browser",
-    fullScreenOpened: false,
+    recordsVisit: false,
   };
 }
 
@@ -163,7 +164,7 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         focusStack: [],
         navigatedAway: true,
         urlOwner: "app",
-        fullScreenOpened: action.view.panelKind === "detail" && !action.sibling,
+        recordsVisit: action.record ?? action.view.panelKind === "detail",
       };
 
     case "openOverview":
@@ -188,7 +189,7 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         ],
         navigatedAway: true,
         urlOwner: "app",
-        fullScreenOpened: true,
+        recordsVisit: true,
       };
     }
 
@@ -205,12 +206,12 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         focusStack: state.focusStack.slice(0, -1),
         navigatedAway: snapshot.navigatedAway,
         urlOwner: "app",
-        fullScreenOpened: false,
+        recordsVisit: false,
       };
     }
 
     case "restore":
-      return { ...action.state, focusStack: [], urlOwner: "browser", fullScreenOpened: false };
+      return { ...action.state, focusStack: [], urlOwner: "browser", recordsVisit: false };
   }
 }
 
