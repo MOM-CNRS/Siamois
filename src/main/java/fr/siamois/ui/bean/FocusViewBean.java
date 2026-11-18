@@ -222,7 +222,6 @@ public class FocusViewBean implements Serializable {
         }
 
         sessionSettingsBean.setSelectedInstitution(target);
-        historyBean.reset(); // entries of the previous organisation are no longer reachable
         institutionChangeEventPublisher.publishInstitutionChangeEvent();
         loginEventPublisher.publishLoginEvent();
         return true;

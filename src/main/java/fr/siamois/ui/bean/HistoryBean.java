@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /*
 Bean managing the history shown in the sidebar: the pages the user opened lately in the active organisation.
@@ -46,19 +47,27 @@ public class HistoryBean {
     private final LangBean langBean;
 
     private List<HistoryItem> items = new ArrayList<>();
-    private boolean loaded;
+    // The organisation the items belong to; null as long as none was read.
+    private Long itemsInstitutionId;
 
-    /** The pages to show: what the session recorded, after what an earlier session left in base (read once). */
+    /**
+     * The pages to show, all of the active organisation: read from base on first use, and again whenever
+     * the active organisation is no longer the one the list was read for.
+     */
     public List<HistoryItem> getItems() {
-        if (!loaded) {
-            loaded = true;
-            List<HistoryItem> stored = loadStored();
-            stored.addAll(items);
-            resolveProjects(stored);
-            relabelHomeEntries(stored);
-            items = stored;
+        Long activeInstitutionId = activeInstitutionId();
+        if (!Objects.equals(itemsInstitutionId, activeInstitutionId)) {
+            itemsInstitutionId = activeInstitutionId;
+            items = loadStored();
+            resolveProjects(items);
+            relabelHomeEntries(items);
         }
         return items;
+    }
+
+    private Long activeInstitutionId() {
+        UserInfo userInfo = currentUserInfo();
+        return userInfo == null ? null : userInfo.getInstitution().getId();
     }
 
     /**
@@ -67,7 +76,7 @@ public class HistoryBean {
      */
     @EventListener(InstitutionChangeEvent.class)
     public void refreshHomeTitles() {
-        if (loaded) {
+        if (itemsInstitutionId != null) {
             relabelHomeEntries(items);
         }
     }
@@ -95,12 +104,6 @@ public class HistoryBean {
         if (component != null && WelcomePanel.RESOURCE_URI.equals(component.getUri())) {
             component.setTitle(homeTitle);
         }
-    }
-
-    /** The active organisation changed: its history, not the previous one's, is shown next. */
-    public void reset() {
-        items = new ArrayList<>();
-        loaded = false;
     }
 
     private List<HistoryItem> loadStored() {

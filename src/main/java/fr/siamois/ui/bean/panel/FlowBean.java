@@ -151,7 +151,7 @@ public class FlowBean implements Serializable {
                     .encodeToString(overviewResourceUri.getBytes(StandardCharsets.UTF_8)));
         }
         if (backUrl != null) {
-            params.append(!params.isEmpty() ? "&" : "?").append("back=")
+            params.append(params.isEmpty() ? "?" : "&").append("back=")
                     .append(Base64.getUrlEncoder().withoutPadding()
                             .encodeToString(backUrl.getBytes(StandardCharsets.UTF_8)));
         }
@@ -211,7 +211,6 @@ public class FlowBean implements Serializable {
      */
     public void onFocusInstitutionChange() throws IOException {
         changeInstitution();
-        historyBean.getItems().clear(); // clear history
         redirectToDashboard();
 
     }

@@ -118,10 +118,14 @@ export function useNavigation(options: MountOptions): Navigation {
     dispatch(restore);
   }, []);
 
-  // Every page the user lands on goes in the header's Back/Forward trail.
+  // Every page the user lands on goes in the active organisation's Back/Forward trail (the header's arrows).
   useEffect(() => {
     if (!state.mainPath) return;
-    recordVisit({ url: encodeUrl(state), mainPath: state.mainPath, overviewPath: overviewPath(state.overview) });
+    recordVisit(latest.current.options.activeOrganizationId, {
+      url: encodeUrl(state),
+      mainPath: state.mainPath,
+      overviewPath: overviewPath(state.overview),
+    });
   }, [state]);
 
   // The address bar follows every app-driven change; a Back/Forward already moved it.

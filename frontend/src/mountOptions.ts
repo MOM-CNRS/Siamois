@@ -80,6 +80,9 @@ export interface MountOptions {
   overviewEntityId?: string | number;
   organizationId?: number;
   overviewOrganizationId?: number;
+  // The organisation selected in the topbar, whatever the panel shows (organizationId is the entity's own,
+  // absent on some panels): the one the Back/Forward trail belongs to.
+  activeOrganizationId?: number;
   // FlowBean.isWriteMode — the topbar's global read/write switch. Everything editable in the app is
   // gated on it in JSF (headerEditControls.xhtml, entityDataTable.xhtml's "writeMode" rendering
   // rule, tableToolbar.xhtml), and React honours the same gate through WriteModeProvider.
@@ -151,6 +154,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
     overviewEntityId: text("overviewEntityId"),
     organizationId: number("organizationId"),
     overviewOrganizationId: number("overviewOrganizationId"),
+    activeOrganizationId: number("activeOrganizationId"),
     // FlowBean.isWriteMode: the topbar's global read/write switch. No change event is needed: its
     // p:ajax updates "flow", which replaces the mount div, so React is mounted again with the new
     // value (reactPanelBootstrap's data-mounted guard is what makes that a remount, not a duplicate).
