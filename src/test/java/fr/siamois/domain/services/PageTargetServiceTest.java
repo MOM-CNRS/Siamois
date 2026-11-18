@@ -63,6 +63,15 @@ class PageTargetServiceTest {
     }
 
     @Test
+    void isFiche_isTheEntityPagesOnly() {
+        assertThat(service.isFiche("/recording-unit/12")).isTrue();
+        assertThat(service.isFiche("/recording-unit")).isFalse();
+        assertThat(service.isFiche("/recording-unit?viewId=3")).isFalse();
+        assertThat(service.isFiche("/welcome")).isFalse();
+        assertThat(service.isFiche("/nope/1")).isFalse();
+    }
+
+    @Test
     void isMissing_answersForOnePage() {
         when(repository.existingIds("phase", Set.of(9L))).thenReturn(Set.of());
 

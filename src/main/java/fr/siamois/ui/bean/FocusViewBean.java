@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus;
 
 import java.io.Serializable;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -42,6 +43,8 @@ public class FocusViewBean implements Serializable {
     private final transient RedirectBean redirectBean;
     private final transient UiViewService uiViewService;
     private final transient PageTargetService pageTargetService;
+
+    private static final String FICHE_PANEL_KIND = "detail";
 
 
     private AbstractPanel mainPanel;
@@ -89,8 +92,6 @@ public class FocusViewBean implements Serializable {
     }
 
     public void beforeInit() {
-        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
-
         if (mainToken != null) {
             ParsedPath parsedMain = parsePath(decodeToken(mainToken));
 
@@ -98,51 +99,40 @@ public class FocusViewBean implements Serializable {
                 return;
             }
 
-            HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
             mainPanel = panelFactory.create(parsedMain.type(), parsedMain.id());
             mainPanel.setRoot(true);
             applyView(mainPanel, parsedMain.viewId());
             if (backToken != null) {
                 mainPanel.setGoBackUrl(decodeToken(backToken));
             }
-            main.setIcon(mainPanel.getIcon());
-            main.setTitle(mainPanel.resolveTitleOrTitleCode());
-            main.setUri(mainPanel.reactResourceUri());
-            main.setStyleClass(mainPanel.getPanelClass());
-            newEntry.setMain(main);
         }
 
         if (secondaryToken != null && !secondaryToken.isEmpty()) {
-            HistoryBean.HistoryItemComponent side = new HistoryBean.HistoryItemComponent();
-
             ParsedPath parsedSide = parsePath(decodeToken(secondaryToken));
             AbstractPanel overviewPanel = panelFactory.create(parsedSide.type(), parsedSide.id());
             overviewPanel.setRoot(false);
             mainPanel.setParentOrOverview(overviewPanel);
             overviewPanel.setParentOrOverview(mainPanel);
-            side.setIcon(overviewPanel.getIcon());
-            side.setTitle(overviewPanel.resolveTitleOrTitleCode());
-
-            side.setUri(overviewPanel.ressourceUri());
-            side.setStyleClass(overviewPanel.getPanelClass());
-            newEntry.setSecondary(side);
         }
 
-        historyBean.addItem(newEntry);
-
+        if (mainPanel != null) {
+            recordIfFiche(mainPanel);
+        }
     }
 
     /**
      * Keeps the view's main panel in step with a client-side navigation of the React main pane
-     * (reactAction_setMain_N({path: "/action-unit/12"})), which otherwise never reaches the server:
-     * the history sidebar records it like a page load would, and a later overview opened through
-     * the bridge is paired with the main pane actually on screen, not the one the page loaded with.
+     * (reactAction_setMain({path: "/action-unit/12", fullScreen: true})), which otherwise never reaches
+     * the server: a later overview opened through the bridge is paired with the main pane actually on
+     * screen, not the one the page loaded with. The history records the page only when {@code fullScreen}
+     * says a fiche was just opened there: scrolling through fiches or going Back/Forward adds nothing.
      * The overview still open, if any, stays attached to the new main panel. A page deleted since (a
      * Back/Forward move can lead to one) is left to React, which shows it as such: the panel would
      * redirect the whole page to the 404.
      */
     public void setMainFromRequest() {
-        String path = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("path");
+        Map<String, String> params = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap();
+        String path = params.get("path");
         if (path == null || path.isBlank() || mainPanel == null || pageTargetService.isMissing(path)) {
             return;
         }
@@ -168,39 +158,24 @@ public class FocusViewBean implements Serializable {
         }
         mainPanel = next;
 
-        historyBean.addItemFromRequest(historyItemOf(next, overview));
-    }
-
-    /**
-     * React closed the overview: the view forgets it, so a reload doesn't reopen it, and the main pane
-     * alone is the page now on screen.
-     */
-    public void closeOverviewFromRequest() {
-        if (mainPanel == null) {
-            return;
+        if (Boolean.parseBoolean(params.get("fullScreen"))) {
+            recordIfFiche(next);
         }
-        mainPanel.closeOverview();
-        historyBean.addItemFromRequest(historyItemOf(mainPanel, null));
     }
 
     /**
-     * Whether this history entry is the page on screen in this view: same main pane, same overview.
+     * Whether this history entry is the fiche shown full screen in this view.
      */
     public boolean isCurrentPage(HistoryBean.HistoryItem item) {
-        if (mainPanel == null) {
-            return false;
-        }
-        AbstractPanel overview = mainPanel.getParentOrOverview();
-        return item.isPage(mainPanel.reactResourceUri(), overview == null ? null : overview.reactResourceUri());
+        return mainPanel != null && item.getMain().getUri().equals(mainPanel.reactResourceUri());
     }
 
-    private static HistoryBean.HistoryItem historyItemOf(AbstractPanel main, AbstractPanel overview) {
-        HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
-        item.setMain(historyComponentOf(main));
-        if (overview != null) {
-            item.setSecondary(historyComponentOf(overview));
+    private void recordIfFiche(AbstractPanel panel) {
+        if (FICHE_PANEL_KIND.equals(panel.reactPanelKind())) {
+            HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
+            item.setMain(historyComponentOf(panel));
+            historyBean.addItem(item);
         }
-        return item;
     }
 
     /** Opens the panel on a saved view: the view's name is then the panel's title (history, favorite, tab). */

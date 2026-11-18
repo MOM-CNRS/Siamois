@@ -66,10 +66,14 @@ export interface NavState {
   // Who moved the address bar to this state: the app (push a history entry for it) or the browser
   // (Back/Forward: the address is already right).
   urlOwner: "app" | "browser";
+  // The main pane's fiche was just opened full screen: the history sidebar records it. Not when the
+  // user scrolls through fiches with the arrows, goes Back/Forward or comes back out of focus mode.
+  fullScreenOpened: boolean;
 }
 
 export type NavAction =
-  | { type: "navigate"; view: NavigationView; path: string }
+  // `sibling`: the fiche arrows' jump to the previous or next fiche.
+  | { type: "navigate"; view: NavigationView; path: string; sibling?: boolean }
   | { type: "openOverview"; overview: OverviewState }
   | { type: "closeOverview" }
   | { type: "enterFocus" }
@@ -99,6 +103,7 @@ export function initialNavState(options: MountOptions): NavState {
     focusStack: [],
     navigatedAway: false,
     urlOwner: "browser",
+    fullScreenOpened: false,
   };
 }
 
@@ -150,7 +155,16 @@ export function navReducer(state: NavState, action: NavAction): NavState {
     case "navigate":
       // Leaving the focused entity ends focus mode, same as a JSF navigation (a plain redirect,
       // no `back=`): there's no longer a promoted panel to put back.
-      return { ...state, view: action.view, mainPath: action.path, backUrl: undefined, focusStack: [], navigatedAway: true, urlOwner: "app" };
+      return {
+        ...state,
+        view: action.view,
+        mainPath: action.path,
+        backUrl: undefined,
+        focusStack: [],
+        navigatedAway: true,
+        urlOwner: "app",
+        fullScreenOpened: action.view.panelKind === "detail" && !action.sibling,
+      };
 
     case "openOverview":
       return { ...state, overview: action.overview, urlOwner: "app" };
@@ -174,6 +188,7 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         ],
         navigatedAway: true,
         urlOwner: "app",
+        fullScreenOpened: true,
       };
     }
 
@@ -190,11 +205,12 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         focusStack: state.focusStack.slice(0, -1),
         navigatedAway: snapshot.navigatedAway,
         urlOwner: "app",
+        fullScreenOpened: false,
       };
     }
 
     case "restore":
-      return { ...action.state, focusStack: [], urlOwner: "browser" };
+      return { ...action.state, focusStack: [], urlOwner: "browser", fullScreenOpened: false };
   }
 }
 

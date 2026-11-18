@@ -50,23 +50,18 @@ export interface PanelToolbarSlot {
   actions?: PanelActions;
 }
 
-// How a move counts for the history sidebar: the page goes to the top ("opened"), its entry stays where
-// it is (a Back/Forward move, "walked"), or it is only a step: another call follows with the page the
-// user actually lands on.
-export type HistoryVisit = "opened" | "walked" | "step";
-
 // The only calls React still makes into the JSF session (reactPanelActions.xhtml's
 // p:remoteCommands). None is bound to the entity JSF mounted with the page — each takes its target
 // as a param — so they stay valid across client-side navigation.
 export interface PanelBridge {
   // Keeps FlowBean's parentOrOverview in sync with a client-side-opened overview (plan §8 phase
   // 5), for F5 and the history — fire-and-forget.
-  setOverview?: (entityType: string, id: string | number, visit?: HistoryVisit) => void;
-  closeOverview?: (visit?: HistoryVisit) => void;
+  setOverview?: (entityType: string, id: string | number) => void;
+  closeOverview?: () => void;
   // FocusViewBean#setMainFromRequest: the main pane moved client-side to this resource path
-  // ("/action-unit/12", "/action-unit") — the server follows it and records it in the history
-  // sidebar, like a page load would. Fire-and-forget.
-  setMain?: (path: string, visit?: HistoryVisit) => void;
+  // ("/action-unit/12", "/action-unit") — the server follows it, and records it in the history sidebar
+  // when `fullScreen` says a fiche was just opened there. Fire-and-forget.
+  setMain?: (path: string, fullScreen?: boolean) => void;
   // Redraws the JSF sidebar's bookmarks list after React added or removed a bookmark (REST).
   refreshBookmarks?: () => void;
   // Redraws the JSF sidebar's views list after React created, renamed or updated a view (REST).
@@ -148,7 +143,6 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
   const action = (key: string) => resolveAction(dataset[key]);
   const setOverview = action("actionSetOverview");
   const setMain = action("actionSetMain");
-  const closeOverview = action("overviewActionCloseOverview");
 
   return {
     panelIndex: text("panelIndex"),
@@ -186,9 +180,9 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
     // built by React from the displayed entity's own REST data. Each remoteCommand takes named
     // params; the bridge speaks positional arguments.
     bridge: {
-      setOverview: setOverview && ((entityType, id, visit = "opened") => setOverview({ entityType, id, visit })),
-      closeOverview: closeOverview && ((visit = "opened") => closeOverview({ visit })),
-      setMain: setMain && ((path, visit = "opened") => setMain({ path, visit })),
+      setOverview: setOverview && ((entityType, id) => setOverview({ entityType, id })),
+      closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
+      setMain: setMain && ((path, fullScreen = false) => setMain({ path, fullScreen })),
       refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
       refreshViews: action("actionRefreshViews") as PanelBridge["refreshViews"],
     },

@@ -259,8 +259,8 @@ describe("App client-side navigation", () => {
     await flush();
     expect(container.textContent).not.toContain("Detail of Row A");
     expect(container.textContent).toContain("Go to detail");
-    // The server follows the browser back to the page it was mounted on, walking the history: its entry stays in place.
-    expect(setMain).toHaveBeenLastCalledWith("/welcome", "walked");
+    // The server follows the browser back to the page it was mounted on, without recording it in the history.
+    expect(setMain).toHaveBeenLastCalledWith("/welcome", false);
 
     await act(async () => {
       window.history.forward();
@@ -297,7 +297,7 @@ describe("App client-side navigation", () => {
     await flush();
 
     expect(setMain).toHaveBeenCalledTimes(1);
-    expect(setMain).toHaveBeenCalledWith("/fake-app-entity/1", "opened");
+    expect(setMain).toHaveBeenCalledWith("/fake-app-entity/1", true);
   });
 
   it("encodes the CURRENT main view, not the originally mounted one, when an overview opens after navigating", async () => {
@@ -500,7 +500,7 @@ describe("App focus mode", () => {
     expect(window.location.search).toBe(`?s=${b64("/fake-app-entity/1")}`);
     // The bean was told the overview left with the promotion, and gets it back.
     expect(setOverview).toHaveBeenCalledTimes(1);
-    expect(setOverview).toHaveBeenCalledWith("fake-app-entity", "1", "opened");
+    expect(setOverview).toHaveBeenCalledWith("fake-app-entity", "1");
     expect(mainPane().querySelector(".bi-arrows-angle-contract")).toBeNull();
     expect(mainPane().querySelector(".bi-bookmark")).toBeTruthy();
   });
@@ -508,9 +508,9 @@ describe("App focus mode", () => {
   it("keeps the server's main panel in step with focus mode when the bridge can set it", async () => {
     const calls: string[] = [];
     const bridge = {
-      setMain: vi.fn((path: string, visit?: string) => void calls.push(`setMain ${path} ${visit}`)),
-      setOverview: vi.fn((type: string, id: string | number, visit?: string) => void calls.push(`setOverview ${type} ${id} ${visit}`)),
-      closeOverview: vi.fn((visit?: string) => void calls.push(`closeOverview ${visit}`)),
+      setMain: vi.fn((path: string, fullScreen?: boolean) => void calls.push(`setMain ${path} ${fullScreen}`)),
+      setOverview: vi.fn((type: string, id: string | number) => void calls.push(`setOverview ${type} ${id}`)),
+      closeOverview: vi.fn(() => void calls.push("closeOverview")),
     };
     act(() => {
       root.render(<App options={baseOptions({ overviewEntityType: "fake-app-entity", overviewEntityId: "1", bridge })} />);
@@ -519,11 +519,11 @@ describe("App focus mode", () => {
 
     await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
     // The promoted entity becomes the server's main panel, with no overview.
-    expect(calls).toEqual(["closeOverview step", "setMain /fake-app-entity/1 opened"]);
+    expect(calls).toEqual(["closeOverview", "setMain /fake-app-entity/1 true"]);
 
     await click(mainPane().querySelector(".bi-arrows-angle-contract"));
     // Back to the previous main, the promoted entity back in its overview — in that order.
-    expect(calls.slice(2)).toEqual(["setMain /fake-app-entity step", "setOverview fake-app-entity 1 opened"]);
+    expect(calls.slice(2)).toEqual(["setMain /fake-app-entity false", "setOverview fake-app-entity 1"]);
   });
 
   it("nests: focus, open an overview, focus again, then unwinds both levels and resyncs the bean", async () => {
@@ -552,7 +552,7 @@ describe("App focus mode", () => {
     await click(childrenTab);
     await click(mainPane().querySelector(".entity-list-panel-identifier-link"));
     await flush();
-    expect(setOverview).toHaveBeenLastCalledWith("fake-child-entity", "9", "opened");
+    expect(setOverview).toHaveBeenLastCalledWith("fake-child-entity", "9");
     // The back= still travels with the URL while the promoted entity stays on screen.
     expect(window.location.search).toContain("back=");
 
@@ -569,7 +569,7 @@ describe("App focus mode", () => {
     expect(container.querySelector(".panel-splitter-panel-r")?.textContent).toContain("Detail of Row A");
     expect(window.location.search).toBe(`?s=${b64("/fake-parent-with-child-tab/1")}`);
     // The bean was moved to the child while in focus mode — put back on the restored overview.
-    expect(setOverview).toHaveBeenLastCalledWith("fake-parent-with-child-tab", "1", "opened");
+    expect(setOverview).toHaveBeenLastCalledWith("fake-parent-with-child-tab", "1");
   });
 
   describe("pane state", () => {

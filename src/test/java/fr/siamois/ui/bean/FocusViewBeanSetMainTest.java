@@ -66,13 +66,20 @@ class FocusViewBeanSetMainTest {
         return panel;
     }
 
+    private static AbstractPanel fiche(String title, String uri) {
+        AbstractPanel panel = panel(title, uri);
+        when(panel.reactPanelKind()).thenReturn("detail");
+        return panel;
+    }
+
     @Test
-    void movesTheMainPanelAndRecordsItInTheHistory() {
+    void movesTheMainPanelAndRecordsTheFicheOpenedFullScreen() {
         AbstractPanel previous = panel("Projets", "/action-unit");
         bean.setMainPanel(previous);
-        AbstractPanel next = panel("UE-12", "/recording-unit/12");
+        AbstractPanel next = fiche("UE-12", "/recording-unit/12");
         when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
         params.put("path", "/recording-unit/12");
+        params.put("fullScreen", "true");
 
         bean.setMainFromRequest();
 
@@ -97,7 +104,6 @@ class FocusViewBeanSetMainTest {
 
         verify(next).setParentOrOverview(overview);
         verify(overview).setParentOrOverview(next);
-        assertThat(historyBean.getItems().get(0).getSecondary().getUri()).isEqualTo("/action-unit/3");
     }
 
     @Test
@@ -157,12 +163,27 @@ class FocusViewBeanSetMainTest {
     }
 
     @Test
-    void aStepTowardsAnotherPageIsNotRecorded() {
+    void recordsNothingWhenTheFicheWasNotOpenedFullScreen() {
         bean.setMainPanel(panel("Projets", "/action-unit"));
-        AbstractPanel next = panel("UE-12", "/recording-unit/12");
+        AbstractPanel next = fiche("UE-12", "/recording-unit/12");
         when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
         params.put("path", "/recording-unit/12");
-        params.put("visit", "step");
+        params.put("fullScreen", "false");
+
+        bean.setMainFromRequest();
+
+        assertThat(bean.getMainPanel()).isSameAs(next);
+        assertThat(historyBean.getItems()).isEmpty();
+    }
+
+    @Test
+    void recordsNothingForAList() {
+        bean.setMainPanel(panel("Projets", "/action-unit"));
+        AbstractPanel list = panel("UE", "/recording-unit");
+        when(list.reactPanelKind()).thenReturn("list");
+        when(panelFactory.create("recording-unit", null)).thenReturn(list);
+        params.put("path", "/recording-unit");
+        params.put("fullScreen", "true");
 
         bean.setMainFromRequest();
 
@@ -170,59 +191,18 @@ class FocusViewBeanSetMainTest {
     }
 
     @Test
-    void aWalkLeavesTheEntryWhereItIs() {
-        bean.setMainPanel(panel("Projets", "/action-unit"));
-        AbstractPanel first = panel("UE-12", "/recording-unit/12");
-        AbstractPanel second = panel("UE-13", "/recording-unit/13");
-        when(panelFactory.create("recording-unit", 12L)).thenReturn(first);
-        when(panelFactory.create("recording-unit", 13L)).thenReturn(second);
-        params.put("path", "/recording-unit/12");
-        bean.setMainFromRequest();
-        params.put("path", "/recording-unit/13");
-        bean.setMainFromRequest();
+    void theCurrentPageIsTheFicheShownFullScreen() {
+        bean.setMainPanel(fiche("UE-12", "/recording-unit/12"));
 
-        params.put("path", "/recording-unit/12");
-        params.put("visit", "walked");
-        bean.setMainFromRequest();
-
-        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri())
-                .containsExactly("/recording-unit/13", "/recording-unit/12");
+        assertThat(bean.isCurrentPage(entry("/recording-unit/12"))).isTrue();
+        assertThat(bean.isCurrentPage(entry("/recording-unit/13"))).isFalse();
     }
 
-    @Test
-    void closingTheOverviewRecordsTheMainPaneAlone() {
-        AbstractPanel main = panel("Projets", "/action-unit");
-        bean.setMainPanel(main);
-
-        bean.closeOverviewFromRequest();
-
-        verify(main).closeOverview();
-        assertThat(historyBean.getItems()).hasSize(1);
-        assertThat(historyBean.getItems().get(0).getSecondary()).isNull();
-    }
-
-    @Test
-    void theCurrentPageIsTheEntryWithTheSameMainPaneAndOverview() {
-        AbstractPanel main = panel("Projets", "/action-unit");
-        AbstractPanel overview = panel("Fouille A", "/action-unit/3");
-        when(main.getParentOrOverview()).thenReturn(overview);
-        bean.setMainPanel(main);
-
-        assertThat(bean.isCurrentPage(entry("/action-unit", "/action-unit/3"))).isTrue();
-        assertThat(bean.isCurrentPage(entry("/action-unit", null))).isFalse();
-        assertThat(bean.isCurrentPage(entry("/recording-unit", "/action-unit/3"))).isFalse();
-    }
-
-    private static HistoryBean.HistoryItem entry(String mainUri, String secondaryUri) {
+    private static HistoryBean.HistoryItem entry(String mainUri) {
         HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
         HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
         main.setUri(mainUri);
         item.setMain(main);
-        if (secondaryUri != null) {
-            HistoryBean.HistoryItemComponent secondary = new HistoryBean.HistoryItemComponent();
-            secondary.setUri(secondaryUri);
-            item.setSecondary(secondary);
-        }
         return item;
     }
 

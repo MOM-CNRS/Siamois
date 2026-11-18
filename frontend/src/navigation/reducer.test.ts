@@ -156,6 +156,25 @@ describe("decodeUrl", () => {
   });
 });
 
+describe("fullScreenOpened", () => {
+  const start = initialNavState(options);
+  const detail = { panelKind: "detail" as const, entityType: "project", entityId: "1" };
+
+  it("is set by a fiche opened in the main pane, and by focus mode", () => {
+    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail }).fullScreenOpened).toBe(true);
+    const withOverview = navReducer(start, { type: "openOverview", overview: { entityType: "project", entityId: "1" } });
+    expect(navReducer(withOverview, { type: "enterFocus" }).fullScreenOpened).toBe(true);
+  });
+
+  it("is not set by the fiche arrows, a list, or coming back out of focus mode", () => {
+    expect(navReducer(start, { type: "navigate", path: "/action-unit/1", view: detail, sibling: true }).fullScreenOpened).toBe(false);
+    expect(navReducer(start, { type: "navigate", path: "/action-unit", view: { panelKind: "list", entityType: "project" } }).fullScreenOpened).toBe(false);
+    const withOverview = navReducer(start, { type: "openOverview", overview: { entityType: "project", entityId: "1" } });
+    const focused = navReducer(withOverview, { type: "enterFocus" });
+    expect(navReducer(focused, { type: "closeFocus" }).fullScreenOpened).toBe(false);
+  });
+});
+
 describe("serverSync", () => {
   const overview = (id: string) => ({ entityType: "project", entityId: id });
 

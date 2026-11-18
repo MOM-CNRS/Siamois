@@ -47,6 +47,7 @@ function PanelContent({
   view,
   organizationId,
   onNavigate,
+  onNavigateSibling,
   onOpenOverview,
   overview,
   onCreate,
@@ -58,6 +59,8 @@ function PanelContent({
   // Opens a saved view of the list in this pane (without an id, the default list).
   onOpenView?: (entityType: string, viewId?: number) => void;
   onNavigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
+  // The fiche arrows of a "detail" view.
+  onNavigateSibling: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // Only meaningful for a "list" view — opens the entity in the overview pane instead of
   // navigating the main pane away from the list (plan §8 phase 5).
   onOpenOverview?: (entityType: string, id: string | number, preview?: EntityPreview) => void;
@@ -117,7 +120,7 @@ function PanelContent({
           overviewEntityType={overview?.entityType}
           // A sibling jump on the MAIN pane's own fiche is a same-pane navigation — the same
           // `navigate` a list row click or the breadcrumb already use, just staying on "detail".
-          onNavigateSibling={(id, preview) => onNavigate(view.entityType, id, preview)}
+          onNavigateSibling={(id, preview) => onNavigateSibling(view.entityType, id, preview)}
         />
       );
   }
@@ -166,7 +169,7 @@ export function App({ options }: { options: MountOptions }) {
   // Outlives the panes: focus mode moves a fiche between the two panes (a remount), and each
   // panel restores its tab, filters and folded sections from here.
   const paneStateStore = usePaneStateStore();
-  const { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
+  const { state, navigate, navigateSibling, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus } = useNavigation(options);
   useHideChromeOnScroll();
   const { view, overview, navigatedAway } = state;
   useRestoreFocus(overview != null);
@@ -273,6 +276,7 @@ export function App({ options }: { options: MountOptions }) {
       view={view}
       organizationId={options.organizationId}
       onNavigate={navigate}
+      onNavigateSibling={navigateSibling}
       onOpenView={openView}
       onOpenOverview={openOverview}
       overview={overview}

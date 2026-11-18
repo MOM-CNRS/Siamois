@@ -13,13 +13,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * The pages a user opened, per organisation: the last {@value #MAX_ENTRIES} are kept, whatever the session
- * or the browser they were opened from.
+ * The fiches a user opened full screen, per organisation: the last {@value #MAX_ENTRIES} are kept, whatever
+ * the session or the browser they were opened from.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,19 +42,6 @@ public class UserHistoryService {
      */
     @Transactional
     public void remember(UserInfo userInfo, Visit visit) {
-        store(userInfo, visit, true);
-    }
-
-    /**
-     * Records a page reached by walking through the history (Back/Forward, a click on its entry): a page
-     * already listed keeps its rank, one that is not is added at the top.
-     */
-    @Transactional
-    public void rememberInPlace(UserInfo userInfo, Visit visit) {
-        store(userInfo, visit, false);
-    }
-
-    private void store(UserInfo userInfo, Visit visit, boolean moveUp) {
         if (visit == null || visit.mainUri() == null || visit.mainUri().isBlank()) {
             return;
         }
@@ -79,9 +66,7 @@ public class UserHistoryService {
         entry.setSecondaryTitle(visit.secondaryTitle());
         entry.setSecondaryIcon(visit.secondaryIcon());
         entry.setSecondaryStyleClass(visit.secondaryStyleClass());
-        if (moveUp || entry.getVisitedAt() == null) {
-            entry.setVisitedAt(Instant.now());
-        }
+        entry.setVisitedAt(Instant.now());
         repository.save(entry);
 
         if (repository.countByPersonAndInstitution(person, institution) > MAX_ENTRIES) {
@@ -94,8 +79,9 @@ public class UserHistoryService {
     }
 
     /**
-     * The user's latest pages in the organisation, the most recent first. A page whose entity or saved view
-     * was deleted since is left out, be it the main pane's or the overview's.
+     * The fiches the user latest opened full screen in the organisation, the most recent first. What older
+     * versions recorded besides (lists, the home page, fiches opened in the overview) is left out, and so is a
+     * fiche deleted since.
      */
     @Transactional(readOnly = true)
     public List<UserHistoryEntry> latest(UserInfo userInfo, int limit) {
@@ -104,14 +90,13 @@ public class UserHistoryService {
         int size = Math.max(1, Math.min(limit, MAX_ENTRIES));
         List<UserHistoryEntry> kept = repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(
                 person, institution, PageRequest.of(0, MAX_ENTRIES));
-        Set<String> uris = new HashSet<>();
-        kept.forEach(entry -> {
-            uris.add(entry.getMainUri());
-            uris.add(entry.getSecondaryUri());
-        });
-        Set<String> missing = pageTargetService.missingAmong(uris);
-        return kept.stream()
-                .filter(entry -> !missing.contains(entry.getMainUri()) && !missing.contains(entry.getSecondaryUri()))
+        List<UserHistoryEntry> fiches = kept.stream()
+                .filter(entry -> entry.getSecondaryUri().isEmpty() && pageTargetService.isFiche(entry.getMainUri()))
+                .toList();
+        Set<String> missing = pageTargetService.missingAmong(
+                fiches.stream().map(UserHistoryEntry::getMainUri).collect(Collectors.toSet()));
+        return fiches.stream()
+                .filter(entry -> !missing.contains(entry.getMainUri()))
                 .limit(size)
                 .toList();
     }

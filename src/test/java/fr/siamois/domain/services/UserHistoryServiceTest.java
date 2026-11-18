@@ -18,13 +18,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -112,32 +110,6 @@ class UserHistoryServiceTest {
         verifyNoInteractions(repository);
     }
 
-    @Test
-    void rememberInPlace_listedPage_keepsItsRank() {
-        Instant visitedAt = Instant.parse("2026-01-01T00:00:00Z");
-        UserHistoryEntry listed = new UserHistoryEntry();
-        listed.setVisitedAt(visitedAt);
-        when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", ""))
-                .thenReturn(List.of(listed));
-
-        service.rememberInPlace(userInfo, visit("/a", null));
-
-        verify(repository).save(listed);
-        assertEquals(visitedAt, listed.getVisitedAt());
-    }
-
-    @Test
-    void rememberInPlace_pageNotListed_isAddedAtTheTop() {
-        when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", ""))
-                .thenReturn(List.of());
-
-        service.rememberInPlace(userInfo, visit("/a", null));
-
-        ArgumentCaptor<UserHistoryEntry> saved = ArgumentCaptor.forClass(UserHistoryEntry.class);
-        verify(repository).save(saved.capture());
-        assertNotNull(saved.getValue().getVisitedAt());
-    }
-
     private static UserHistoryEntry entry(String main, String secondary) {
         UserHistoryEntry entry = new UserHistoryEntry();
         entry.setMainUri(main);
@@ -148,6 +120,7 @@ class UserHistoryServiceTest {
     @Test
     void latest_readsEverythingKeptAndBoundsTheResult() {
         List<UserHistoryEntry> kept = List.of(entry("/a", ""), entry("/b", ""));
+        when(pageTargetService.isFiche(anyString())).thenReturn(true);
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(kept);
 
@@ -162,15 +135,28 @@ class UserHistoryServiceTest {
     }
 
     @Test
-    void latest_leavesOutThePagesDeletedSince_mainPaneOrOverview() {
+    void latest_leavesOutTheFichesDeletedSince() {
         UserHistoryEntry alive = entry("/recording-unit/1", "");
-        UserHistoryEntry deletedMain = entry("/recording-unit/2", "");
-        UserHistoryEntry deletedOverview = entry("/recording-unit", "/recording-unit/2");
+        UserHistoryEntry deleted = entry("/recording-unit/2", "");
         UserHistoryEntry next = entry("/recording-unit/3", "");
         when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
-                .thenReturn(List.of(deletedMain, alive, deletedOverview, next));
+                .thenReturn(List.of(deleted, alive, next));
+        when(pageTargetService.isFiche(anyString())).thenReturn(true);
         when(pageTargetService.missingAmong(anySet())).thenReturn(Set.of("/recording-unit/2"));
 
         assertEquals(List.of(alive, next), service.latest(userInfo, 2));
+    }
+
+    @Test
+    void latest_keepsOnlyTheFichesOpenedFullScreen() {
+        UserHistoryEntry fiche = entry("/recording-unit/1", "");
+        UserHistoryEntry list = entry("/recording-unit", "");
+        UserHistoryEntry inOverview = entry("/recording-unit", "/recording-unit/1");
+        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+                .thenReturn(List.of(list, inOverview, fiche));
+        when(pageTargetService.isFiche("/recording-unit/1")).thenReturn(true);
+        when(pageTargetService.isFiche("/recording-unit")).thenReturn(false);
+
+        assertEquals(List.of(fiche), service.latest(userInfo, 10));
     }
 }

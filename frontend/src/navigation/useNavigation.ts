@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useReducer, useRef} from "react";
 import {apiUrl} from "../api/basePath";
 import {getEntityType} from "../entities/registry";
-import type {HistoryVisit, MountOptions} from "../mountOptions";
+import type {MountOptions} from "../mountOptions";
 import type {EntityPreview} from "../panels/EntityDetailPanel";
 import {withPanelTransition} from "../panels/pane/panelTransition";
 import type {ListSeed} from "./externalBus";
@@ -24,6 +24,8 @@ export interface Navigation {
   state: NavState;
   // Stable identities: panels receive them, and must not re-render on every navigation.
   navigate: (entityType: string, id?: string | number, preview?: EntityPreview) => void;
+  // The fiche arrows of the main pane: the next fiche takes its place, without entering the history.
+  navigateSibling: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   openOverview: (entityType: string, id: string | number, preview?: EntityPreview) => void;
   // The entity type's list in the main pane, on a saved view (or, without one, its default list).
   openView: (entityType: string, viewId?: number) => void;
@@ -64,6 +66,19 @@ export function useNavigation(options: MountOptions): Navigation {
       }
       const path = id != null ? config.routes.detail(id) : config.routes.list;
       send({ type: "navigate", path, view: { panelKind: id != null ? "detail" : "list", entityType, entityId: id, preview } });
+    },
+    [send],
+  );
+  const navigateSibling = useCallback<Navigation["navigateSibling"]>(
+    (entityType, id, preview) => {
+      const config = getEntityType(entityType);
+      if (!config) return;
+      send({
+        type: "navigate",
+        sibling: true,
+        path: config.routes.detail(id),
+        view: { panelKind: "detail", entityType, entityId: id, preview },
+      });
     },
     [send],
   );
@@ -151,13 +166,11 @@ export function useNavigation(options: MountOptions): Navigation {
   useEffect(() => {
     const { bridge } = latest.current.options;
     const sync = serverSync(server.current, state);
-    // Only the last call of a move names the page the user lands on: the history records that one alone.
-    const landing: HistoryVisit = state.urlOwner === "browser" ? "walked" : "opened";
-    if (sync.closeOverview) bridge?.closeOverview?.(sync.setMain ? "step" : landing);
-    if (sync.setMain) bridge?.setMain?.(sync.setMain, sync.setOverview ? "step" : landing);
-    if (sync.setOverview) bridge?.setOverview?.(sync.setOverview.entityType, sync.setOverview.entityId, landing);
+    if (sync.closeOverview) bridge?.closeOverview?.();
+    if (sync.setMain) bridge?.setMain?.(sync.setMain, state.fullScreenOpened);
+    if (sync.setOverview) bridge?.setOverview?.(sync.setOverview.entityType, sync.setOverview.entityId);
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 
-  return { state, navigate, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
+  return { state, navigate, navigateSibling, openView, openOverview, openList, restoreUrl, closeOverview, enterFocus, closeFocus };
 }
