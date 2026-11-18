@@ -23,6 +23,13 @@ function toggleCollapseSidebar() {
     }
 }
 
+// The history sidebar is redrawn on every move: its entry for the page on screen is kept in sight.
+function revealCurrentHistoryEntry() {
+    document.querySelector(".sia-history-table .sia-history-current")?.scrollIntoView({block: "nearest"});
+}
+
+document.addEventListener("DOMContentLoaded", revealCurrentHistoryEntry);
+
 function animateSidebarClose() {
     // Manually force the CSS collapse transition right before AJAX finishes
     let sidebar = document.getElementById('subSidebarForm');

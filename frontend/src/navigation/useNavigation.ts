@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useReducer, useRef} from "react";
 import {apiUrl} from "../api/basePath";
 import {getEntityType} from "../entities/registry";
-import type {MountOptions} from "../mountOptions";
+import type {HistoryVisit, MountOptions} from "../mountOptions";
 import type {EntityPreview} from "../panels/EntityDetailPanel";
 import {withPanelTransition} from "../panels/pane/panelTransition";
 import type {ListSeed} from "./externalBus";
@@ -151,9 +151,11 @@ export function useNavigation(options: MountOptions): Navigation {
   useEffect(() => {
     const { bridge } = latest.current.options;
     const sync = serverSync(server.current, state);
-    if (sync.closeOverview) bridge?.closeOverview?.();
-    if (sync.setMain) bridge?.setMain?.(sync.setMain);
-    if (sync.setOverview) bridge?.setOverview?.(sync.setOverview.entityType, sync.setOverview.entityId);
+    // Only the last call of a move names the page the user lands on: the history records that one alone.
+    const landing: HistoryVisit = state.urlOwner === "browser" ? "walked" : "opened";
+    if (sync.closeOverview) bridge?.closeOverview?.(sync.setMain ? "step" : landing);
+    if (sync.setMain) bridge?.setMain?.(sync.setMain, sync.setOverview ? "step" : landing);
+    if (sync.setOverview) bridge?.setOverview?.(sync.setOverview.entityType, sync.setOverview.entityId, landing);
     server.current = { mainPath: state.mainPath, overview: state.overview };
   }, [state]);
 

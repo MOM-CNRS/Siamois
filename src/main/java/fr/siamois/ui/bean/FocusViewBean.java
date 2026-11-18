@@ -3,6 +3,7 @@ package fr.siamois.ui.bean;
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.events.publisher.LoginEventPublisher;
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.services.PageTargetService;
 import fr.siamois.domain.services.UiViewService;
 import fr.siamois.domain.services.ResourceInstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
@@ -40,6 +41,7 @@ public class FocusViewBean implements Serializable {
     private final transient LoginEventPublisher loginEventPublisher;
     private final transient RedirectBean redirectBean;
     private final transient UiViewService uiViewService;
+    private final transient PageTargetService pageTargetService;
 
 
     private AbstractPanel mainPanel;
@@ -135,11 +137,13 @@ public class FocusViewBean implements Serializable {
      * (reactAction_setMain_N({path: "/action-unit/12"})), which otherwise never reaches the server:
      * the history sidebar records it like a page load would, and a later overview opened through
      * the bridge is paired with the main pane actually on screen, not the one the page loaded with.
-     * The overview still open, if any, stays attached to the new main panel.
+     * The overview still open, if any, stays attached to the new main panel. A page deleted since (a
+     * Back/Forward move can lead to one) is left to React, which shows it as such: the panel would
+     * redirect the whole page to the 404.
      */
     public void setMainFromRequest() {
         String path = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get("path");
-        if (path == null || path.isBlank() || mainPanel == null) {
+        if (path == null || path.isBlank() || mainPanel == null || pageTargetService.isMissing(path)) {
             return;
         }
         ParsedPath parsed;
@@ -164,12 +168,39 @@ public class FocusViewBean implements Serializable {
         }
         mainPanel = next;
 
-        HistoryBean.HistoryItem entry = new HistoryBean.HistoryItem();
-        entry.setMain(historyComponentOf(next));
-        if (overview != null) {
-            entry.setSecondary(historyComponentOf(overview));
+        historyBean.addItemFromRequest(historyItemOf(next, overview));
+    }
+
+    /**
+     * React closed the overview: the view forgets it, so a reload doesn't reopen it, and the main pane
+     * alone is the page now on screen.
+     */
+    public void closeOverviewFromRequest() {
+        if (mainPanel == null) {
+            return;
         }
-        historyBean.addItem(entry);
+        mainPanel.closeOverview();
+        historyBean.addItemFromRequest(historyItemOf(mainPanel, null));
+    }
+
+    /**
+     * Whether this history entry is the page on screen in this view: same main pane, same overview.
+     */
+    public boolean isCurrentPage(HistoryBean.HistoryItem item) {
+        if (mainPanel == null) {
+            return false;
+        }
+        AbstractPanel overview = mainPanel.getParentOrOverview();
+        return item.isPage(mainPanel.reactResourceUri(), overview == null ? null : overview.reactResourceUri());
+    }
+
+    private static HistoryBean.HistoryItem historyItemOf(AbstractPanel main, AbstractPanel overview) {
+        HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
+        item.setMain(historyComponentOf(main));
+        if (overview != null) {
+            item.setSecondary(historyComponentOf(overview));
+        }
+        return item;
     }
 
     /** Opens the panel on a saved view: the view's name is then the panel's title (history, favorite, tab). */

@@ -8,6 +8,7 @@ import fr.siamois.domain.services.UserHistoryService;
 import fr.siamois.ui.api.openapi.v1.service.EntityProjectResolver;
 import fr.siamois.ui.bean.panel.FlowBean;
 import fr.siamois.ui.bean.panel.models.panel.WelcomePanel;
+import jakarta.faces.context.FacesContext;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ import java.util.Objects;
 /*
 Bean managing the history shown in the sidebar: the pages the user opened lately in the active organisation.
 They are kept in base (UserHistoryService), so they outlive the session; the session holds the list to show,
-loaded from there on first use.
+read from there each time the sidebar draws it.
  */
 @Slf4j
 @Component
@@ -37,7 +38,11 @@ loaded from there on first use.
 @RequiredArgsConstructor
 public class HistoryBean {
 
-    private static final int MAX_ITEMS = 20;
+    private static final int MAX_ITEMS = UserHistoryService.MAX_ENTRIES;
+    // What React says of the page it moved to (the remoteCommands' "visit" parameter, reactPanelActions.xhtml).
+    private static final String VISIT_PARAM = "visit";
+    private static final String VISIT_WALKED = "walked";
+    private static final String VISIT_STEP = "step";
 
     private final FlowBean flowBean;
     private final UserHistoryService historyService;
@@ -49,6 +54,8 @@ public class HistoryBean {
     private List<HistoryItem> items = new ArrayList<>();
     // The organisation the items belong to; null as long as none was read.
     private Long itemsInstitutionId;
+    // The entry the user just clicked on: reaching its page leaves it where it is in the list.
+    private HistoryItem clickedEntry;
 
     /**
      * The pages to show, all of the active organisation: read from base on first use, and again whenever
@@ -57,12 +64,20 @@ public class HistoryBean {
     public List<HistoryItem> getItems() {
         Long activeInstitutionId = activeInstitutionId();
         if (!Objects.equals(itemsInstitutionId, activeInstitutionId)) {
-            itemsInstitutionId = activeInstitutionId;
-            items = loadStored();
-            resolveProjects(items);
-            relabelHomeEntries(items);
+            refresh();
         }
         return items;
+    }
+
+    /**
+     * Reads the list again from base, each time the sidebar draws it: a page deleted in the meantime
+     * leaves it, whoever deleted it and from wherever.
+     */
+    public void refresh() {
+        itemsInstitutionId = activeInstitutionId();
+        items = loadStored();
+        resolveProjects(items);
+        relabelHomeEntries(items);
     }
 
     private Long activeInstitutionId() {
@@ -149,7 +164,7 @@ public class HistoryBean {
         return component;
     }
 
-    private void persist(HistoryItem item) {
+    private void persist(HistoryItem item, boolean walked) {
         UserInfo userInfo = currentUserInfo();
         if (userInfo == null) {
             return;
@@ -157,10 +172,15 @@ public class HistoryBean {
         HistoryItemComponent main = item.getMain();
         HistoryItemComponent side = item.getSecondary();
         try {
-            historyService.remember(userInfo, new UserHistoryService.Visit(
+            UserHistoryService.Visit visit = new UserHistoryService.Visit(
                     main.getUri(), main.getTitle(), main.getIcon(), main.getStyleClass(),
                     side == null ? null : side.getUri(), side == null ? null : side.getTitle(),
-                    side == null ? null : side.getIcon(), side == null ? null : side.getStyleClass()));
+                    side == null ? null : side.getIcon(), side == null ? null : side.getStyleClass());
+            if (walked) {
+                historyService.rememberInPlace(userInfo, visit);
+            } else {
+                historyService.remember(userInfo, visit);
+            }
         } catch (RuntimeException e) {
             // Keeping the history is never worth failing a navigation.
             log.warn("History entry could not be saved", e);
@@ -195,38 +215,68 @@ public class HistoryBean {
         }
     }
 
+    /**
+     * Opens the page of a sidebar entry. Walking through the history does not reorder it: the entry stays
+     * where it is, and is the one highlighted once the page is loaded.
+     */
     public void redirectToEntry(HistoryItem entry) throws IOException {
-
+        clickedEntry = entry;
         flowBean.redirectToFocus(entry.main.uri, entry.secondary != null ? entry.secondary.uri :  null);
 
     }
 
-
+    /**
+     * Records a page loaded in the browser: at the top of the list, unless the user reached it through its entry.
+     */
     public void addItem(HistoryItem item) {
-
         if(item.getMain() == null) {
             return;
-
         }
+        boolean walked = clickedEntry != null && clickedEntry.isSamePageAs(item);
+        clickedEntry = null;
+        record(item, walked);
+    }
+
+    /**
+     * Records the page React moved to client-side, as the request's {@code visit} parameter says: at the top
+     * of the list, where it already is for a Back/Forward move ({@code walked}), or not at all when it is only
+     * a step towards the page the user lands on ({@code step}).
+     */
+    public void addItemFromRequest(HistoryItem item) {
+        String visit = FacesContext.getCurrentInstance().getExternalContext().getRequestParameterMap().get(VISIT_PARAM);
+        if (item.getMain() != null && !VISIT_STEP.equals(visit)) {
+            record(item, VISIT_WALKED.equals(visit));
+        }
+    }
+
+    private void record(HistoryItem item, boolean walked) {
         getItems();
-        persist(item);
+        persist(item, walked);
         resolveProjects(List.of(item));
 
-        // Remove any existing item with the same main URI and secondary URI
-        items.removeIf(existingItem ->
-                existingItem.getMain().getUri().equals(item.getMain().getUri()) &&
-                        ((existingItem.getSecondary() == null && item.getSecondary() == null) ||
-                                (existingItem.getSecondary() != null && item.getSecondary() != null &&
-                                        existingItem.getSecondary().getUri().equals(item.getSecondary().getUri())))
-        );
-
-        // Add the new item
+        int rank = rankOf(item);
+        if (walked && rank >= 0) {
+            items.set(rank, item);
+            return;
+        }
+        if (rank >= 0) {
+            items.remove(rank);
+        }
         items.add(0, item); // Add to the beginning to keep the most recent first
 
         // Enforce max size
         if (items.size() > MAX_ITEMS) {
             items = new ArrayList<>(items.subList(0, MAX_ITEMS));
         }
+    }
+
+    private int rankOf(HistoryItem item) {
+        for (int rank = 0; rank < items.size(); rank++) {
+            if (items.get(rank).isSamePageAs(item)) {
+                return rank;
+            }
+        }
+        return -1;
     }
 
 
@@ -236,6 +286,21 @@ public class HistoryBean {
         private HistoryItemComponent secondary;
         /** Name of the project of the page's fiche; null when it has none. */
         private String projectName;
+
+        /**
+         * Whether this entry is the page with this main pane and this overview (null for none).
+         */
+        public boolean isPage(String mainUri, String secondaryUri) {
+            return main.getUri().equals(mainUri)
+                    && Objects.equals(secondary == null ? null : secondary.getUri(), secondaryUri);
+        }
+
+        /**
+         * Whether both entries are the same page: same main pane, same overview.
+         */
+        public boolean isSamePageAs(HistoryItem other) {
+            return other.isPage(main.getUri(), secondary == null ? null : secondary.getUri());
+        }
 
         public String getTitle() {
             if(secondary != null) {

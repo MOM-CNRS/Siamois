@@ -18,10 +18,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -35,6 +38,8 @@ class UserHistoryServiceTest {
     private PersonMapper personMapper;
     @Mock
     private InstitutionMapper institutionMapper;
+    @Mock
+    private PageTargetService pageTargetService;
     @InjectMocks
     private UserHistoryService service;
 
@@ -108,17 +113,64 @@ class UserHistoryServiceTest {
     }
 
     @Test
-    void latest_asksForThePageSizeBoundedToWhatIsKept() {
-        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+    void rememberInPlace_listedPage_keepsItsRank() {
+        Instant visitedAt = Instant.parse("2026-01-01T00:00:00Z");
+        UserHistoryEntry listed = new UserHistoryEntry();
+        listed.setVisitedAt(visitedAt);
+        when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", ""))
+                .thenReturn(List.of(listed));
+
+        service.rememberInPlace(userInfo, visit("/a", null));
+
+        verify(repository).save(listed);
+        assertEquals(visitedAt, listed.getVisitedAt());
+    }
+
+    @Test
+    void rememberInPlace_pageNotListed_isAddedAtTheTop() {
+        when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", ""))
                 .thenReturn(List.of());
 
-        service.latest(userInfo, 1000);
-        service.latest(userInfo, 0);
+        service.rememberInPlace(userInfo, visit("/a", null));
+
+        ArgumentCaptor<UserHistoryEntry> saved = ArgumentCaptor.forClass(UserHistoryEntry.class);
+        verify(repository).save(saved.capture());
+        assertNotNull(saved.getValue().getVisitedAt());
+    }
+
+    private static UserHistoryEntry entry(String main, String secondary) {
+        UserHistoryEntry entry = new UserHistoryEntry();
+        entry.setMainUri(main);
+        entry.setSecondaryUri(secondary);
+        return entry;
+    }
+
+    @Test
+    void latest_readsEverythingKeptAndBoundsTheResult() {
+        List<UserHistoryEntry> kept = List.of(entry("/a", ""), entry("/b", ""));
+        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+                .thenReturn(kept);
+
+        assertEquals(kept, service.latest(userInfo, 1000));
+        assertEquals(kept.subList(0, 1), service.latest(userInfo, 0));
 
         ArgumentCaptor<Pageable> page = ArgumentCaptor.forClass(Pageable.class);
         verify(repository, times(2))
                 .findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), page.capture());
         assertEquals(UserHistoryService.MAX_ENTRIES, page.getAllValues().get(0).getPageSize());
-        assertEquals(1, page.getAllValues().get(1).getPageSize());
+        assertEquals(UserHistoryService.MAX_ENTRIES, page.getAllValues().get(1).getPageSize());
+    }
+
+    @Test
+    void latest_leavesOutThePagesDeletedSince_mainPaneOrOverview() {
+        UserHistoryEntry alive = entry("/recording-unit/1", "");
+        UserHistoryEntry deletedMain = entry("/recording-unit/2", "");
+        UserHistoryEntry deletedOverview = entry("/recording-unit", "/recording-unit/2");
+        UserHistoryEntry next = entry("/recording-unit/3", "");
+        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+                .thenReturn(List.of(deletedMain, alive, deletedOverview, next));
+        when(pageTargetService.missingAmong(anySet())).thenReturn(Set.of("/recording-unit/2"));
+
+        assertEquals(List.of(alive, next), service.latest(userInfo, 2));
     }
 }

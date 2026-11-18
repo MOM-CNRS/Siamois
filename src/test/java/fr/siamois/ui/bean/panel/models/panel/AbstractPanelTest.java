@@ -62,13 +62,6 @@ class AbstractPanelTest {
     }
 
     @Test
-    void jsPanelIndex_isAValidJsIdentifier() {
-        TestPanel panel = new TestPanel("/action-unit");
-        panel.setRoot(false);
-        assertThat(panel.getJsPanelIndex()).isEqualTo("action_unit_list_overview");
-    }
-
-    @Test
     void closeOverview_forgetsTheOverview() {
         TestPanel panel = new TestPanel("/action-unit");
         panel.setParentOrOverview(new TestPanel("/action-unit/1"));

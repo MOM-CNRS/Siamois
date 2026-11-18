@@ -104,15 +104,6 @@ public abstract class AbstractPanel implements Serializable {
         return getPrefixPanelIndex() + "-overview";
     }
 
-    /**
-     * {@link #getPanelIndex()} made safe for a JS identifier: p:remoteCommand turns its name into a
-     * global function assignment, and a hyphenated index ("action-unit-list") made that a syntax
-     * error, so none of the React panel's bridged actions (reactPanelActions.xhtml) ever existed.
-     */
-    public String getJsPanelIndex() {
-        return getPanelIndex().replaceAll("\\W", "_");
-    }
-
     /** React closed the overview: forget it, so a reload doesn't reopen it. */
     public void closeOverview() {
         parentOrOverview = null;

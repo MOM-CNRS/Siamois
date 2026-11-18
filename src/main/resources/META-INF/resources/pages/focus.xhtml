@@ -79,9 +79,10 @@
                                              scrollRows="40"
                                              scrollHeight="100%"
                                              virtualScroll="true"
+                                             rowStyleClass="#{focusViewBean.isCurrentPage(historyItem) ? 'sia-history-current' : null}"
                                              styleClass="ui-datatable-invisible-header panel-menu sia-history-table">
 
-
+                                    <f:event type="preRenderComponent" listener="#{historyBean.refresh()}"/>
 
                                     <p:column style="vertical-align: middle; width:100%">
                                         <div class="bookmark-row" style="width: 100%;">
