@@ -69,7 +69,7 @@ function siaFeedbackStartCapture() {
         overlay.removeEventListener('mousemove', onMouseMove);
         overlay.removeEventListener('mouseup', onMouseUp);
         document.removeEventListener('keydown', onKeyDown);
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (overlay.parentNode) overlay.remove();
     }
 
     function onMouseUp() {
@@ -152,6 +152,11 @@ function siaFeedbackEscape(text) {
     return div.innerHTML;
 }
 
+function siaFeedbackClearDescription() {
+    const descriptionInput = document.getElementById('feedbackCreateForm:feedbackDescriptionInput');
+    if (descriptionInput) descriptionInput.value = '';
+}
+
 function siaFeedbackOnSendComplete(xhr, status, args) {
     const sendBtn = document.getElementById('feedbackSendBtn');
     const cancelBtn = document.getElementById('feedbackCancelBtn');
@@ -164,10 +169,14 @@ function siaFeedbackOnSendComplete(xhr, status, args) {
     siaFeedbackImageData = null;
     PF('feedbackCreateDiag').hide();
 
-    if (args && args.feedbackSummary) {
+    /* The dialog is never re-rendered, so the text outlives the send. Only a filed issue clears it:
+     * after a failure the user can retry without typing the description again. */
+    if (args?.feedbackIssueUrl) siaFeedbackClearDescription();
+
+    if (args?.feedbackSummary) {
         let detail = siaFeedbackEscape(args.feedbackDetail);
         if (args.feedbackIssueUrl) {
-            detail += ' <a href="' + siaFeedbackEscape(args.feedbackIssueUrl).replace(/"/g, '&quot;')
+            detail += ' <a href="' + siaFeedbackEscape(args.feedbackIssueUrl).replaceAll("\"", '&quot;')
                 + '" target="_blank" rel="noopener" style="color:inherit;font-weight:600;text-decoration:underline;white-space:nowrap;">Voir le retour →</a>';
         }
         PF('feedbackGrowlVar').renderMessage({
