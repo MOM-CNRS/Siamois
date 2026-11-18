@@ -66,10 +66,15 @@ export interface NavState {
   // Who moved the address bar to this state: the app (push a history entry for it) or the browser
   // (Back/Forward: the address is already right).
   urlOwner: "app" | "browser";
+  // The history sidebar records the main pane's page: a fiche opened full screen, or a table opened from
+  // the home page. Not when the user scrolls through fiches with the arrows, goes Back/Forward or comes
+  // back out of focus mode.
+  recordsVisit: boolean;
 }
 
 export type NavAction =
-  | { type: "navigate"; view: NavigationView; path: string }
+  // `record`: whether the history records the page; by default, only a fiche is.
+  | { type: "navigate"; view: NavigationView; path: string; record?: boolean }
   | { type: "openOverview"; overview: OverviewState }
   | { type: "closeOverview" }
   | { type: "enterFocus" }
@@ -99,6 +104,7 @@ export function initialNavState(options: MountOptions): NavState {
     focusStack: [],
     navigatedAway: false,
     urlOwner: "browser",
+    recordsVisit: false,
   };
 }
 
@@ -150,7 +156,16 @@ export function navReducer(state: NavState, action: NavAction): NavState {
     case "navigate":
       // Leaving the focused entity ends focus mode, same as a JSF navigation (a plain redirect,
       // no `back=`): there's no longer a promoted panel to put back.
-      return { ...state, view: action.view, mainPath: action.path, backUrl: undefined, focusStack: [], navigatedAway: true, urlOwner: "app" };
+      return {
+        ...state,
+        view: action.view,
+        mainPath: action.path,
+        backUrl: undefined,
+        focusStack: [],
+        navigatedAway: true,
+        urlOwner: "app",
+        recordsVisit: action.record ?? action.view.panelKind === "detail",
+      };
 
     case "openOverview":
       return { ...state, overview: action.overview, urlOwner: "app" };
@@ -174,6 +189,7 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         ],
         navigatedAway: true,
         urlOwner: "app",
+        recordsVisit: true,
       };
     }
 
@@ -190,11 +206,12 @@ export function navReducer(state: NavState, action: NavAction): NavState {
         focusStack: state.focusStack.slice(0, -1),
         navigatedAway: snapshot.navigatedAway,
         urlOwner: "app",
+        recordsVisit: false,
       };
     }
 
     case "restore":
-      return { ...action.state, focusStack: [], urlOwner: "browser" };
+      return { ...action.state, focusStack: [], urlOwner: "browser", recordsVisit: false };
   }
 }
 

@@ -2,6 +2,7 @@ package fr.siamois.ui.bean;
 
 import fr.siamois.domain.events.publisher.InstitutionChangeEventPublisher;
 import fr.siamois.domain.events.publisher.LoginEventPublisher;
+import fr.siamois.domain.services.PageTargetService;
 import fr.siamois.domain.services.ResourceInstitutionService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.ui.bean.panel.PanelFactory;
@@ -30,6 +31,7 @@ class FocusViewBeanSetMainTest {
     private final PanelFactory panelFactory = mock(PanelFactory.class);
     private final ResourceInstitutionService resourceInstitutionService = mock(ResourceInstitutionService.class);
     private final HistoryBean historyBean = new HistoryBean(null, null, null, null, null);
+    private final PageTargetService pageTargetService = mock(PageTargetService.class);
     private final Map<String, String> params = new HashMap<>();
     private MockedStatic<FacesContext> facesContextStatic;
     private FocusViewBean bean;
@@ -39,7 +41,7 @@ class FocusViewBeanSetMainTest {
         bean = new FocusViewBean(panelFactory, historyBean, mock(LangBean.class), mock(SessionSettingsBean.class),
                 resourceInstitutionService, mock(ProfilePermissionService.class),
                 mock(InstitutionChangeEventPublisher.class), mock(LoginEventPublisher.class), mock(RedirectBean.class),
-                mock(fr.siamois.domain.services.UiViewService.class));
+                mock(fr.siamois.domain.services.UiViewService.class), pageTargetService);
         // A list or an entity of the active organisation: no switch, no permission check to make.
         when(resourceInstitutionService.findInstitutionOf(any(), any())).thenReturn(Optional.empty());
 
@@ -64,13 +66,20 @@ class FocusViewBeanSetMainTest {
         return panel;
     }
 
+    private static AbstractPanel fiche(String title, String uri) {
+        AbstractPanel panel = panel(title, uri);
+        when(panel.reactPanelKind()).thenReturn("detail");
+        return panel;
+    }
+
     @Test
-    void movesTheMainPanelAndRecordsItInTheHistory() {
+    void movesTheMainPanelAndRecordsThePageWhenAskedTo() {
         AbstractPanel previous = panel("Projets", "/action-unit");
         bean.setMainPanel(previous);
-        AbstractPanel next = panel("UE-12", "/recording-unit/12");
+        AbstractPanel next = fiche("UE-12", "/recording-unit/12");
         when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
         params.put("path", "/recording-unit/12");
+        params.put("record", "true");
 
         bean.setMainFromRequest();
 
@@ -95,7 +104,6 @@ class FocusViewBeanSetMainTest {
 
         verify(next).setParentOrOverview(overview);
         verify(overview).setParentOrOverview(next);
-        assertThat(historyBean.getItems().get(0).getSecondary().getUri()).isEqualTo("/action-unit/3");
     }
 
     @Test
@@ -138,6 +146,101 @@ class FocusViewBeanSetMainTest {
         assertThat(bean.getMainPanel()).isSameAs(previous);
         assertThat(historyBean.getItems()).isEmpty();
         verify(panelFactory, never()).create(eq("recording-unit"), anyLong());
+    }
+
+    @Test
+    void leavesADeletedPageToReact() {
+        AbstractPanel previous = panel("Projets", "/action-unit");
+        bean.setMainPanel(previous);
+        when(pageTargetService.isMissing("/recording-unit/12")).thenReturn(true);
+        params.put("path", "/recording-unit/12");
+
+        bean.setMainFromRequest();
+
+        assertThat(bean.getMainPanel()).isSameAs(previous);
+        assertThat(historyBean.getItems()).isEmpty();
+        verifyNoInteractions(panelFactory);
+    }
+
+    @Test
+    void recordsNothingWhenNotAskedTo() {
+        bean.setMainPanel(panel("Projets", "/action-unit"));
+        AbstractPanel next = fiche("UE-12", "/recording-unit/12");
+        when(panelFactory.create("recording-unit", 12L)).thenReturn(next);
+        params.put("path", "/recording-unit/12");
+        params.put("record", "false");
+
+        bean.setMainFromRequest();
+
+        assertThat(bean.getMainPanel()).isSameAs(next);
+        assertThat(historyBean.getItems()).isEmpty();
+    }
+
+    @Test
+    void recordsATableOpenedFromTheHomePage() {
+        bean.setMainPanel(panel("Accueil", "/welcome"));
+        AbstractPanel list = panel("UE", "/recording-unit");
+        when(list.reactPanelKind()).thenReturn("list");
+        when(panelFactory.create("recording-unit", null)).thenReturn(list);
+        params.put("path", "/recording-unit");
+        params.put("record", "true");
+
+        bean.setMainFromRequest();
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/recording-unit");
+    }
+
+    private void loadPage(String path) {
+        bean.setMainToken(java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(path.getBytes()));
+        bean.beforeInit();
+    }
+
+    @Test
+    void loadingTheHomePageRecordsIt() {
+        AbstractPanel home = panel("Accueil", "/welcome");
+        when(home.reactPanelKind()).thenReturn("home");
+        when(panelFactory.create("welcome", null)).thenReturn(home);
+
+        loadPage("/welcome");
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/welcome");
+    }
+
+    @Test
+    void loadingAFicheRecordsIt() {
+        AbstractPanel fiche = fiche("UE-12", "/recording-unit/12");
+        when(panelFactory.create("recording-unit", 12L)).thenReturn(fiche);
+
+        loadPage("/recording-unit/12");
+
+        assertThat(historyBean.getItems()).extracting(item -> item.getMain().getUri()).containsExactly("/recording-unit/12");
+    }
+
+    @Test
+    void loadingAListRecordsNothing() {
+        AbstractPanel list = panel("UE", "/recording-unit");
+        when(list.reactPanelKind()).thenReturn("list");
+        when(panelFactory.create("recording-unit", null)).thenReturn(list);
+
+        loadPage("/recording-unit");
+
+        assertThat(historyBean.getItems()).isEmpty();
+    }
+
+    @Test
+    void theCurrentPageIsTheFicheShownFullScreen() {
+        bean.setMainPanel(fiche("UE-12", "/recording-unit/12"));
+
+        assertThat(bean.isCurrentPage(entry("/recording-unit/12"))).isTrue();
+        assertThat(bean.isCurrentPage(entry("/recording-unit/13"))).isFalse();
+    }
+
+    private static HistoryBean.HistoryItem entry(String mainUri) {
+        HistoryBean.HistoryItem item = new HistoryBean.HistoryItem();
+        HistoryBean.HistoryItemComponent main = new HistoryBean.HistoryItemComponent();
+        main.setUri(mainUri);
+        item.setMain(main);
+        return item;
     }
 
     @Test

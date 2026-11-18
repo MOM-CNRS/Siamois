@@ -259,8 +259,8 @@ describe("App client-side navigation", () => {
     await flush();
     expect(container.textContent).not.toContain("Detail of Row A");
     expect(container.textContent).toContain("Go to detail");
-    // The server follows the browser back to the page it was mounted on.
-    expect(setMain).toHaveBeenLastCalledWith("/welcome");
+    // The server follows the browser back to the page it was mounted on, without recording it in the history.
+    expect(setMain).toHaveBeenLastCalledWith("/welcome", false);
 
     await act(async () => {
       window.history.forward();
@@ -297,7 +297,7 @@ describe("App client-side navigation", () => {
     await flush();
 
     expect(setMain).toHaveBeenCalledTimes(1);
-    expect(setMain).toHaveBeenCalledWith("/fake-app-entity/1");
+    expect(setMain).toHaveBeenCalledWith("/fake-app-entity/1", true);
   });
 
   it("encodes the CURRENT main view, not the originally mounted one, when an overview opens after navigating", async () => {
@@ -508,7 +508,7 @@ describe("App focus mode", () => {
   it("keeps the server's main panel in step with focus mode when the bridge can set it", async () => {
     const calls: string[] = [];
     const bridge = {
-      setMain: vi.fn((path: string) => void calls.push(`setMain ${path}`)),
+      setMain: vi.fn((path: string, fullScreen?: boolean) => void calls.push(`setMain ${path} ${fullScreen}`)),
       setOverview: vi.fn((type: string, id: string | number) => void calls.push(`setOverview ${type} ${id}`)),
       closeOverview: vi.fn(() => void calls.push("closeOverview")),
     };
@@ -519,11 +519,11 @@ describe("App focus mode", () => {
 
     await click(container.querySelector(".panel-splitter-panel-r .bi-arrows-angle-expand"));
     // The promoted entity becomes the server's main panel, with no overview.
-    expect(calls).toEqual(["closeOverview", "setMain /fake-app-entity/1"]);
+    expect(calls).toEqual(["closeOverview", "setMain /fake-app-entity/1 true"]);
 
     await click(mainPane().querySelector(".bi-arrows-angle-contract"));
     // Back to the previous main, the promoted entity back in its overview — in that order.
-    expect(calls.slice(2)).toEqual(["setMain /fake-app-entity", "setOverview fake-app-entity 1"]);
+    expect(calls.slice(2)).toEqual(["setMain /fake-app-entity false", "setOverview fake-app-entity 1"]);
   });
 
   it("nests: focus, open an overview, focus again, then unwinds both levels and resyncs the bean", async () => {

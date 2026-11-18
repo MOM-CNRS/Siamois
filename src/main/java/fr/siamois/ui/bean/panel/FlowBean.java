@@ -6,9 +6,9 @@ import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.events.InstitutionChangeEvent;
 import fr.siamois.domain.models.events.LoginEvent;
 import fr.siamois.domain.services.InstitutionService;
+import fr.siamois.domain.services.PageTargetService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
-import fr.siamois.ui.bean.HistoryBean;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
 import fr.siamois.ui.bean.panel.models.panel.AbstractPanel;
@@ -53,7 +53,7 @@ public class FlowBean implements Serializable {
     private final transient ProfilePermissionService profilePermissionService;
     private final transient InstitutionService institutionService;
     private final transient InstitutionChangeEventPublisher institutionChangeEventPublisher;
-    private final transient HistoryBean historyBean;
+    private final transient PageTargetService pageTargetService;
 
     private final transient LoginEventPublisher loginEventPublisher;
 
@@ -85,10 +85,11 @@ public class FlowBean implements Serializable {
 
     /**
      * Keeps the page's panel in sync with the overview React opened client-side, so a reload (F5)
-     * and the navigation history reopen it. Called through the {@code reactAction_setOverview_N}
+     * reopens it. An overview is not a fiche opened full screen: the history does not record it. Called through the {@code reactAction_setOverview_N}
      * remoteCommand (panel/reactPanelActions.xhtml) with the entity's React registry key
      * ({@code entityType}) and {@code id} as request parameters. An unknown or missing key is a
-     * no-op rather than a guess.
+     * no-op rather than a guess, and so is an entity deleted since (a Back/Forward move can lead to
+     * one): React shows that itself, where the panel would redirect the whole page to the 404.
      */
     public void addEntityToOverviewFromRequest(AbstractPanel targetPanel) {
         Map<String, String> params = FacesContext.getCurrentInstance()
@@ -97,7 +98,8 @@ public class FlowBean implements Serializable {
         String idParam = params.get("id");
         String entityType = params.get("entityType");
 
-        if (targetPanel == null || idParam == null || entityType == null) {
+        if (targetPanel == null || idParam == null || entityType == null
+                || pageTargetService.isMissing(PanelFactory.listPathOf(entityType) + "/" + idParam)) {
             return;
         }
 
@@ -114,20 +116,6 @@ public class FlowBean implements Serializable {
         targetPanel.setRoot(true);
         targetPanel.setParentOrOverview(overviewPanel);
         overviewPanel.setParentOrOverview(targetPanel);
-
-        HistoryBean.HistoryItem newEntry = new HistoryBean.HistoryItem();
-        newEntry.setMain(historyComponentOf(targetPanel));
-        newEntry.setSecondary(historyComponentOf(overviewPanel));
-        historyBean.addItem(newEntry);
-    }
-
-    private static HistoryBean.HistoryItemComponent historyComponentOf(AbstractPanel panel) {
-        HistoryBean.HistoryItemComponent component = new HistoryBean.HistoryItemComponent();
-        component.setTitle(panel.resolveTitleOrTitleCode());
-        component.setIcon(panel.getIcon());
-        component.setUri(panel.ressourceUri());
-        component.setStyleClass(panel.getPanelClass());
-        return component;
     }
 
     public void redirectToFocus(String resourceUri) throws IOException {

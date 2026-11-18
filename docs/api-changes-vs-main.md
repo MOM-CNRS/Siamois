@@ -456,3 +456,7 @@ Additive. A field of answer type `GEOMETRY` (the entity's own geometry and the a
 - **An additional geometry field** is kept as the text sent (trimmed): any geometry PostGIS reads. Give its SRID (EWKT) for the map view to place it.
 - **`PATCH /api/v1/places/{id}`** (no `answers` map): new property **`geomWkt`**, the same text, which must be a `MultiPolygon`. Ignored when `geom` (GeoJSON) is sent too. Absent = unchanged.
 - **A `geom` (GeoJSON) JTS cannot build** — a polygon ring that does not close, missing or incomplete coordinates — is now a `400` with a readable message on every endpoint that takes one (recording units and finds, creation and PATCH; project and place PATCH; place creation). It used to fail the save with a `500`. A place's `geom` / `geomWkt` that is not a `MultiPolygon` is likewise a `400` before anything is saved.
+
+## 15. History entries have no `id` any more (2026-11-18)
+
+**Breaking.** The items of `GET /api/v1/history` no longer carry **`id`**: an entry is identified by its person, its organization and the time of the visit. Within one response, `mainUri` and `secondaryUri` identify an item.

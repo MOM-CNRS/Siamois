@@ -101,8 +101,10 @@ describe("parseMountOptions", () => {
     bridge!.setMain!("/action-unit/12");
     bridge!.closeOverview!();
     expect(called.setOverview).toEqual({ entityType: "recordingUnit", id: 40 });
-    expect(called.setMain).toEqual({ path: "/action-unit/12" });
+    expect(called.setMain).toEqual({ path: "/action-unit/12", record: false });
     expect(fns.reactAction_closeOverview).toHaveBeenCalled();
+    bridge!.setMain!("/action-unit/12", true);
+    expect(called.setMain).toEqual({ path: "/action-unit/12", record: true });
     bridge!.refreshViews!();
     expect(fns.reactAction_refreshViews).toHaveBeenCalled();
   });

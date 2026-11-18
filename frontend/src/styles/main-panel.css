@@ -4025,6 +4025,16 @@ body .sia-views-table .ui-button.ui-button-flat.bookmark-full-button .ui-button-
   color: var(--text-main, #2a2c30) !important;
 }
 
+/* The history entry of the page on screen, in the colour of its entity's type. */
+body .sia-history-table tr.sia-history-current .ui-button.bookmark-full-button {
+  background: var(--light-color-100, var(--siamois-green-light-100)) !important;
+  box-shadow: inset 3px 0 0 var(--main-color, var(--siamois-green-light-350));
+}
+
+body .sia-history-table tr.sia-history-current .sia-entry-title {
+  font-weight: 600;
+}
+
 /* « +N »: the filters that do not fit in the bar; clicked, they are listed. */
 .filter-chip-more {
   font-weight: 600;

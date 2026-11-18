@@ -25,7 +25,7 @@ async function flush() {
 }
 
 function renderWidget(index: 0 | 1, onNavigate = vi.fn()) {
-  const widgets = projectHomeWidgets({ organizationId: 7, onNavigate });
+  const widgets = projectHomeWidgets({ organizationId: 7, onNavigate, onOpenTable: onNavigate });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   act(() => {
     root.render(<QueryClientProvider client={queryClient}>{widgets[index].render()}</QueryClientProvider>);

@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Objects;
 
 /*
-Bean managing the history shown in the sidebar: the pages the user opened lately in the active organisation.
-They are kept in base (UserHistoryService), so they outlive the session; the session holds the list to show,
-loaded from there on first use.
+Bean managing the history shown in the sidebar: the pages the user opened lately in the active organisation (the
+fiches opened full screen, the home page and the tables opened from it). They are kept in base (UserHistoryService), so they outlive the session; the session holds the list to show,
+read from there each time the sidebar draws it.
  */
 @Slf4j
 @Component
@@ -37,11 +37,10 @@ loaded from there on first use.
 @RequiredArgsConstructor
 public class HistoryBean {
 
-    private static final int MAX_ITEMS = 20;
+    private static final int MAX_ITEMS = UserHistoryService.MAX_ENTRIES;
 
     private final FlowBean flowBean;
     private final UserHistoryService historyService;
-    // Looked up when needed: SessionSettingsBean depends on FlowBean, which depends on this bean.
     private final ObjectProvider<SessionSettingsBean> sessionSettings;
     private final EntityProjectResolver projectResolver;
     private final LangBean langBean;
@@ -49,6 +48,8 @@ public class HistoryBean {
     private List<HistoryItem> items = new ArrayList<>();
     // The organisation the items belong to; null as long as none was read.
     private Long itemsInstitutionId;
+    // The entry the user just clicked on: reaching its page leaves it where it is in the list.
+    private HistoryItem clickedEntry;
 
     /**
      * The pages to show, all of the active organisation: read from base on first use, and again whenever
@@ -57,12 +58,20 @@ public class HistoryBean {
     public List<HistoryItem> getItems() {
         Long activeInstitutionId = activeInstitutionId();
         if (!Objects.equals(itemsInstitutionId, activeInstitutionId)) {
-            itemsInstitutionId = activeInstitutionId;
-            items = loadStored();
-            resolveProjects(items);
-            relabelHomeEntries(items);
+            refresh();
         }
         return items;
+    }
+
+    /**
+     * Reads the list again from base, each time the sidebar draws it: a page deleted in the meantime
+     * leaves it, whoever deleted it and from wherever.
+     */
+    public void refresh() {
+        itemsInstitutionId = activeInstitutionId();
+        items = loadStored();
+        resolveProjects(items);
+        relabelHomeEntries(items);
     }
 
     private Long activeInstitutionId() {
@@ -195,32 +204,40 @@ public class HistoryBean {
         }
     }
 
+    /**
+     * Opens the page of a sidebar entry. Walking through the history does not reorder it: the entry stays
+     * where it is, and is the one highlighted once the page is loaded.
+     */
     public void redirectToEntry(HistoryItem entry) throws IOException {
-
+        clickedEntry = entry;
         flowBean.redirectToFocus(entry.main.uri, entry.secondary != null ? entry.secondary.uri :  null);
 
     }
 
+    /**
+     * A page was loaded in the browser: it is recorded when it is {@code recordable}, unless the user reached
+     * it through its entry.
+     */
+    public void addLoadedPage(HistoryItem item, boolean recordable) {
+        boolean clicked = clickedEntry != null && clickedEntry.getMain().getUri().equals(item.getMain().getUri());
+        clickedEntry = null;
+        if (recordable && !clicked) {
+            addItem(item);
+        }
+    }
 
+    /**
+     * Records a page the user opened, at the top of the list.
+     */
     public void addItem(HistoryItem item) {
-
         if(item.getMain() == null) {
             return;
-
         }
         getItems();
         persist(item);
         resolveProjects(List.of(item));
 
-        // Remove any existing item with the same main URI and secondary URI
-        items.removeIf(existingItem ->
-                existingItem.getMain().getUri().equals(item.getMain().getUri()) &&
-                        ((existingItem.getSecondary() == null && item.getSecondary() == null) ||
-                                (existingItem.getSecondary() != null && item.getSecondary() != null &&
-                                        existingItem.getSecondary().getUri().equals(item.getSecondary().getUri())))
-        );
-
-        // Add the new item
+        items.removeIf(existingItem -> existingItem.getMain().getUri().equals(item.getMain().getUri()));
         items.add(0, item); // Add to the beginning to keep the most recent first
 
         // Enforce max size

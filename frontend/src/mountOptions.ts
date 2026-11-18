@@ -59,9 +59,9 @@ export interface PanelBridge {
   setOverview?: (entityType: string, id: string | number) => void;
   closeOverview?: () => void;
   // FocusViewBean#setMainFromRequest: the main pane moved client-side to this resource path
-  // ("/action-unit/12", "/action-unit") — the server follows it and records it in the history
-  // sidebar, like a page load would. Fire-and-forget.
-  setMain?: (path: string) => void;
+  // ("/action-unit/12", "/action-unit") — the server follows it, and records it in the history sidebar
+  // when `record` says so. Fire-and-forget.
+  setMain?: (path: string, record?: boolean) => void;
   // Redraws the JSF sidebar's bookmarks list after React added or removed a bookmark (REST).
   refreshBookmarks?: () => void;
   // Redraws the JSF sidebar's views list after React created, renamed or updated a view (REST).
@@ -182,7 +182,7 @@ export function parseMountOptions(dataset: MountDataset, resolveAction: ActionRe
     bridge: {
       setOverview: setOverview && ((entityType, id) => setOverview({ entityType, id })),
       closeOverview: action("overviewActionCloseOverview") as PanelBridge["closeOverview"],
-      setMain: setMain && ((path) => setMain({ path })),
+      setMain: setMain && ((path, record = false) => setMain({ path, record })),
       refreshBookmarks: action("actionRefreshBookmarks") as PanelBridge["refreshBookmarks"],
       refreshViews: action("actionRefreshViews") as PanelBridge["refreshViews"],
     },

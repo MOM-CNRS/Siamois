@@ -59,7 +59,6 @@ describe("home history", () => {
     mockedApiFetch.mockResolvedValue({
       data: [
         {
-          id: 1,
           title: "US 9",
           icon: "bi bi-pencil-square",
           mainUri: "/action-unit/2",
@@ -86,7 +85,7 @@ describe("home history", () => {
   });
 
   it("opens a list entry without an overview", async () => {
-    mockedApiFetch.mockResolvedValue({ data: [{ id: 1, title: "Projets", mainUri: "/action-unit", mainTitle: "Projets" }] });
+    mockedApiFetch.mockResolvedValue({ data: [{ title: "Projets", mainUri: "/action-unit", mainTitle: "Projets" }] });
     const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenOverview: vi.fn() };
     render(ctx);
     await flush();
@@ -100,10 +99,10 @@ describe("home history", () => {
   it("leaves the home page out and shows each card in the colour and icon of its type", async () => {
     mockedApiFetch.mockResolvedValue({
       data: [
-        { id: 1, title: "Accueil", mainUri: "/home", mainTitle: "Accueil" },
-        { id: 4, title: "Ailleurs", mainUri: "/nope/1", mainTitle: "Ailleurs" },
-        { id: 2, title: "Projet A", mainUri: "/action-unit/2", mainTitle: "Projet A" },
-        { id: 3, title: "US 9", mainUri: "/recording-unit/9", mainTitle: "US 9" },
+        { title: "Accueil", mainUri: "/home", mainTitle: "Accueil" },
+        { title: "Ailleurs", mainUri: "/nope/1", mainTitle: "Ailleurs" },
+        { title: "Projet A", mainUri: "/action-unit/2", mainTitle: "Projet A" },
+        { title: "US 9", mainUri: "/recording-unit/9", mainTitle: "US 9" },
       ],
     });
     render({ organizationId: 7 });
@@ -119,7 +118,7 @@ describe("home history", () => {
 
   it("keeps a fiche opened beside a pane the server still knows as Home, and reopens just that fiche", async () => {
     mockedApiFetch.mockResolvedValue({
-      data: [{ id: 1, title: "US 9", mainUri: "/home", mainTitle: "Accueil", secondaryUri: "/recording-unit/9", secondaryTitle: "US 9" }],
+      data: [{ title: "US 9", mainUri: "/home", mainTitle: "Accueil", secondaryUri: "/recording-unit/9", secondaryTitle: "US 9" }],
     });
     const ctx = { organizationId: 7, onNavigate: vi.fn(), onOpenOverview: vi.fn() };
     render(ctx);
