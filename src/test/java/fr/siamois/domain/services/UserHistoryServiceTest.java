@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -68,10 +69,11 @@ class UserHistoryServiceTest {
         assertEquals("", saved.getValue().getSecondaryUri());
         assertEquals("Titre", saved.getValue().getMainTitle());
         assertSame(person, saved.getValue().getPerson());
+        assertEquals(0, saved.getValue().getVisitedAt().getNano() % 1000, "kept to the microsecond, as the database does");
     }
 
     @Test
-    void record_samePageAgain_movesTheExistingEntryUpAndDropsDuplicates() {
+    void record_samePageAgain_replacesItsEntriesByANewOne() {
         UserHistoryEntry first = new UserHistoryEntry();
         UserHistoryEntry duplicate = new UserHistoryEntry();
         when(repository.findByPersonAndInstitutionAndMainUriAndSecondaryUri(person, institution, "/a", "/b"))
@@ -79,9 +81,11 @@ class UserHistoryServiceTest {
 
         service.remember(userInfo, visit("/a", "/b"));
 
-        verify(repository).deleteAll(List.of(duplicate));
-        verify(repository).save(first);
-        assertEquals("Volet", first.getSecondaryTitle());
+        verify(repository).deleteAll(List.of(first, duplicate));
+        ArgumentCaptor<UserHistoryEntry> saved = ArgumentCaptor.forClass(UserHistoryEntry.class);
+        verify(repository).save(saved.capture());
+        assertNotSame(first, saved.getValue());
+        assertEquals("Volet", saved.getValue().getSecondaryTitle());
     }
 
     @Test
@@ -93,7 +97,7 @@ class UserHistoryServiceTest {
         for (int i = 0; i <= UserHistoryService.MAX_ENTRIES; i++) {
             all.add(new UserHistoryEntry());
         }
-        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+        when(repository.findByPersonAndInstitutionOrderByIdVisitedAtDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(all);
 
         service.remember(userInfo, visit("/x", null));
@@ -120,7 +124,7 @@ class UserHistoryServiceTest {
     @Test
     void latest_readsEverythingKeptAndBoundsTheResult() {
         List<UserHistoryEntry> kept = List.of(entry("/a", ""), entry("/b", ""));
-        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+        when(repository.findByPersonAndInstitutionOrderByIdVisitedAtDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(kept);
 
         assertEquals(kept, service.latest(userInfo, 1000));
@@ -128,7 +132,7 @@ class UserHistoryServiceTest {
 
         ArgumentCaptor<Pageable> page = ArgumentCaptor.forClass(Pageable.class);
         verify(repository, times(2))
-                .findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), page.capture());
+                .findByPersonAndInstitutionOrderByIdVisitedAtDesc(eq(person), eq(institution), page.capture());
         assertEquals(UserHistoryService.MAX_ENTRIES, page.getAllValues().get(0).getPageSize());
         assertEquals(UserHistoryService.MAX_ENTRIES, page.getAllValues().get(1).getPageSize());
     }
@@ -138,7 +142,7 @@ class UserHistoryServiceTest {
         UserHistoryEntry alive = entry("/recording-unit/1", "");
         UserHistoryEntry deleted = entry("/recording-unit/2", "");
         UserHistoryEntry next = entry("/recording-unit/3", "");
-        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+        when(repository.findByPersonAndInstitutionOrderByIdVisitedAtDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(List.of(deleted, alive, next));
         when(pageTargetService.missingAmong(anySet())).thenReturn(Set.of("/recording-unit/2"));
 
@@ -151,7 +155,7 @@ class UserHistoryServiceTest {
         UserHistoryEntry home = entry("/welcome", "");
         UserHistoryEntry table = entry("/recording-unit", "");
         UserHistoryEntry inOverview = entry("/recording-unit", "/recording-unit/1");
-        when(repository.findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(eq(person), eq(institution), any(Pageable.class)))
+        when(repository.findByPersonAndInstitutionOrderByIdVisitedAtDesc(eq(person), eq(institution), any(Pageable.class)))
                 .thenReturn(List.of(table, inOverview, fiche, home));
 
         assertEquals(List.of(table, fiche, home), service.latest(userInfo, 10));

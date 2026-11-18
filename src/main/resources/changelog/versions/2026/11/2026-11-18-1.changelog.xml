@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    user_history: an entry is identified by who visited, in which organisation and when, instead of a generated id.
+    The primary key covers the columns of idx_user_history_person_institution, which is no longer needed.
+    -->
+
+    <!-- Two visits of one person in one organisation at the same instant cannot both stay: the latest recorded does. -->
+    <changeSet id="2026-11-18-1-user-history-drop-same-instant-visits" author="Julien Linget">
+        <sql>
+            DELETE FROM public.user_history older
+            USING public.user_history latest
+            WHERE older.fk_person = latest.fk_person
+              AND older.fk_institution = latest.fk_institution
+              AND older.visited_at = latest.visited_at
+              AND older.id &lt; latest.id;
+        </sql>
+    </changeSet>
+
+    <changeSet id="2026-11-18-1-user-history-drop-id-primary-key" author="Julien Linget">
+        <dropPrimaryKey tableName="user_history" constraintName="user_history_pkey"/>
+    </changeSet>
+
+    <changeSet id="2026-11-18-1-user-history-drop-id" author="Julien Linget">
+        <dropColumn tableName="user_history" columnName="id"/>
+    </changeSet>
+
+    <!--
+    In this order on purpose: the history of a person in an organisation is read straight off the key, its entries being
+    side by side and sorted by time. Read backwards, the index gives the latest visits first, with no sort.
+    -->
+    <changeSet id="2026-11-18-1-user-history-add-composite-primary-key" author="Julien Linget">
+        <addPrimaryKey tableName="user_history" columnNames="fk_person, fk_institution, visited_at"
+                       constraintName="user_history_pkey"/>
+    </changeSet>
+
+    <changeSet id="2026-11-18-1-user-history-drop-covered-index" author="Julien Linget">
+        <dropIndex tableName="user_history" indexName="idx_user_history_person_institution"/>
+    </changeSet>
+
+</databaseChangeLog>

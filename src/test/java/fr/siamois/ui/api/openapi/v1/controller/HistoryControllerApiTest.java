@@ -160,12 +160,10 @@ class HistoryControllerApiTest {
         when(personMapper.convert(person)).thenReturn(personDto);
         when(institutionService.findInstitutionsOfPerson(personDto)).thenReturn(Set.of(institutionDto));
         fr.siamois.domain.models.UserHistoryEntry alone = new fr.siamois.domain.models.UserHistoryEntry();
-        alone.setId(1L);
         alone.setMainUri("/action-unit/2");
         alone.setMainTitle("Projet A");
         alone.setMainIcon("bi bi-arrow-down-square");
         fr.siamois.domain.models.UserHistoryEntry paired = new fr.siamois.domain.models.UserHistoryEntry();
-        paired.setId(2L);
         paired.setMainUri("/action-unit/2");
         paired.setMainTitle("Projet A");
         paired.setSecondaryUri("/recording-unit/9");
@@ -175,6 +173,7 @@ class HistoryControllerApiTest {
         mockMvc.perform(get("/api/v1/history").param("organizationId", "100"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].title").value("Projet A"))
+                .andExpect(jsonPath("$.data[0].id").doesNotExist())
                 .andExpect(jsonPath("$.data[0].secondaryUri").doesNotExist())
                 .andExpect(jsonPath("$.data[1].title").value("US 9"))
                 .andExpect(jsonPath("$.data[1].mainUri").value("/action-unit/2"))

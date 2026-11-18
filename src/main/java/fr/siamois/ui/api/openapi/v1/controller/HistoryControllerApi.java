@@ -35,7 +35,7 @@ public class HistoryControllerApi {
      * The main pane's page, and the overview open next to it (secondary fields null when there was none).
      * {@code project}: the project of the fiche shown (the overview's, else the main pane's); null for a page with none.
      */
-    public record HistoryItem(Long id, String title, String icon, String mainUri, String mainTitle,
+    public record HistoryItem(String title, String icon, String mainUri, String mainTitle,
                               String secondaryUri, String secondaryTitle, ProjectRef project) {
     }
 
@@ -67,7 +67,7 @@ public class HistoryControllerApi {
 
     private static HistoryItem item(UserHistoryEntry e, Map<String, ProjectRef> projects) {
         boolean overview = !e.getSecondaryUri().isEmpty();
-        return new HistoryItem(e.getId(),
+        return new HistoryItem(
                 overview ? e.getSecondaryTitle() : e.getMainTitle(),
                 overview ? e.getSecondaryIcon() : e.getMainIcon(),
                 e.getMainUri(), e.getMainTitle(),

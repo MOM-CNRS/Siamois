@@ -4517,8 +4517,6 @@ export interface components {
             canEdit?: boolean;
         };
         HistoryItem: {
-            /** Format: int64 */
-            id?: number;
             title?: string;
             icon?: string;
             mainUri?: string;

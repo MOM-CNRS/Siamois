@@ -77,7 +77,7 @@ function RecentlyViewed(ctx: HomeWidgetContext) {
             const type = getEntityType(resolveEntityPath(page.secondaryUri ?? page.mainUri)?.entityType ?? "");
             return (
               <ClickableCard
-                key={page.id}
+                key={`${page.mainUri}|${page.secondaryUri ?? ""}`}
                 ariaLabel={page.title}
                 onOpen={() => open(page)}
                 className={`sia-welcome-card ${type?.cardClassName ?? ""}`}

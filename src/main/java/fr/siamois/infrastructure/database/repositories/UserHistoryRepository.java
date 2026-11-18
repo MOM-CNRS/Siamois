@@ -10,13 +10,13 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface UserHistoryRepository extends CrudRepository<UserHistoryEntry, Long> {
+public interface UserHistoryRepository extends CrudRepository<UserHistoryEntry, UserHistoryEntry.UserHistoryEntryId> {
 
     List<UserHistoryEntry> findByPersonAndInstitutionAndMainUriAndSecondaryUri(
             Person person, Institution institution, String mainUri, String secondaryUri);
 
     /** The user's entries in an organisation, the most recent first. */
-    List<UserHistoryEntry> findByPersonAndInstitutionOrderByVisitedAtDescIdDesc(
+    List<UserHistoryEntry> findByPersonAndInstitutionOrderByIdVisitedAtDesc(
             Person person, Institution institution, Pageable pageable);
 
     long countByPersonAndInstitution(Person person, Institution institution);
