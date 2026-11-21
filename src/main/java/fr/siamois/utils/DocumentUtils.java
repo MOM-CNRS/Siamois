@@ -90,16 +90,10 @@ public class DocumentUtils {
      * @return a regex string that matches the allowed MIME types.
      */
     public static String allowedTypesRegex(List<MimeType> allowedTypes) {
-        List<String> extensions = new ArrayList<>();
-
-        for (MimeType mimeType : allowedTypes) {
-            if (mimeType.toString().equalsIgnoreCase("*/*"))
-                return "*";
-
-            String subtype = mimeType.getSubtype();
-            extensions.add(subtype);
+        List<String> extensions = fileExtensions(allowedTypes);
+        if (extensions == null || extensions.isEmpty()) {
+            return "/.*/";
         }
-
         return String.format("/(\\.|\\/)(%s)$/", String.join("|", extensions));
     }
 
@@ -110,13 +104,47 @@ public class DocumentUtils {
      * @return a string of allowed file extensions, e.g., ".pdf,.jpg".
      */
     public static String allowedExtensionsStringList(List<MimeType> allowedTypes) {
+        List<String> extensions = fileExtensions(allowedTypes);
+        if (extensions == null || extensions.isEmpty()) {
+            return "";
+        }
+        return extensions.stream().map(ext -> "." + ext).reduce((a, b) -> a + "," + b).orElse("");
+    }
+
+    static List<String> fileExtensions(List<MimeType> allowedTypes) {
+        if (allowedTypes == null || allowedTypes.isEmpty()) {
+            return null;
+        }
         List<String> extensions = new ArrayList<>();
         for (MimeType type : allowedTypes) {
-            if (type.toString().equalsIgnoreCase("*/*"))
-                return "*";
-            extensions.add("." + type.getSubtype());
+            if (type.toString().equalsIgnoreCase("*/*")) {
+                return null;
+            }
+            for (String ext : extensionsForMime(type)) {
+                if (!extensions.contains(ext)) {
+                    extensions.add(ext);
+                }
+            }
         }
-        return String.join(",", extensions);
+        return extensions;
+    }
+
+    private static List<String> extensionsForMime(MimeType type) {
+        String full = type.toString().toLowerCase();
+        return switch (full) {
+            case "image/jpeg" -> List.of("jpg", "jpeg");
+            case "image/png" -> List.of("png");
+            case "image/gif" -> List.of("gif");
+            case "image/webp" -> List.of("webp");
+            case "image/tiff" -> List.of("tif", "tiff");
+            case "image/svg+xml" -> List.of("svg");
+            case "application/pdf" -> List.of("pdf");
+            default -> {
+                String subtype = type.getSubtype();
+                int plus = subtype.indexOf('+');
+                yield List.of(plus >= 0 ? subtype.substring(0, plus) : subtype);
+            }
+        };
     }
 
 }

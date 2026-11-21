@@ -1,3 +1,4 @@
+import {BulkImportDocument} from "../document/BulkImportDocument";
 import {relationTab} from "../../panels/detail/relationTab";
 import {deleteEntity} from "../shared/deleteApi";
 import {createBulkApi} from "../shared/bulkApi";
@@ -93,13 +94,17 @@ export const projectEntityConfig: EntityTypeConfig<
         ),
       },
       // Order: détails, documents, UE, mobilier, phases, then études, contenants, lieux. The project is
-      // the document's own attachment, not a link: the tab lists, creates, and has nothing to link.
+      // the document's own attachment, not a link: the tab lists, creates, and has nothing to link —
+      // but bulk import still targets this project via action_unit_document.
       relationTab<ProjectDetail>({
         key: "documents",
         label: t("entity.document.plural"),
         target: "document",
         scopeEntityType: "project",
         badge: (entity) => entity._counts?.documents ?? 0,
+        toolbarExtra: (entity) => (
+          <BulkImportDocument segment="projects" entityId={entity.id} />
+        ),
       }),
       relationTab<ProjectDetail>({
         key: "recording-units",

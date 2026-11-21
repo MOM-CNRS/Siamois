@@ -69,6 +69,13 @@ public class DocumentImportItem implements Serializable {
     @Column(name = "description", length = 5000)
     private String description;
 
+    @Column(name = "identifier", length = 255)
+    private String identifier;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fk_type_concept_id")
+    private Concept type;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_nature_concept_id")
     private Concept nature;

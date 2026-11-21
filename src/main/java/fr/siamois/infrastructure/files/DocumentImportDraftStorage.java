@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,6 +27,10 @@ public class DocumentImportDraftStorage {
 
     public Path draftDir(long institutionId, long draftId) {
         return Paths.get(documentsPath, DRAFTS_DIR, Long.toString(institutionId), Long.toString(draftId));
+    }
+
+    Path draftsRoot() {
+        return Paths.get(documentsPath, DRAFTS_DIR).normalize();
     }
 
     /**
@@ -65,24 +70,64 @@ public class DocumentImportDraftStorage {
         } catch (IOException e) {
             log.warn("Unable to delete draft file {}: {}", path, e.getMessage());
         }
+        pruneEmptyAncestors(draftDir(institutionId, draftId));
     }
 
     /** Deletes the whole draft directory (all item files). */
     public void deleteDraftTree(long institutionId, long draftId) {
         Path dir = draftDir(institutionId, draftId);
-        if (!Files.isDirectory(dir)) {
+        if (Files.isDirectory(dir)) {
+            try (Stream<Path> walk = Files.walk(dir)) {
+                walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                    try {
+                        Files.deleteIfExists(p);
+                    } catch (IOException e) {
+                        log.warn("Unable to delete {}: {}", p, e.getMessage());
+                    }
+                });
+            } catch (IOException e) {
+                log.warn("Unable to walk draft dir {}: {}", dir, e.getMessage());
+            }
+        }
+        pruneEmptyAncestors(dir.getParent());
+    }
+
+    /**
+     * Removes {@code start} and its parents while they stay empty, stopping at (and including)
+     * {@code _import_drafts} when that root itself is empty. Never walks above the drafts root.
+     */
+    void pruneEmptyAncestors(Path start) {
+        if (start == null) {
             return;
         }
-        try (Stream<Path> walk = Files.walk(dir)) {
-            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException e) {
-                    log.warn("Unable to delete {}: {}", p, e.getMessage());
-                }
-            });
+        Path root = draftsRoot();
+        Path current = start.normalize();
+        if (!current.startsWith(root)) {
+            return;
+        }
+        while (current != null && current.startsWith(root)) {
+            if (!Files.isDirectory(current) || !isEmptyDirectory(current)) {
+                break;
+            }
+            try {
+                Files.deleteIfExists(current);
+                log.debug("Removed empty draft directory {}", current);
+            } catch (IOException e) {
+                log.warn("Unable to remove empty draft directory {}: {}", current, e.getMessage());
+                break;
+            }
+            if (current.equals(root)) {
+                break;
+            }
+            current = current.getParent();
+        }
+    }
+
+    private static boolean isEmptyDirectory(Path dir) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            return !stream.iterator().hasNext();
         } catch (IOException e) {
-            log.warn("Unable to walk draft dir {}: {}", dir, e.getMessage());
+            return false;
         }
     }
 

@@ -24,6 +24,7 @@ export function BulkImportDocument({ segment, entityId }: BulkImportDocumentProp
   useEffect(() => {
     const onDone = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.entityList("document") });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
     };
     window.addEventListener("sia-bulk-documents-done", onDone);
     return () => window.removeEventListener("sia-bulk-documents-done", onDone);
