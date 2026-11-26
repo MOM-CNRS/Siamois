@@ -933,9 +933,7 @@
                                   dragDrop="true"
                                   update="bulkDocumentImport:bulkBody bulkDocumentImport:bulkFooterActions bulkDocumentImport:bulkReadyCount"
                                   oncomplete="if (PF('bulkDocumentImportDiag')) { PF('bulkDocumentImportDiag').initPosition(); }"
-                                  accept="#{documentBulkImportBean.allowedExtensions()}"
                                   label="#{langBean.msg('documents.bulk.chooseFiles')}"
-                                  allowTypes="#{documentBulkImportBean.regexSupportedTypes()}"
                                   sizeLimit="#{documentBulkImportBean.maxFileSize()}"/>
                 </div>
 
