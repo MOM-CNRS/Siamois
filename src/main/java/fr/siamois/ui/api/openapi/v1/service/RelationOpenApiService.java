@@ -61,11 +61,15 @@ public class RelationOpenApiService {
 
     @Transactional(rollbackFor = Exception.class)
     public RelationLinkResponse createLink(RelationLinkCreateRequest body, ProjectApiCaller caller) {
-        if (body == null || body.definition() == null || body.record() == null || body.other() == null) {
-            throw badRequest("definition, record et other sont obligatoires");
+        if (body == null || (body.field() == null && body.definition() == null) || body.record() == null
+                || body.other() == null) {
+            throw badRequest("field (ou definition), record et other sont obligatoires");
         }
+        RelationDefinition fieldDefinition = body.field() != null ? definitionOfField(body.field()) : null;
         RelationLinkService.Result result = linkService.create(new RelationLinkService.CreateRequest(
-                body.definition(), sideOf(body.side()), end(body.record()), end(body.other()),
+                fieldDefinition != null ? fieldDefinition.getId() : body.definition(),
+                fieldDefinition != null ? sideOfField(fieldDefinition, body.field()) : sideOf(body.side()),
+                end(body.record()), end(body.other()),
                 body.qualifier(), Boolean.TRUE.equals(body.uncertain())), caller.person(), caller.accessibleInstitutionIds());
         return responseOf(result);
     }
@@ -73,15 +77,31 @@ public class RelationOpenApiService {
     @Transactional(rollbackFor = Exception.class)
     public RelationLinkResponse updateLink(Long id, RelationLinkUpdateRequest body, ProjectApiCaller caller) {
         if (body == null) throw badRequest("Corps de requête obligatoire");
+        RelationSide side = body.field() != null ? sideOfField(definitionOfField(body.field()), body.field())
+                : sideOf(body.side());
         RelationLinkService.Result result = linkService.update(id, new RelationLinkService.UpdateRequest(
-                sideOf(body.side()), body.qualifier(), Boolean.TRUE.equals(body.uncertain())),
+                side, body.qualifier(), Boolean.TRUE.equals(body.uncertain())),
                 caller.person(), caller.accessibleInstitutionIds());
         return responseOf(result);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteLink(Long id, @Nullable String side, ProjectApiCaller caller) {
-        linkService.delete(id, sideOf(side), caller.person(), caller.accessibleInstitutionIds());
+    public void deleteLink(Long id, @Nullable Long field, @Nullable String side, ProjectApiCaller caller) {
+        RelationSide edited = field != null ? sideOfField(definitionOfField(field), field) : sideOf(side);
+        linkService.delete(id, edited, caller.person(), caller.accessibleInstitutionIds());
+    }
+
+    /** The definition a relation field is a side of. */
+    private RelationDefinition definitionOfField(Long fieldId) {
+        return definitionRepository.findByField(fieldId).orElseThrow(() ->
+                new RelationLinkException(RelationLinkException.Reason.DEFINITION_NOT_FOUND,
+                        "Ce champ n'est un côté d'aucune relation : " + fieldId));
+    }
+
+    /** The source side for a definition's source field (and for a symmetric one), the target side otherwise. */
+    private static RelationSide sideOfField(RelationDefinition definition, Long fieldId) {
+        return definition.isSymmetric() || definition.getSourceField().getId().equals(fieldId)
+                ? RelationSide.SOURCE : RelationSide.TARGET;
     }
 
     /** What a relation field is in a project: its side, the records it can link, its qualifiers seen from its side. */

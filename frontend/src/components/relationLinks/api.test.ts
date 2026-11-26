@@ -2,6 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {
     addHierarchyLink,
     addStratigraphyLink,
+    linkIdOf,
     removeHierarchyLink,
     removeStratigraphyLink,
     updateStratigraphyLink
@@ -20,21 +21,32 @@ describe("relation graph writes", () => {
     expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/v1/recording-units/5/children/9", { method: "DELETE" });
   });
 
-  it("creates a stratigraphic link with the position of the other unit, its type and its uncertainty", async () => {
-    await addStratigraphyLink(5, "anterior", "9", { typeConceptId: 7, uncertain: true });
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/5/stratigraphic-relationships", {
+  it("creates a stratigraphic link through the field it is entered from, with its type and its uncertainty", async () => {
+    await addStratigraphyLink("-328", 5, "9", { typeConceptId: 7, uncertain: true });
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/relation-links", {
       method: "POST",
-      body: { relatedRecordingUnitId: 9, position: "anterior", typeConceptId: 7, uncertain: true },
+      body: {
+        field: -328,
+        record: { resourceType: "recording-units", resourceId: 5 },
+        other: { resourceType: "recording-units", resourceId: 9 },
+        qualifier: 7,
+        uncertain: true,
+      },
     });
   });
 
-  it("replaces and removes a stratigraphic link", async () => {
-    await updateStratigraphyLink(5, "9", { uncertain: true });
-    await removeStratigraphyLink(5, "9");
-    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/v1/recording-units/5/stratigraphic-relationships/9", {
-      method: "PUT",
-      body: { typeConceptId: null, uncertain: true },
+  it("replaces and removes a stratigraphic link by its id, through its field", async () => {
+    await updateStratigraphyLink("-329", "900", { uncertain: true });
+    await removeStratigraphyLink("-329", "900");
+    expect(apiFetch).toHaveBeenNthCalledWith(1, "/api/v1/relation-links/900", {
+      method: "PATCH",
+      body: { field: -329, qualifier: null, uncertain: true },
     });
-    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/v1/recording-units/5/stratigraphic-relationships/9", { method: "DELETE" });
+    expect(apiFetch).toHaveBeenNthCalledWith(2, "/api/v1/relation-links/900?field=-329", { method: "DELETE" });
+  });
+
+  it("refuses a value that does not say which link it stands for", () => {
+    expect(() => linkIdOf({ qualifier: {} })).toThrow();
+    expect(linkIdOf({ qualifier: { linkId: 900 } })).toBe("900");
   });
 });

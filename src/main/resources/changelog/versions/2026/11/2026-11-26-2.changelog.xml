@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    The stratigraphy on the configurable relations (docs/reprise-stratigraphie.md, validated on 2026-11-26): the two
+    system definitions, their platform default rules and mirror pairs, then the takeover of stratigraphic_relationship.
+    The old table is kept, read only, until a later delivery. Every changeSet can run again without effect.
+    -->
+
+    <!-- The system fields the definitions use, as SystemFieldInitializer creates them, for a database that has none yet. -->
+    <changeSet id="2026-11-26-2-stratigraphy-system-fields" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO public.custom_field (custom_field_id, answer_type, label, is_system_field, value_binding, field_code)
+            SELECT v.id, 'SELECT_MULTIPLE_STRATIGRAPHY', v.label, true, v.binding, v.code
+            FROM (VALUES (-328, 'recordingunit.field.anteriorRelationships', 'anteriorRelationships', 'SIARU.STRATI.ANTERIOR'),
+                         (-329, 'recordingunit.field.posteriorRelationships', 'posteriorRelationships', 'SIARU.STRATI.POSTERIOR'),
+                         (-330, 'recordingunit.field.synchronousRelationships', 'synchronousRelationships', 'SIARU.STRATI.SYNCHRONOUS'))
+                 AS v(id, label, binding, code)
+            WHERE NOT EXISTS (SELECT 1 FROM public.custom_field f WHERE f.custom_field_id = v.id);
+        ]]></sql>
+    </changeSet>
+
+    <!--
+    The order, from -328 "Antérieur" (on a unit, the units anterior to it: the field of the posterior unit, the source)
+    to -329 "Postérieur", its mirror. Each field is also its definition's qualifier field: its vocabulary (the anterior
+    branch, the synchronous branch) is the qualifier's. Both relations are complex, with an optional qualifier.
+    -->
+    <changeSet id="2026-11-26-2-stratigraphy-definitions" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            INSERT INTO public.relation_definition (fk_source_field_id, fk_target_field_id, kind, is_symmetric, is_hierarchical, fk_qualifier_field_id)
+            SELECT -328, -329, 'COMPLEX', false, false, -328
+            WHERE NOT EXISTS (SELECT 1 FROM public.relation_definition WHERE fk_source_field_id = -328);
+            INSERT INTO public.relation_definition (fk_source_field_id, fk_target_field_id, kind, is_symmetric, is_hierarchical, fk_qualifier_field_id)
+            SELECT -330, -330, 'COMPLEX', true, false, -330
+            WHERE NOT EXISTS (SELECT 1 FROM public.relation_definition WHERE fk_source_field_id = -330);
+        ]]></sql>
+    </changeSet>
+
+    <!-- Platform default rules: recording units on both sides, no cycle in the order, order and synchrony exclusive. -->
+    <changeSet id="2026-11-26-2-stratigraphy-default-rules" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DO $do$
+            DECLARE
+                v_order     bigint := (SELECT relation_definition_id FROM public.relation_definition WHERE fk_source_field_id = -328);
+                v_synchrony bigint := (SELECT relation_definition_id FROM public.relation_definition WHERE fk_source_field_id = -330);
+                v_rule      bigint;
+                v_def       bigint;
+                v_other     bigint;
+            BEGIN
+                FOREACH v_def IN ARRAY ARRAY[v_order, v_synchrony] LOOP
+                    v_other := CASE WHEN v_def = v_order THEN v_synchrony ELSE v_order END;
+                    SELECT relation_rule_id INTO v_rule FROM public.relation_rule
+                    WHERE fk_relation_definition_id = v_def AND fk_institution_id IS NULL;
+                    IF v_rule IS NULL THEN
+                        INSERT INTO public.relation_rule (fk_relation_definition_id, no_cycle)
+                        VALUES (v_def, v_def = v_order) RETURNING relation_rule_id INTO v_rule;
+                        INSERT INTO public.relation_rule_kind (fk_relation_rule_id, side, kind)
+                        VALUES (v_rule, 'SOURCE', 'RECORDING_UNIT'), (v_rule, 'TARGET', 'RECORDING_UNIT');
+                        INSERT INTO public.relation_rule_exclusion (fk_relation_rule_id, fk_excluded_definition_id)
+                        VALUES (v_rule, v_other);
+                    END IF;
+                END LOOP;
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <!--
+    Migration helpers, dropped by the last changeSet of this file.
+    tmp_siamois_strati_norm: a label compared without case nor accents.
+    tmp_siamois_strati_concepts: every concept of a SIARU.STRATI* branch, in any vocabulary, with its group (the
+    anterior and posterior branches form one group, the old shared list another, the synchronous branch a third) and
+    its normalized French preferred label.
+    tmp_siamois_strati_pairs: the semantic pairs, the first as the posterior unit reads it (the stored qualifier).
+    -->
+    <changeSet id="2026-11-26-2-stratigraphy-helpers" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            CREATE OR REPLACE FUNCTION public.tmp_siamois_strati_norm(p_label text) RETURNS text
+                LANGUAGE sql IMMUTABLE AS $f$ SELECT lower(public.unaccent(btrim(p_label))) $f$;
+
+            CREATE OR REPLACE FUNCTION public.tmp_siamois_strati_concepts()
+                RETURNS TABLE (concept_id bigint, vocabulary_id bigint, branch text, grp text, label text)
+                LANGUAGE sql STABLE AS $f$
+                WITH RECURSIVE branch(top, concept_id, depth) AS (
+                    SELECT cfc.field_code, cfc.fk_concept_id, 0 FROM public.concept_field_config cfc
+                    WHERE cfc.field_code IN ('SIARU.STRATI', 'SIARU.STRATI.ANTERIOR', 'SIARU.STRATI.POSTERIOR', 'SIARU.STRATI.SYNCHRONOUS')
+                  UNION
+                    SELECT b.top, h.fk_child_concept_id, b.depth + 1 FROM branch b
+                    JOIN public.concept_hierarchy h ON h.fk_parent_concept_id = b.concept_id
+                    WHERE b.depth < 10
+                )
+                SELECT DISTINCT b.concept_id, c.fk_vocabulary_id, b.top,
+                       CASE b.top WHEN 'SIARU.STRATI' THEN 'legacy' WHEN 'SIARU.STRATI.SYNCHRONOUS' THEN 'sync' ELSE 'order' END,
+                       (SELECT public.tmp_siamois_strati_norm(l.label) FROM public.concept_label l
+                        WHERE l.fk_concept_id = b.concept_id AND l.lang_code = 'fr'
+                        ORDER BY l.label_type, l.label LIMIT 1)
+                FROM branch b JOIN public.concept c ON c.concept_id = b.concept_id
+                WHERE b.depth > 0
+            $f$;
+
+            CREATE OR REPLACE FUNCTION public.tmp_siamois_strati_pairs()
+                RETURNS TABLE (posterior_label text, anterior_label text)
+                LANGUAGE sql IMMUTABLE AS $f$
+                VALUES ('coupe', 'est coupee par'), ('recouvre', 'est recouverte par'),
+                       ('s''appuie sur', 'est appuyee par'), ('comble', 'est comblee par'), ('sur', 'sous')
+            $f$;
+        ]]></sql>
+    </changeSet>
+
+    <!--
+    The mirror pairs of the order's platform default rules, found by the meaning of the labels in each vocabulary: in
+    the order group, the posterior reading from the anterior branch and the anterior one from the posterior branch;
+    in the old shared list, both from it. A concept takes part in one pair at most.
+    -->
+    <changeSet id="2026-11-26-2-stratigraphy-mirror-pairs" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DO $do$
+            DECLARE
+                v_rule bigint := (SELECT r.relation_rule_id FROM public.relation_rule r
+                                  JOIN public.relation_definition d ON d.relation_definition_id = r.fk_relation_definition_id
+                                  WHERE d.fk_source_field_id = -328 AND r.fk_institution_id IS NULL);
+                v_count integer;
+            BEGIN
+                WITH concepts AS (SELECT * FROM public.tmp_siamois_strati_concepts()),
+                candidates AS (
+                    SELECT DISTINCT q.concept_id AS concept, m.concept_id AS mirror
+                    FROM public.tmp_siamois_strati_pairs() p
+                    JOIN concepts q ON q.label = p.posterior_label
+                    JOIN concepts m ON m.label = p.anterior_label AND m.vocabulary_id = q.vocabulary_id AND m.grp = q.grp
+                    WHERE (q.grp = 'order' AND q.branch = 'SIARU.STRATI.ANTERIOR' AND m.branch = 'SIARU.STRATI.POSTERIOR')
+                       OR (q.grp = 'legacy')
+                ),
+                one_to_one AS (
+                    SELECT c.concept, c.mirror FROM candidates c
+                    WHERE (SELECT count(*) FROM candidates x WHERE x.concept = c.concept) = 1
+                      AND (SELECT count(*) FROM candidates x WHERE x.mirror = c.mirror) = 1
+                )
+                INSERT INTO public.relation_rule_mirror_concept (fk_relation_rule_id, fk_concept_id, fk_mirror_concept_id)
+                SELECT v_rule, o.concept, o.mirror FROM one_to_one o
+                WHERE NOT EXISTS (SELECT 1 FROM public.relation_rule_mirror_concept e
+                                  WHERE e.fk_relation_rule_id = v_rule AND (e.fk_concept_id = o.concept OR e.fk_mirror_concept_id = o.mirror));
+                GET DIAGNOSTICS v_count = ROW_COUNT;
+                RAISE NOTICE 'Stratigraphy: % mirror pairs declared', v_count;
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <!--
+    The takeover. Asynchronous (or unknown): an order link from the posterior unit (unit 2) to the anterior one
+    (unit 1). Synchronous: a synchrony link, its pair ordered. The qualifier is always the posterior reading of its
+    pair, whatever concept_direction says; the concepts that only restate the relation are dropped; the links of the
+    hierarchy-like concepts (regroupe, englobe…) stay in the old table. A notice reports what the report query
+    (docs/reprise-stratigraphie.md) details.
+    -->
+    <changeSet id="2026-11-26-2-stratigraphy-takeover" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DO $do$
+            DECLARE
+                v_order     bigint := (SELECT relation_definition_id FROM public.relation_definition WHERE fk_source_field_id = -328);
+                v_synchrony bigint := (SELECT relation_definition_id FROM public.relation_definition WHERE fk_source_field_id = -330);
+                v_rule      bigint := (SELECT relation_rule_id FROM public.relation_rule
+                                       WHERE fk_relation_definition_id = v_order AND fk_institution_id IS NULL);
+                v_total integer; v_order_count integer; v_sync_count integer;
+            BEGIN
+                CREATE TEMPORARY TABLE tmp_strati ON COMMIT DROP AS
+                SELECT r.fk_recording_unit_1_id AS anterior, r.fk_recording_unit_2_id AS posterior,
+                       COALESCE(r.asynchronous, true) AS asynchronous, COALESCE(r.uncertain, false) AS uncertain,
+                       a.fk_action_unit_id AS project, b.fk_action_unit_id AS other_project,
+                       r.fk_relationship_concept_id AS concept,
+                       (SELECT public.tmp_siamois_strati_norm(l.label) FROM public.concept_label l
+                        WHERE l.fk_concept_id = r.fk_relationship_concept_id AND l.lang_code = 'fr'
+                        ORDER BY l.label_type, l.label LIMIT 1) AS label
+                FROM public.stratigraphic_relationship r
+                JOIN public.recording_unit a ON a.recording_unit_id = r.fk_recording_unit_1_id
+                JOIN public.recording_unit b ON b.recording_unit_id = r.fk_recording_unit_2_id;
+
+                -- The links that are not taken over today: hierarchy-like concepts, or units of two projects.
+                DELETE FROM tmp_strati
+                WHERE label IN ('regroupe', 'est regroupee dans', 'englobe', 'est englobee par')
+                   OR project IS NULL OR project IS DISTINCT FROM other_project;
+
+                INSERT INTO public.relation_link (fk_relation_definition_id, fk_action_unit_id, source_kind, source_id,
+                                                  target_kind, target_id, fk_qualifier_concept_id, uncertain, simple)
+                SELECT v_order, t.project, 'RECORDING_UNIT', t.posterior, 'RECORDING_UNIT', t.anterior,
+                       CASE WHEN t.label IN ('anterieur a', 'posterieur a') THEN NULL
+                            ELSE COALESCE((SELECT m.fk_concept_id FROM public.relation_rule_mirror_concept m
+                                           WHERE m.fk_relation_rule_id = v_rule AND m.fk_mirror_concept_id = t.concept),
+                                          t.concept) END,
+                       t.uncertain, false
+                FROM tmp_strati t
+                WHERE t.asynchronous
+                  AND NOT EXISTS (SELECT 1 FROM public.relation_link l WHERE l.fk_relation_definition_id = v_order
+                                  AND l.source_kind = 'RECORDING_UNIT' AND l.source_id = t.posterior
+                                  AND l.target_kind = 'RECORDING_UNIT' AND l.target_id = t.anterior);
+                GET DIAGNOSTICS v_order_count = ROW_COUNT;
+
+                INSERT INTO public.relation_link (fk_relation_definition_id, fk_action_unit_id, source_kind, source_id,
+                                                  target_kind, target_id, fk_qualifier_concept_id, uncertain, simple)
+                SELECT v_synchrony, t.project, 'RECORDING_UNIT', LEAST(t.anterior, t.posterior),
+                       'RECORDING_UNIT', GREATEST(t.anterior, t.posterior),
+                       CASE WHEN t.label = 'synchrone avec' THEN NULL ELSE t.concept END, t.uncertain, false
+                FROM tmp_strati t
+                WHERE NOT t.asynchronous
+                  AND NOT EXISTS (SELECT 1 FROM public.relation_link l WHERE l.fk_relation_definition_id = v_synchrony
+                                  AND l.source_kind = 'RECORDING_UNIT' AND l.source_id = LEAST(t.anterior, t.posterior)
+                                  AND l.target_kind = 'RECORDING_UNIT' AND l.target_id = GREATEST(t.anterior, t.posterior));
+                GET DIAGNOSTICS v_sync_count = ROW_COUNT;
+
+                SELECT count(*) INTO v_total FROM public.stratigraphic_relationship;
+                RAISE NOTICE 'Stratigraphy takeover: % old relationships, % order links and % synchrony links written, % left in the old table',
+                    v_total, v_order_count, v_sync_count, v_total - (SELECT count(*) FROM tmp_strati);
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <!--
+    The old table is read only from now on: nothing writes to it, so its trigger (which dropped a reversed pair, set
+    at startup by the former StratiTriggerInitializer) goes. Its links to recording units cascade on delete: a unit
+    can be deleted although its former relationships are kept there.
+    -->
+    <changeSet id="2026-11-26-2-stratigraphic-relationship-drop-trigger" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DROP TRIGGER IF EXISTS prevent_reverse_relationship ON public.stratigraphic_relationship;
+            DROP FUNCTION IF EXISTS public.order_strat_relationship();
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-26-2-stratigraphic-relationship-cascade" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DO $do$
+            DECLARE
+                v_column text;
+                v_constraint text;
+            BEGIN
+                FOREACH v_column IN ARRAY ARRAY['fk_recording_unit_1_id', 'fk_recording_unit_2_id'] LOOP
+                    FOR v_constraint IN
+                        SELECT c.conname FROM pg_constraint c
+                        JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+                        WHERE c.conrelid = 'public.stratigraphic_relationship'::regclass AND c.contype = 'f'
+                          AND a.attname = v_column
+                    LOOP
+                        EXECUTE format('ALTER TABLE public.stratigraphic_relationship DROP CONSTRAINT %I', v_constraint);
+                    END LOOP;
+                    EXECUTE format('ALTER TABLE public.stratigraphic_relationship ADD CONSTRAINT %I FOREIGN KEY (%I) '
+                                   'REFERENCES public.recording_unit (recording_unit_id) ON DELETE CASCADE',
+                                   'fk_stratigraphic_relationship_' || replace(v_column, 'fk_', ''), v_column);
+                END LOOP;
+            END
+            $do$;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-26-2-stratigraphy-drop-helpers" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DROP FUNCTION IF EXISTS public.tmp_siamois_strati_pairs();
+            DROP FUNCTION IF EXISTS public.tmp_siamois_strati_concepts();
+            DROP FUNCTION IF EXISTS public.tmp_siamois_strati_norm(text);
+        ]]></sql>
+    </changeSet>
+</databaseChangeLog>

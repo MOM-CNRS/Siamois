@@ -4,6 +4,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Le qualificatif et l'incertitude d'un lien ; ses deux fiches ne changent pas")
 public record RelationLinkUpdateRequest(
+        @Schema(description = "Champ relation par lequel le lien est modifié : donne le côté. À défaut, side",
+                example = "-329")
+        Long field,
         @Schema(description = "Côté du champ par lequel le lien est modifié", allowableValues = {"source", "target"},
                 defaultValue = "source")
         String side,

@@ -1,35 +1,36 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
-import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationshipId;
-import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.domain.services.permissions.ProfilePermissionService;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationEndKind;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.domain.models.relation.RelationSide;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
-import fr.siamois.dto.entity.InstitutionDTO;
+import fr.siamois.domain.services.relation.RelationLinkService;
 import fr.siamois.dto.entity.PersonDTO;
-import fr.siamois.dto.entity.RecordingUnitDTO;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
-import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepository;
 import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipRequest;
-import fr.siamois.ui.api.openapi.v1.request.recordingunit.RecordingUnitStratigraphicRelationshipUpdateRequest;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
+import java.util.Set;
 
 /**
- * Writes the stratigraphic relationships of a recording unit through the API, on the
- * {@code stratigraphic_relationship} table as it is today: the first unit of a stored relationship
- * is the older one for an asynchronous relationship, and the type concept is read from the unit
- * the call is made for toward the other unit ({@code concept_direction} is true when that unit is
- * the first one).
+ * The stratigraphic relationships of the bulk actions ("add the same relationship to each selected unit"), on the
+ * configurable relations (docs/reprise-stratigraphie.md, §7), through {@link RelationLinkService}; the fiche writes
+ * its links through /api/v1/relation-links. A relationship is named by
+ * the other unit's position relative to the owner: {@code anterior} is an order link entered from the owner's field
+ * -328 (the owner is posterior, the link's source), {@code posterior} one entered from its mirror -329 (the owner is
+ * anterior), {@code synchronous} a synchrony link. The type concept is read from the owner, so a type picked from
+ * the mirror is stored as the qualifier it mirrors. All the checks are the link service's.
+ * <p>
+ * A relationship is named by its pair of units: when an order has several links between two units, the first one is
+ * the one changed or removed.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,64 +43,34 @@ public class RecordingUnitStratigraphyWriteService {
     private static final String NOT_FOUND = "Relation stratigraphique introuvable";
 
     private final RecordingUnitService recordingUnitService;
-    private final StratigraphicRelationshipRepository relationshipRepository;
-    private final ConceptRepository conceptRepository;
-    private final ProfilePermissionService profilePermissionService;
-
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final RelationLinkService relationLinkService;
+    private final RelationDefinitionRepository definitionRepository;
+    private final RelationLinkRepository linkRepository;
 
     @Transactional
     public void add(String recordingUnitKey, RecordingUnitStratigraphicRelationshipRequest body,
                     PersonDTO person, Set<Long> accessibleInstitutionIds) {
         String position = requirePosition(body);
-        RecordingUnit owner = writableOwner(recordingUnitKey, person, accessibleInstitutionIds);
-        RecordingUnit other = accessibleUnit(body.getRelatedRecordingUnitId(), accessibleInstitutionIds);
-        requireLinkable(owner, other);
-
-        // The older unit is the first one; a synchronous relationship is stored the way it was asked.
-        boolean ownerIsFirst = !ANTERIOR.equals(position);
-        RecordingUnit first = ownerIsFirst ? owner : other;
-        RecordingUnit second = ownerIsFirst ? other : owner;
-        if (!SYNCHRONOUS.equals(position) && reaches(second, first)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Impossible de créer la relation : cycle stratigraphique détecté");
+        RecordingUnit owner = accessibleUnit(recordingUnitKey, accessibleInstitutionIds);
+        long otherId = body.getRelatedRecordingUnitId();
+        if (!linkRepository.findStratigraphicBetween(owner.getId(), otherId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ces deux unités sont déjà reliées");
         }
-
-        StratigraphicRelationship relationship = new StratigraphicRelationship();
-        StratigraphicRelationshipId id = new StratigraphicRelationshipId();
-        id.setUnit1Id(first.getId());
-        id.setUnit2Id(second.getId());
-        relationship.setId(id);
-        relationship.setUnit1(first);
-        relationship.setUnit2(second);
-        relationship.setIsAsynchronous(!SYNCHRONOUS.equals(position));
-        fill(relationship, body.getTypeConceptId(), body.getUncertain(), ownerIsFirst);
-        relationshipRepository.save(relationship);
-    }
-
-    @Transactional
-    public void update(String recordingUnitKey, long relatedRecordingUnitId,
-                       RecordingUnitStratigraphicRelationshipUpdateRequest body,
-                       PersonDTO person, Set<Long> accessibleInstitutionIds) {
-        RecordingUnit owner = writableOwner(recordingUnitKey, person, accessibleInstitutionIds);
-        RecordingUnit other = accessibleUnit(relatedRecordingUnitId, accessibleInstitutionIds);
-        StratigraphicRelationship relationship = find(owner, other)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, NOT_FOUND));
-        boolean ownerIsFirst = Objects.equals(relationship.getUnit1().getId(), owner.getId());
-        fill(relationship, body == null ? null : body.getTypeConceptId(), body == null ? null : body.getUncertain(), ownerIsFirst);
-        relationshipRepository.save(relationship);
+        boolean synchronous = SYNCHRONOUS.equals(position);
+        RelationDefinition definition = definition(synchronous ? RelationField.Stratigraphy.SYNCHRONY_FIELD
+                : RelationField.Stratigraphy.ORDER_SOURCE_FIELD);
+        RelationSide side = POSTERIOR.equals(position) ? RelationSide.TARGET : RelationSide.SOURCE;
+        relationLinkService.create(new RelationLinkService.CreateRequest(definition.getId(), side,
+                unit(owner.getId()), unit(otherId), body.getTypeConceptId(), Boolean.TRUE.equals(body.getUncertain())),
+                person, accessibleInstitutionIds);
     }
 
     @Transactional
     public void remove(String recordingUnitKey, long relatedRecordingUnitId,
                        PersonDTO person, Set<Long> accessibleInstitutionIds) {
-        RecordingUnit owner = writableOwner(recordingUnitKey, person, accessibleInstitutionIds);
-        RecordingUnit other = accessibleUnit(relatedRecordingUnitId, accessibleInstitutionIds);
-        StratigraphicRelationship relationship = find(owner, other)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, NOT_FOUND));
-        relationship.detachFromUnits();
-        relationshipRepository.delete(relationship);
-        entityManager.flush();
+        RecordingUnit owner = accessibleUnit(recordingUnitKey, accessibleInstitutionIds);
+        RelationLink link = linkBetween(owner.getId(), relatedRecordingUnitId);
+        relationLinkService.delete(link.getId(), sideOf(link, owner.getId()), person, accessibleInstitutionIds);
     }
 
     /** The request's position, once the request is known to be complete and well-formed. */
@@ -114,78 +85,26 @@ public class RecordingUnitStratigraphyWriteService {
         return position;
     }
 
-    /** Two distinct units of one operation that no relationship joins yet. */
-    private void requireLinkable(RecordingUnit owner, RecordingUnit other) {
-        if (Objects.equals(owner.getId(), other.getId())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Une unité ne peut pas être reliée à elle-même");
-        }
-        if (!sameActionUnit(owner, other)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Les deux unités doivent appartenir à la même opération");
-        }
-        if (find(owner, other).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ces deux unités sont déjà reliées");
-        }
+    /** The side of the owner's field: the source of an order link it is the posterior unit of, else its mirror. */
+    private static RelationSide sideOf(RelationLink link, long ownerId) {
+        return link.getSourceId().equals(ownerId) ? RelationSide.SOURCE : RelationSide.TARGET;
     }
 
-    private void fill(StratigraphicRelationship relationship, Long typeConceptId, Boolean uncertain, boolean ownerIsFirst) {
-        Concept concept = null;
-        if (typeConceptId != null) {
-            concept = conceptRepository.findById(typeConceptId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Concept de type introuvable"));
-        }
-        relationship.setConcept(concept);
-        relationship.setConceptDirection(concept == null ? null : ownerIsFirst);
-        relationship.setUncertain(Boolean.TRUE.equals(uncertain));
+    private RelationLink linkBetween(long ownerId, long otherId) {
+        return linkRepository.findStratigraphicBetween(ownerId, otherId).stream().findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, NOT_FOUND));
     }
 
-    private RecordingUnit writableOwner(String key, PersonDTO person, Set<Long> accessibleInstitutionIds) {
-        RecordingUnitService.AccessibleRecordingUnit owner =
-                recordingUnitService.findAccessibleRecordingUnitWithEntity(key, accessibleInstitutionIds, null);
-        assertWritePermission(owner.dto(), person);
-        return owner.entity();
+    private RecordingUnit accessibleUnit(String key, Set<Long> accessibleInstitutionIds) {
+        return recordingUnitService.findAccessibleRecordingUnitWithEntity(key, accessibleInstitutionIds, null).entity();
     }
 
-    private RecordingUnit accessibleUnit(long id, Set<Long> accessibleInstitutionIds) {
-        return recordingUnitService.findAccessibleRecordingUnitWithEntity(
-                String.valueOf(id), accessibleInstitutionIds, null).entity();
+    private RelationDefinition definition(long sourceField) {
+        return definitionRepository.findByField(sourceField).orElseThrow(() ->
+                new IllegalStateException("La relation stratigraphique du champ " + sourceField + " n'est pas définie"));
     }
 
-    private void assertWritePermission(RecordingUnitDTO dto, PersonDTO person) {
-        InstitutionDTO institution = dto.getCreatedByInstitution();
-        if (institution == null || institution.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unité sans organisation");
-        }
-        if (!profilePermissionService.hasRecordingUnitWritePermission(new UserInfo(institution, person, null), dto)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Modification non autorisée");
-        }
-    }
-
-    private static boolean sameActionUnit(RecordingUnit a, RecordingUnit b) {
-        return a.getActionUnit() != null && b.getActionUnit() != null
-                && Objects.equals(a.getActionUnit().getId(), b.getActionUnit().getId());
-    }
-
-    /** The relationship between two units, whichever of them is its first one. */
-    private Optional<StratigraphicRelationship> find(RecordingUnit a, RecordingUnit b) {
-        Optional<StratigraphicRelationship> direct = relationshipRepository.findByUnit1AndUnit2(a, b);
-        return direct.isPresent() ? direct : relationshipRepository.findByUnit1AndUnit2(b, a);
-    }
-
-    /** Whether {@code target} is reachable from {@code start} going from older to more recent units. */
-    private boolean reaches(RecordingUnit start, RecordingUnit target) {
-        Set<Long> seen = new HashSet<>();
-        Deque<Long> todo = new ArrayDeque<>();
-        todo.push(start.getId());
-        while (!todo.isEmpty()) {
-            Long current = todo.pop();
-            if (!seen.add(current)) continue;
-            if (Objects.equals(current, target.getId())) return true;
-            for (StratigraphicRelationship r : relationshipRepository.findAllInvolvingRecordingUnitId(current)) {
-                if (Boolean.TRUE.equals(r.getIsAsynchronous()) && Objects.equals(r.getUnit1().getId(), current)) {
-                    todo.push(r.getUnit2().getId());
-                }
-            }
-        }
-        return false;
+    private static RelationLinkService.End unit(long id) {
+        return new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, id);
     }
 }

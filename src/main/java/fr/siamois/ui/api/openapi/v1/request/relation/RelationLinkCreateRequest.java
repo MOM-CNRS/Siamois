@@ -4,7 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Un lien saisi depuis une fiche, par le champ d'un côté d'une relation")
 public record RelationLinkCreateRequest(
-        @Schema(description = "Identifiant de la définition de relation", example = "1")
+        @Schema(description = "Champ relation de saisie (ex. -328) : donne la définition et le côté. À défaut, "
+                + "definition et side", example = "-328")
+        Long field,
+        @Schema(description = "Identifiant de la définition de relation, si field est absent", example = "1")
         Long definition,
         @Schema(description = "Côté du champ de saisie : source (« Postérieur à ») ou target, son miroir (« Antérieur à »). "
                 + "Sans effet pour une relation symétrique", allowableValues = {"source", "target"}, defaultValue = "source")

@@ -38,30 +38,35 @@ public enum RelationField implements RelationSource {
                     + " FROM specimen s",
             Target.FIND, true),
 
-    // A stored relationship is seen from both of its units, and from each it is one of three things
-    // by where the other unit stands: posterior (the owner is the first, older, unit of an
-    // asynchronous relationship), anterior (the owner is its second unit), or synchronous (either).
-    // An unknown order (null asynchronous) counts as asynchronous, as RelationFieldService does.
+    // The stratigraphy, on the configurable relations (docs/reprise-stratigraphie.md): the order goes from the
+    // posterior unit (its source, whose field -328 lists the units anterior to it) to the anterior one; the synchrony
+    // is symmetric. The values keep the columns of the former table (role, direction, asynchronous), so the API's
+    // stratigraphic qualifier is unchanged: the owner of -328 is "unit2", that of -329 "unit1".
     RECORDING_UNIT_POSTERIOR(RecordingUnit.class, "posteriorRelationships",
-            "SELECT r.fk_recording_unit_1_id AS owner_id, r.fk_recording_unit_2_id AS target_id, "
-                    + StratigraphyColumns.SELECT_UNIT1
-                    + " FROM stratigraphic_relationship r WHERE " + StratigraphyColumns.ASYNCHRONOUS,
+            "SELECT l.target_id AS owner_id, l.source_id AS target_id, 'unit1' AS role, "
+                    + "COALESCE(mq.mirror_id, l.fk_qualifier_concept_id) AS concept_id, TRUE AS asynchronous, "
+                    + "CASE WHEN l.fk_qualifier_concept_id IS NULL THEN NULL ELSE TRUE END AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
+                    + "FROM relation_link l " + Stratigraphy.ORDER + DefinitionRelation.MIRROR_JOIN
+                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
             Target.RECORDING_UNIT, true),
 
     RECORDING_UNIT_ANTERIOR(RecordingUnit.class, "anteriorRelationships",
-            "SELECT r.fk_recording_unit_2_id AS owner_id, r.fk_recording_unit_1_id AS target_id, "
-                    + StratigraphyColumns.SELECT_UNIT2
-                    + " FROM stratigraphic_relationship r WHERE " + StratigraphyColumns.ASYNCHRONOUS,
+            "SELECT l.source_id AS owner_id, l.target_id AS target_id, 'unit2' AS role, "
+                    + "l.fk_qualifier_concept_id AS concept_id, TRUE AS asynchronous, "
+                    + "CASE WHEN l.fk_qualifier_concept_id IS NULL THEN NULL ELSE FALSE END AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
+                    + "FROM relation_link l " + Stratigraphy.ORDER
+                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
             Target.RECORDING_UNIT, true),
 
     RECORDING_UNIT_SYNCHRONOUS(RecordingUnit.class, "synchronousRelationships",
-            "SELECT r.fk_recording_unit_1_id AS owner_id, r.fk_recording_unit_2_id AS target_id, "
-                    + StratigraphyColumns.SELECT_UNIT1
-                    + " FROM stratigraphic_relationship r WHERE NOT (" + StratigraphyColumns.ASYNCHRONOUS + ") "
+            "SELECT l.source_id AS owner_id, l.target_id AS target_id, 'unit1' AS role, l.fk_qualifier_concept_id AS concept_id, "
+                    + "FALSE AS asynchronous, CAST(NULL AS boolean) AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
+                    + "FROM relation_link l " + Stratigraphy.SYNCHRONY
+                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT' "
                     + "UNION ALL "
-                    + "SELECT r.fk_recording_unit_2_id, r.fk_recording_unit_1_id, "
-                    + StratigraphyColumns.SELECT_UNIT2
-                    + " FROM stratigraphic_relationship r WHERE NOT (" + StratigraphyColumns.ASYNCHRONOUS + ")",
+                    + "SELECT l.target_id, l.source_id, 'unit2', l.fk_qualifier_concept_id, FALSE, CAST(NULL AS boolean), l.uncertain, l.relation_link_id "
+                    + "FROM relation_link l " + Stratigraphy.SYNCHRONY
+                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
             Target.RECORDING_UNIT, true),
 
     ACTION_UNIT_RECORDING_UNITS(ActionUnit.class, "recordingUnitList",
@@ -168,7 +173,7 @@ public enum RelationField implements RelationSource {
     @Override
     public String valuesSql() {
         return "SELECT p.owner_id, p.target_id, " + targetLabel() + " AS label, p.role, p.concept_id, "
-                + "c.external_id AS concept_external_id, p.asynchronous, p.concept_direction, p.uncertain "
+                + "c.external_id AS concept_external_id, p.asynchronous, p.concept_direction, p.uncertain, p.link_id "
                 + "FROM (" + pairsSql() + ") p "
                 + "JOIN " + targetTable() + " t ON t." + targetKey() + " = p.target_id "
                 + "LEFT JOIN concept c ON c.concept_id = p.concept_id";
@@ -203,19 +208,26 @@ public enum RelationField implements RelationSource {
         }
     }
 
-    /** The columns a stratigraphic relationship selects, and the test of its being asynchronous. */
-    private static final class StratigraphyColumns {
-        static final String SELECT_UNIT1 = "'unit1' AS role, r.fk_relationship_concept_id AS concept_id, r.asynchronous, "
-                + "r.concept_direction, r.uncertain";
-        static final String SELECT_UNIT2 = "'unit2' AS role, r.fk_relationship_concept_id AS concept_id, r.asynchronous, "
-                + "r.concept_direction, r.uncertain";
-        static final String ASYNCHRONOUS = "(r.asynchronous IS NULL OR r.asynchronous = TRUE)";
+    /** The joins that keep the links of the two stratigraphic definitions, found by their system fields. */
+    public static final class Stratigraphy {
+        /** The order's source field: on a unit, the units anterior to it. */
+        public static final long ORDER_SOURCE_FIELD = -328L;
+        /** The synchrony's field, both of its sides. */
+        public static final long SYNCHRONY_FIELD = -330L;
+
+        static final String ORDER = "JOIN relation_definition sd ON sd.relation_definition_id = l.fk_relation_definition_id "
+                + "AND sd.fk_source_field_id = " + ORDER_SOURCE_FIELD + " ";
+        static final String SYNCHRONY = "JOIN relation_definition sd ON sd.relation_definition_id = l.fk_relation_definition_id "
+                + "AND sd.fk_source_field_id = " + SYNCHRONY_FIELD + " ";
+
+        private Stratigraphy() {
+        }
     }
 
     /** The relation columns a plain (unqualified) relation selects as nulls. */
     private static final class NoQualifier {
         static final String COLUMNS = "CAST(NULL AS text) AS role, CAST(NULL AS bigint) AS concept_id, "
                 + "CAST(NULL AS boolean) AS asynchronous, CAST(NULL AS boolean) AS concept_direction, "
-                + "CAST(NULL AS boolean) AS uncertain";
+                + "CAST(NULL AS boolean) AS uncertain, CAST(NULL AS bigint) AS link_id";
     }
 }

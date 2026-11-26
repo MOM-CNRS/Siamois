@@ -36,7 +36,7 @@ public record DefinitionRelation(long definitionId, RelationSide side, boolean s
      * The mirror of the stored qualifier in the rule set the link's project follows: the project's own, else its
      * institution's, else the platform default.
      */
-    private static final String MIRROR_JOIN = "LEFT JOIN LATERAL (SELECT m.fk_mirror_concept_id AS mirror_id "
+    static final String MIRROR_JOIN = "LEFT JOIN LATERAL (SELECT m.fk_mirror_concept_id AS mirror_id "
             + "FROM relation_rule_mirror_concept m WHERE m.fk_concept_id = l.fk_qualifier_concept_id "
             + "AND m.fk_relation_rule_id = (SELECT r.relation_rule_id FROM relation_rule r "
             + "JOIN action_unit au ON au.action_unit_id = l.fk_action_unit_id "
@@ -71,7 +71,7 @@ public record DefinitionRelation(long definitionId, RelationSide side, boolean s
         return "SELECT l." + owner + "_id AS owner_id, l." + other + "_id AS target_id, " + table[2] + " AS label, "
                 + "CAST('" + table[3] + "' AS text) AS role, " + concept + " AS concept_id, "
                 + "c.external_id AS concept_external_id, CAST(NULL AS boolean) AS asynchronous, "
-                + "CAST(NULL AS boolean) AS concept_direction, l.uncertain AS uncertain "
+                + "CAST(NULL AS boolean) AS concept_direction, l.uncertain AS uncertain, l.relation_link_id AS link_id "
                 + "FROM relation_link l "
                 + "JOIN " + table[0] + " t ON t." + table[1] + " = l." + other + "_id "
                 + (mirrored ? MIRROR_JOIN : "")

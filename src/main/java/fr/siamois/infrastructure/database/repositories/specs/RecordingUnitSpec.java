@@ -2,7 +2,8 @@ package fr.siamois.infrastructure.database.repositories.specs;
 
 import fr.siamois.domain.models.form.customfieldanswer.basetypes.CustomFieldAnswerText;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationEndKind;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.vocabulary.label.ConceptPrefLabel;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Root;
@@ -142,12 +143,14 @@ public class RecordingUnitSpec {
     public static Specification<RecordingUnit> orderByRelationshipCount(Sort.Direction direction) {
         return (root, query, cb) -> {
             Subquery<Long> subquery = query.subquery(Long.class);
-            Root<StratigraphicRelationship> rel = subquery.from(StratigraphicRelationship.class);
-            subquery.select(cb.count(rel));
-            subquery.where(cb.or(
-                    cb.equal(rel.get("unit1"), root),
-                    cb.equal(rel.get("unit2"), root)
-            ));
+            Root<RelationLink> link = subquery.from(RelationLink.class);
+            subquery.select(cb.count(link));
+            subquery.where(
+                    link.get("definition").get("sourceField").get("id").in(-328L, -330L),
+                    cb.or(cb.and(cb.equal(link.get("sourceKind"), RelationEndKind.RECORDING_UNIT),
+                                    cb.equal(link.get("sourceId"), root.get("id"))),
+                            cb.and(cb.equal(link.get("targetKind"), RelationEndKind.RECORDING_UNIT),
+                                    cb.equal(link.get("targetId"), root.get("id")))));
             query.orderBy(direction == Sort.Direction.ASC ? cb.asc(subquery) : cb.desc(subquery));
             return cb.conjunction();
         };

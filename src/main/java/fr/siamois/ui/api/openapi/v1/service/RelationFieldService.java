@@ -142,7 +142,8 @@ public class RelationFieldService {
         ResourceRef concept = row.conceptId() == null || !typeReadsFromOwner(row) ? null
                 : conceptRef(row.conceptId(), row.conceptExternalId(), conceptLabels);
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
-                concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
+                concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain(),
+                row.linkId()));
     }
 
     /**
@@ -155,7 +156,7 @@ public class RelationFieldService {
                 : conceptRef(row.conceptId(), row.conceptExternalId(), conceptLabels);
         String side = relation.symmetric() ? null : relation.side().name().toLowerCase();
         return new ResourceRef(String.valueOf(row.targetId()), row.role(), row.label(),
-                new ResourceRef.StratigraphicQualifier(concept, side, null, null, null, row.uncertain()));
+                new ResourceRef.StratigraphicQualifier(concept, side, null, null, null, row.uncertain(), row.linkId()));
     }
 
     /**

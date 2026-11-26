@@ -47,7 +47,7 @@ export interface paths {
          * Supprimer une vue
          * @description Réservé au propriétaire. Supprime aussi l'état que chaque utilisateur avait sur cette vue.
          */
-        delete: operations["delete"];
+        delete: operations["delete_1"];
         options?: never;
         head?: never;
         patch?: never;
@@ -102,25 +102,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/recording-units/{id}/stratigraphic-relationships/{relatedId}": {
+    "/api/v1/relation-definitions/{id}/rules": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
         /**
-         * Modifier une relation stratigraphique
-         * @description Remplace le type et l'indicateur d'incertitude de la relation entre l'UE et relatedId. La position (antérieure, postérieure, synchrone) ne change pas : on supprime et on recrée.
+         * Lire les règles d'une portée
+         * @description Les règles propres à la portée, sinon celles qu'elle hérite (own = false). Portée : projectId pour un projet, institutionId seul pour une institution, aucun pour le défaut de la plateforme.
          */
-        put: operations["update_1"];
+        get: operations["rules"];
+        /**
+         * Enregistrer les règles d'une portée
+         * @description Remplace les règles de la portée, ou les crée si elle n'en avait pas. Refusé, avec les liens en cause, si des liens existants des projets qui suivent ces règles les enfreignent. Portée : projectId pour un projet, institutionId seul pour une institution, aucun pour le défaut de la plateforme.
+         */
+        put: operations["saveRules"];
         post?: never;
         /**
-         * Supprimer une relation stratigraphique
-         * @description Supprime la relation entre l'UE et relatedId, quel que soit son sens.
+         * Retirer les règles propres d'une portée
+         * @description La portée suit alors le niveau au-dessus. Refusé si ses liens enfreignent ces règles-là. Portée : projectId pour un projet, institutionId seul pour une institution, aucun pour le défaut de la plateforme.
          */
-        delete: operations["remove"];
+        delete: operations["deleteRules"];
         options?: never;
         head?: never;
         patch?: never;
@@ -168,7 +172,7 @@ export interface paths {
          * Revenir aux onglets du code
          * @description Supprime la configuration exacte demandée (projet, type et sous-type). Même droit que l'enregistrement.
          */
-        delete: operations["delete_5"];
+        delete: operations["delete_8"];
         options?: never;
         head?: never;
         patch?: never;
@@ -202,6 +206,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/{resourceType}/{id}/on-the-fly-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Champs ajoutés à la volée
+         * @description Les champs ajoutés à la fiche de cet enregistrement et le panneau de chacun.
+         */
+        get: operations["list"];
+        put?: never;
+        /**
+         * Ajouter une mesure
+         * @description Ajoute à la fiche une mesure propre à cet enregistrement, dans le panneau demandé. Droit d'édition de l'enregistrement requis.
+         */
+        post: operations["add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/views": {
         parameters: {
             query?: never;
@@ -213,7 +241,7 @@ export interface paths {
          * Vues de l'organisation
          * @description Les vues créées par les utilisateurs, visibles de tous les membres de l'organisation, les plus récemment modifiées d'abord. Les vues par défaut n'y figurent pas.
          */
-        get: operations["list"];
+        get: operations["list_1"];
         put?: never;
         /**
          * Créer une vue
@@ -250,6 +278,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/relation-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer un lien
+         * @description Relie la fiche en cours de saisie à une autre, par le champ d'un côté d'une relation. Le lien est enregistré une fois, de la source vers la cible. Vérifie : fiches existantes et accessibles, droit de modifier la fiche (les deux depuis le champ miroir), même projet, types acceptés par les règles du projet, qualificatif proposé, doublon, choix unique, exclusion, boucle.
+         */
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relation-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer une relation depuis un champ
+         * @description Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau (le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la plateforme. Réservé à l'administrateur de la plateforme.
+         */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recording-units": {
         parameters: {
             query?: never;
@@ -268,26 +336,6 @@ export interface paths {
          * @description Crée une UE sur un projet avec un type (concept). Les valeurs sont passées dans `answers` (clés = fieldId). Le formulaire effectif dépend du type d'UE et du projet.
          */
         post: operations["createRecordingUnit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/recording-units/{id}/stratigraphic-relationships": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Créer une relation stratigraphique
-         * @description Relie l'UE à une autre UE de la même opération : antérieure (plus ancienne), postérieure (plus récente) ou synchrone, avec un type facultatif et un indicateur d'incertitude.
-         */
-        post: operations["add"];
         delete?: never;
         options?: never;
         head?: never;
@@ -416,7 +464,27 @@ export interface paths {
          * Créer un projet
          * @description Crée une unité d'action (projet) dans une organisation. Droit requis : gestionnaire d'institution ou gestionnaire d'action.
          */
-        post: operations["create_1"];
+        post: operations["create_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/persons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer une personne en attente de création de compte
+         * @description Crée, à partir de son seul prénom et nom, une personne sans compte (désactivée, sans e-mail) et l'ajoute aux membres du projet. Si l'organisation compte déjà une personne en attente de ce nom (casse et accents ignorés), c'est elle qui est renvoyée et ajoutée au projet. Droit requis : modifier le projet ou l'une de ses données (unités d'enregistrement, mobiliers, études, documents, phases ou contenants).
+         */
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -484,7 +552,7 @@ export interface paths {
          * Créer un lieu
          * @description Crée une unité spatiale dans une organisation. Champs obligatoires : organizationId, name, typeConceptId (concept SIASU.TYPE). Droit requis : gestionnaire d'institution ou gestionnaire d'action.
          */
-        post: operations["create_2"];
+        post: operations["create_5"];
         delete?: never;
         options?: never;
         head?: never;
@@ -505,6 +573,26 @@ export interface paths {
          * @description Copie les champs et les parents du lieu (pas ses enfants), nommée « nom (n) ». Droit requis : gestion des lieux de l'organisation.
          */
         post: operations["duplicate_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/places/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer un document rattaché à un lieu
+         * @description Crée un document et le lie à l'unité spatiale (spatial_unit_document). Champs multipart : title (obligatoire), file (obligatoire), description, natureConceptId, scaleConceptId, formatConceptId. Droit requis : ORGANIZATION_MANAGE_PLACES.
+         */
+        post: operations["createPlaceDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -566,13 +654,13 @@ export interface paths {
          * Accès aux données de l'accueil
          * @description Les cartes configurées pour l'organisation, dans l'ordre d'affichage, et si l'utilisateur peut les modifier.
          */
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
         /**
          * Ajouter un accès aux données
          * @description Crée la vue (table et type) et la carte qui l'ouvre. Droit de modifier les vues par défaut requis.
          */
-        post: operations["create_3"];
+        post: operations["create_6"];
         delete?: never;
         options?: never;
         head?: never;
@@ -623,6 +711,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/finds/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Créer un document rattaché à un mobilier
+         * @description Crée un document et le lie au spécimen (specimen_document). Champs multipart : title (obligatoire), file (obligatoire), description, natureConceptId, scaleConceptId, formatConceptId.
+         */
+        post: operations["createFindDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents": {
         parameters: {
             query?: never;
@@ -641,6 +749,26 @@ export interface paths {
          * @description Crée un document (sans fichier) dans un projet, avec sa catégorie. Droit requis : édition des documents (instance, organisation ou projet). Le fichier s'envoie ensuite sur la fiche.
          */
         post: operations["createDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload massif de documents (multi-cibles)
+         * @description Crée plusieurs documents en un appel. Part `manifest` (JSON DocumentBatchManifestRequest) : items indexés. Parts fichiers : `file_0`, `file_1`, … alignés sur l'index du manifeste. Chaque item peut être rattaché à plusieurs cibles (projects, recording-units, finds, places). Réponse 200 avec statut par item (created/failed) ; liens MD5 déjà présents sont listés dans skippedTargets.
+         */
+        post: operations["batchUpload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -671,6 +799,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bulk/{segment}/stratigraphy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ajouter ou retirer une relation stratigraphique en lot
+         * @description mode LINK : ajoute à chaque UE la relation (position, type, incertitude) avec l'UE relatedRecordingUnitId ; UNLINK : retire la relation entre chaque UE et celle-ci. Mêmes droits et règles que POST / DELETE /api/v1/recording-units/{id}/stratigraphic-relationships, élément par élément.
+         */
+        post: operations["linkStratigraphy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bulk/{segment}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Lier ou délier un document en lot
+         * @description mode LINK : lie le document à chaque élément ; UNLINK : retire ce lien (le document n'est pas supprimé). Idempotent, mêmes règles que PUT/DELETE /api/v1/{segment}/{id}/documents/{documentId}, et en plus le droit de modifier chaque élément (403 sinon, dans le bilan).
+         */
+        post: operations["linkDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bulk/{collection}/patch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Modifier des éléments en lot
+         * @description Applique à chaque élément la même mise à jour partielle, au format du PATCH unitaire de la collection. Pour un champ à plusieurs valeurs (relations : UE parentes, phases, contenants…), { add: [...] } et { remove: [...] } ajoutent ou retirent des valeurs sans toucher aux autres. L'identifiant, unique par élément, ne peut pas être modifié en lot.
+         */
+        post: operations["patch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bulk/{collection}/duplicate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dupliquer des éléments en lot
+         * @description Duplique chaque élément comme sa duplication unitaire (mêmes droits, identifiant régénéré). Chaque copie garde les relations de l'élément (parents, phases, stratigraphie, documents…), mais ses enfants ne sont pas dupliqués. Les copies sont créées en commençant par le dernier élément, pour apparaître en tête des listes dans l'ordre de la sélection.
+         */
+        post: operations["duplicate_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bulk/{collection}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Supprimer des éléments en lot
+         * @description Supprime chaque élément comme le DELETE unitaire de la collection (mêmes droits, même refus 409 tant qu'un élément a des relations), chacun dans sa propre transaction. Un élément refusé n'empêche pas la suppression des autres : le bilan les liste.
+         */
+        post: operations["delete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bulk/jobs/{jobId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Arrêter une action en lot
+         * @description L'action s'arrête avant l'élément suivant (status CANCELLED) ; les éléments déjà traités restent modifiés et figurent dans le bilan.
+         */
+        post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bookmarks": {
         parameters: {
             query?: never;
@@ -688,12 +936,12 @@ export interface paths {
          * Ajouter un favori
          * @description resourceUri générique (ex. /action-unit/123), pas le chemin REST. organizationId doit être dans le périmètre JWT.
          */
-        post: operations["create_4"];
+        post: operations["create_7"];
         /**
          * Retirer un favori
          * @description Même resourceUri que celui utilisé à la création. organizationId doit être dans le périmètre JWT.
          */
-        delete: operations["delete_6"];
+        delete: operations["delete_9"];
         options?: never;
         head?: never;
         /**
@@ -751,6 +999,58 @@ export interface paths {
         patch: operations["patchStudy"];
         trace?: never;
     };
+    "/api/v1/relation-links/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Supprimer un lien
+         * @description Supprime le lien, vu des deux fiches.
+         */
+        delete: operations["delete_2"];
+        options?: never;
+        head?: never;
+        /**
+         * Modifier un lien
+         * @description Change le qualificatif et l'incertitude. Rendre certain un lien qui ferme une boucle est refusé. Pour relier une autre fiche, supprimer le lien et en créer un autre.
+         */
+        patch: operations["update_1"];
+        trace?: never;
+    };
+    "/api/v1/relation-definitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lire une relation
+         * @description Son identité : ses deux champs et sa nature.
+         */
+        get: operations["read"];
+        put?: never;
+        post?: never;
+        /**
+         * Supprimer une relation
+         * @description Refusé tant qu'elle a des liens. Ses règles partent avec elle ; ses deux champs restent.
+         */
+        delete: operations["delete_3"];
+        options?: never;
+        head?: never;
+        /**
+         * Modifier la nature d'une relation
+         * @description Simple ou complexe, hiérarchique, champ qualificatif : refusé dès que la relation a des liens.
+         */
+        patch: operations["update_2"];
+        trace?: never;
+    };
     "/api/v1/recording-units/{id}": {
         parameters: {
             query?: never;
@@ -769,7 +1069,7 @@ export interface paths {
          * Supprimer une unité d'enregistrement
          * @description Identifiant numérique obligatoire : clé primaire recording_unit_id. L'UE doit être dans une institution accessible (JWT). Droit d'écriture requis. Refus (409) si l'UE a encore des relations avec d'autres entités (hiérarchie, stratigraphie, mobiliers, documents, phases, études) : les retirer d'abord.
          */
-        delete: operations["delete_1"];
+        delete: operations["delete_4"];
         options?: never;
         head?: never;
         /**
@@ -794,14 +1094,14 @@ export interface paths {
          * Supprimer un projet
          * @description Supprime le projet et tout son contenu (UE, mobiliers, documents, phases, contenants, études). Refus (409) s'il a des sous-projets ou si son contenu est lié à un autre projet. Même clé de projet que GET /api/v1/projects/{id}. Droit de suppression requis.
          */
-        delete: operations["delete_2"];
+        delete: operations["delete_5"];
         options?: never;
         head?: never;
         /**
          * Mise à jour partielle d'un projet
          * @description Champs modifiables : nom, catégorie (type d'opération, `typeConceptId`), date de début, date de fin, localisation précise. Champs absents = inchangés, champ null = valeur effacé . Droit d'écriture sur le projet requis.
          */
-        patch: operations["patch"];
+        patch: operations["patch_1"];
         trace?: never;
     };
     "/api/v1/places/{id}": {
@@ -822,14 +1122,14 @@ export interface paths {
          * Supprimer un lieu
          * @description Uniquement si le lieu n'a aucune relation (lieux parents/enfants, UE, projets, contenants, documents). Droit requis : gestionnaire d'institution ou gestionnaire d'action.
          */
-        delete: operations["delete_3"];
+        delete: operations["delete_6"];
         options?: never;
         head?: never;
         /**
          * Modifier un lieu
          * @description Mise à jour partielle : name, typeConceptId, address. Champs absents ou null = inchangés. Droit requis : gestionnaire d'institution ou gestionnaire d'action.
          */
-        patch: operations["patch_1"];
+        patch: operations["patch_2"];
         trace?: never;
     };
     "/api/v1/phases/{id}": {
@@ -964,6 +1264,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/{resourceType}/{id}/on-the-fly-fields/measurement-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unités proposées pour une mesure */
+        get: operations["measurementUnits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/{resourceType}/{id}/on-the-fly-fields/measurement-concepts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Concepts proposés pour une mesure
+         * @description kind=TYPE (ce qui est mesuré) ou NATURE ; q filtre par libellé.
+         */
+        get: operations["measurementConcepts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/{resourceType}/{id}/on-the-fly-fields/existing-measurements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mesures déjà utilisées sur la même table
+         * @description Les mesures ajoutées à d'autres enregistrements de la même table dans le projet, à reprendre.
+         */
+        get: operations["existingMeasurements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/{collection}/{id}/breadcrumbs": {
         parameters: {
             query?: never;
@@ -1085,6 +1442,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/relation-fields/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Décrire un champ relation dans un projet
+         * @description Le côté du champ, son champ miroir, les fiches qu'il peut relier, s'il est à choix unique, et les qualificatifs tels qu'il les montre avec le concept que le lien enregistre, selon les règles que le projet suit.
+         */
+        get: operations["field"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recording-units/{id}/structure": {
         parameters: {
             query?: never;
@@ -1165,6 +1542,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recording-units/{id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Une unité d'enregistrement, sur une carte
+         * @description La géométrie de l'unité reprojetée en WGS84 (EPSG:4326), hors de toute liste : pour montrer sur la carte d'une liste la fiche ouverte à côté quand le filtre l'exclut. feature est null quand l'unité n'a pas de géométrie exploitable.
+         */
+        get: operations["unitMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recording-units/{id}/finds": {
         parameters: {
             query?: never;
@@ -1177,6 +1574,26 @@ export interface paths {
          * @description Spécimens liés à l'UE (table specimen, fk_recording_unit_id). Pagination : offset, limit (max 200, offset multiple de limit). Tri : creationTime, id ou fullIdentifier (ex. creationTime:desc). Recherche : search, sur fullIdentifier. Chaque élément porte _permissions, resourceUri et bookmarked. Même clé d'UE que GET /api/v1/recording-units/{id}. La langue pour les libellés de type suit Accept-Language.
          */
         get: operations["getFinds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recording-units/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unités d'enregistrement d'une organisation, sur une carte
+         * @description Mêmes recherche, tri et filtres f.<clé> que la liste. Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée stockée. Seules les unités dont la colonne de géométrie n'est pas vide sont retenues (meta.total) ; celles dont la géométrie est illisible, sans SRID ou avec un SRID inconnu sont examinées (meta.examined) mais absentes de features. Au plus 2000 unités examinées (meta.total > meta.examined quand le filtre en compte davantage).
+         */
+        get: operations["organizationMap"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1283,6 +1700,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{id}/recording-units/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Unités d'enregistrement d'un projet, sur une carte
+         * @description Mêmes recherche, tri et filtres f.<clé> que la liste. Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée stockée. Seules les unités dont la colonne de géométrie n'est pas vide sont retenues (meta.total) ; celles dont la géométrie est illisible, sans SRID ou avec un SRID inconnu sont examinées (meta.examined) mais absentes de features. Au plus 2000 unités examinées (meta.total > meta.examined quand le filtre en compte davantage).
+         */
+        get: operations["projectMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{id}/recording-unit-types": {
         parameters: {
             query?: never;
@@ -1372,6 +1809,26 @@ export interface paths {
          * @description Clé de projet : identique à GET /api/v1/projects/{id}. Tri : paramètre sort au format « propriété:asc » ou « propriété:desc » (propriétés autorisées : fullIdentifier, collectionDate, id). Valeur par défaut : fullIdentifier:asc. Recherche : paramètre search, sur fullIdentifier.
          */
         get: operations["getFinds_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{id}/finds/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mobiliers d'un projet, sur une carte
+         * @description Mêmes recherche, tri et filtres f.<fieldId> que la liste. Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée stockée. Seuls les mobiliers dont la colonne de géométrie n'est pas vide sont retenus (meta.total) ; ceux dont la géométrie est illisible, sans SRID ou avec un SRID inconnu sont examinés (meta.examined) mais absents de features. Au plus 2000 mobiliers examinés (meta.total > meta.examined quand le filtre en compte davantage).
+         */
+        get: operations["projectMap_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1573,6 +2030,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/places/{id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un lieu, sur une carte
+         * @description La géométrie du lieu reprojetée en WGS84 (EPSG:4326), hors de toute liste : pour montrer sur la carte de la liste la fiche ouverte à côté quand le filtre l'exclut. feature est null quand le lieu n'a pas de géométrie exploitable.
+         */
+        get: operations["placeMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/places/{id}/children": {
         parameters: {
             query?: never;
@@ -1605,6 +2082,26 @@ export interface paths {
          * @description Les lieux de l'organisation dont le nom contient `q`, puis les suggestions des sources dont la configuration du champ `fieldId` dispose (INSEE : communes ; GEOPLAT : adresses de la GéoPlateforme). Le client ne choisit jamais les sources. Une source dont un paramètre dépend d'un autre champ lieu est alimentée par `dep.<idChamp>=<idLieu>` (le lieu choisi dans ce champ) ; sans valeur, elle est interrogée sans ce filtre (recherche élargie, `unnarrowedSources` le signale) ou ignorée si sa configuration le dit. Une suggestion externe (id null) se transforme en lieu par POST /api/v1/places/from-suggestion.
          */
         get: operations["suggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/places/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lieux d'une organisation, sur une carte
+         * @description Mêmes recherche, tri et filtres f.<fieldId> que la liste. Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée stockée. Seuls les lieux dont la géométrie n'est pas vide sont retenus (meta.total) ; ceux sans SRID ou avec un SRID inconnu sont examinés (meta.examined) mais absents de features. Au plus 2000 lieux examinés (meta.total > meta.examined quand le filtre en compte davantage).
+         */
+        get: operations["organizationMap_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1934,6 +2431,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/identifier-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggérer le prochain identifiant d'une nouvelle entité
+         * @description L'identifiant que le serveur générerait pour une nouvelle entité du type donné — sans consommer le compteur. Le formulaire de création l'affiche comme valeur modifiable : si l'utilisateur la change, l'identifiant choisi est envoyé à la création (champ identifier). Une entité se crée dans un projet (projectId), sauf un mobilier, créé sur une UE (recordingUnitId).
+         */
+        get: operations["suggestIdentifier"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/history": {
         parameters: {
             query?: never;
@@ -1966,6 +2483,46 @@ export interface paths {
          * @description Voisins dans le même projet, par ordre de création. Boucle en fin de liste (le suivant du dernier est le premier) ; null seulement s'il n'y a aucun autre élément.
          */
         get: operations["getSiblings_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/finds/{id}/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un mobilier, sur une carte
+         * @description La géométrie du mobilier reprojetée en WGS84 (EPSG:4326), hors de toute liste : pour montrer sur la carte d'une liste la fiche ouverte à côté quand le filtre l'exclut. feature est null quand le mobilier n'a pas de géométrie exploitable.
+         */
+        get: operations["findMap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/finds/map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mobiliers d'une organisation, sur une carte
+         * @description Mêmes recherche, tri et filtres f.<fieldId> que la liste. Les géométries sont reprojetées en WGS84 (EPSG:4326) par PostGIS depuis leur SRID d'origine, sans jamais modifier la donnée stockée. Seuls les mobiliers dont la colonne de géométrie n'est pas vide sont retenus (meta.total) ; ceux dont la géométrie est illisible, sans SRID ou avec un SRID inconnu sont examinés (meta.examined) mais absents de features. Au plus 2000 mobiliers examinés (meta.total > meta.examined quand le filtre en compte davantage).
+         */
+        get: operations["organizationMap_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2055,6 +2612,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bulk/jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suivre une action en lot
+         * @description Avancement (processed / total) et bilan élément par élément d'une action en lot démarrée par l'appelant. status vaut RUNNING tant que des éléments restent à traiter, puis DONE (ou FAILED si l'action s'est arrêtée). Pendant l'exécution, seuls les compteurs sont renvoyés ; les listes succeeded / failed le sont une fois la tâche terminée. Le bilan reste disponible une heure après la fin.
+         */
+        get: operations["job"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/bookmarks/status": {
         parameters: {
             query?: never;
@@ -2087,6 +2664,26 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/{resourceType}/{id}/on-the-fly-fields/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Retirer un champ ajouté à la volée
+         * @description Détache le champ de la fiche de cet enregistrement. Droit d'édition requis.
+         */
+        delete: operations["remove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2146,27 +2743,7 @@ export interface paths {
          * Retirer un accès aux données
          * @description Retire la carte ; sa vue reste. Droit de modifier les vues par défaut requis.
          */
-        delete: operations["delete_4"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/projects/{id}/persons": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Créer une personne en attente de création de compte
-         * @description Crée, à partir de son seul prénom et nom, une personne sans compte (désactivée, sans e-mail) et l'ajoute aux membres du projet. Si l'organisation compte déjà une personne en attente de ce nom (casse et accents ignorés), c'est elle qui est renvoyée et ajoutée au projet. Droit requis : modifier le projet ou l'une de ses données (unités d'enregistrement, mobiliers, études, documents, phases ou contenants).
-         */
-        post: operations["create_5"];
-        delete?: never;
+        delete: operations["delete_7"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2317,18 +2894,69 @@ export interface components {
                 [key: string]: Record<string, never>;
             };
         };
-        /** @description Nouvelles valeurs d'une relation stratigraphique existante (remplacement) */
-        RecordingUnitStratigraphicRelationshipUpdateRequest: {
+        /** @description Un type de fiche accepté d'un côté */
+        AcceptedKind: {
+            /** @enum {string} */
+            side?: "source" | "target";
+            /**
+             * @description Collection d'API
+             * @example recording-units
+             */
+            resourceType?: string;
             /**
              * Format: int64
-             * @description Concept du type de relation, lu de l'UE de l'URL vers l'autre UE ; absent = aucun type
+             * @description Sous-type exigé (identifiant du concept type), facultatif
+             * @example 100
              */
-            typeConceptId?: number;
+            subtype?: number;
+        };
+        /** @description Un qualificatif et son miroir */
+        MirrorPair: {
             /**
-             * @description Relation incertaine
-             * @default false
+             * Format: int64
+             * @description Concept du qualificatif
+             * @example 201
              */
-            uncertain: boolean;
+            concept?: number;
+            /**
+             * Format: int64
+             * @description Concept miroir
+             * @example 301
+             */
+            mirror?: number;
+        };
+        /** @description Les règles d'une relation dans une portée, entières : elles remplacent celles qui existaient */
+        RelationRulesRequest: {
+            /** @description Interdire les boucles (toujours vrai pour une relation hiérarchique) */
+            noCycle?: boolean;
+            /** @description Côté source à choix unique : une fiche n'a qu'un lien de ce côté */
+            sourceUnique?: boolean;
+            /** @description Côté cible à choix unique */
+            targetUnique?: boolean;
+            /** @description Types acceptés de chaque côté ; aucun pour un côté : toute fiche */
+            accepted?: components["schemas"]["AcceptedKind"][];
+            /** @description Paires qualificatif / miroir, un à un */
+            mirrors?: components["schemas"]["MirrorPair"][];
+            /** @description Définitions exclusives de celle-ci : une même paire ne peut pas être reliée par les deux */
+            exclusions?: number[];
+        };
+        /** @description Les règles d'une relation et la portée d'où elles viennent */
+        RelationRulesResponse: {
+            /** Format: int64 */
+            definition?: number;
+            /**
+             * @description Portée d'origine des règles
+             * @enum {string}
+             */
+            scope?: "platform" | "institution" | "project" | "none";
+            /** @description Les règles appartiennent à la portée demandée (sinon elles sont héritées) */
+            own?: boolean;
+            noCycle?: boolean;
+            sourceUnique?: boolean;
+            targetUnique?: boolean;
+            accepted?: components["schemas"]["AcceptedKind"][];
+            mirrors?: components["schemas"]["MirrorPair"][];
+            exclusions?: number[];
         };
         /** @description Nouvel ordre des cartes d'accès aux données de l'accueil */
         HomeAccessOrderRequest: {
@@ -2526,12 +3154,186 @@ export interface components {
              * @enum {string}
              */
             position?: "anterior" | "posterior" | "synchronous";
-            /** @description Sens de lecture du concept (stratigraphic_relationship.concept_direction) */
+            /** @description Sens de lecture du concept : vrai quand il se lit depuis l'UE antérieure (unit1) */
             conceptDirection?: boolean;
             /** @description Relation asynchrone (antérieur/postérieur) ; false = synchrone */
             asynchronous?: boolean;
             /** @description Relation incertaine */
             uncertain?: boolean;
+            /**
+             * Format: int64
+             * @description Identifiant du lien (relation_link) : ce que /api/v1/relation-links modifie ou supprime
+             */
+            linkId?: number;
+        };
+        /** @description Mesure ajoutée à la volée à la fiche d'un enregistrement (« Ajouter une mesure ») */
+        OnTheFlyMeasurementRequest: {
+            /** @description Nom du panneau de la fiche où le champ est ajouté */
+            panel?: string;
+            /**
+             * Format: int64
+             * @description Concept de ce qui est mesuré (SIAMD.TYPE) ; sert aussi de libellé
+             */
+            typeConceptId?: number;
+            /**
+             * Format: int64
+             * @description Concept de la nature de la mesure (SIAMD.NATURE), facultatif
+             */
+            natureConceptId?: number;
+            /**
+             * Format: int64
+             * @description Unité par défaut de la mesure
+             */
+            defaultUnitId?: number;
+            /** @description Autres unités proposées à la saisie, de même dimension que l'unité par défaut */
+            allowedUnitIds?: number[];
+            /** @description Nom d'un nouveau type de mesure, à défaut de typeConceptId : un concept local, sans URI */
+            newTypeLabel?: string;
+            /** @description Nom d'une nouvelle nature de mesure, à défaut de natureConceptId : un concept local, sans URI */
+            newNatureLabel?: string;
+            /**
+             * Format: int64
+             * @description Mesure existante de la même table à reprendre telle quelle (type, nature et unités) ; les autres champs sont alors ignorés
+             */
+            copyFieldId?: number;
+        };
+        /** @description Un concept d'une liste figée et son état */
+        ConceptStateEntry: {
+            /** @description Identifiant du concept */
+            id?: string;
+            /**
+             * @description ENABLED : proposé ; DISABLED : écarté ; PENDING : nouveau dans la source, pas encore activé (non proposé)
+             * @enum {string}
+             */
+            state?: "ENABLED" | "DISABLED" | "PENDING";
+        };
+        /** @description Contraintes de saisie d'un champ */
+        Constraints: {
+            /**
+             * Format: double
+             * @description Borne basse (INTEGER, DECIMAL, MEASUREMENT)
+             */
+            min?: number;
+            /**
+             * Format: double
+             * @description Borne haute (INTEGER, DECIMAL, MEASUREMENT)
+             */
+            max?: number;
+            /** @description DATETIME : saisir aussi l'heure */
+            showTime?: boolean;
+            /**
+             * @description MEASUREMENT : symbole de l'unité par défaut du champ
+             * @example cm
+             */
+            unit?: string;
+            /**
+             * @description MEASUREMENT : symboles des unités que la saisie peut choisir (l'unité par défaut en fait partie) ; null si le champ n'a qu'une unité
+             * @example [
+             *       "m²",
+             *       "ha"
+             *     ]
+             */
+            units?: string[];
+            /** @description BOOLEAN : la réponse peut rester vide (trois états oui / non / sans réponse) */
+            allowNoAnswer?: boolean;
+        };
+        /** @description Définition d'un champ de formulaire */
+        FieldResource: {
+            /**
+             * @description Identifiant du champ (custom_field_id)
+             * @example 3
+             */
+            id?: string;
+            /**
+             * @description Type de ressource
+             * @example fields
+             * @enum {string}
+             */
+            resourceType?: "fields";
+            /** @description Libellé affichable, résolu selon Accept-Language : celui du concept du champ dans le thésaurus, à défaut celui du champ */
+            label?: string;
+            /**
+             * @description Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer
+             * @enum {string}
+             */
+            answerType?: "TEXT" | "GEOMETRY" | "INTEGER" | "DECIMAL" | "DATETIME" | "BOOLEAN" | "MEASUREMENT" | "SELECT_ONE" | "SELECT_ONE_PERSON" | "SELECT_ONE_ACTION_UNIT" | "SELECT_ONE_SPATIAL_UNIT" | "SELECT_ONE_RECORDING_UNIT" | "SELECT_ONE_DOCUMENT" | "SELECT_ADDRESS" | "SELECT_MULTIPLE" | "SELECT_MULTIPLE_PERSON" | "SELECT_MULTIPLE_RECORDING_UNIT" | "SELECT_MULTIPLE_SPATIAL_UNIT" | "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" | "SELECT_MULTIPLE_SPECIMEN" | "SELECT_MULTIPLE_CONTAINER" | "SELECT_MULTIPLE_PHASE" | "SELECT_MULTIPLE_STRATIGRAPHY";
+            /** @description Définition du champ, résolue selon Accept-Language : celle de son concept dans le thésaurus, à défaut le texte d'aide du champ */
+            hint?: string;
+            /** @description Vrai si le champ est un champ système (binding direct sur l'entité) */
+            isSystemField?: boolean;
+            /** @description Nom de la propriété métier bindée si champ système (ex. openingDate) */
+            valueBinding?: string;
+            /** @description Code de vocabulaire (ex. SIARU.CHRONO) du champ, à titre informatif : la liste de ses valeurs se lit par identifiant de champ */
+            fieldCode?: string;
+            /** @description Vrai si un champ TEXT doit s'afficher sur plusieurs lignes (CustomFieldText.isTextArea) ; null pour les autres types de champ */
+            isTextArea?: boolean;
+            /**
+             * @description Classe d'icône affichée devant le libellé du champ dans la fiche (CustomField.getIcon)
+             * @example bi bi-question
+             */
+            icon?: string;
+            /** @description URI du concept du champ, cible du lien « Documentation » de la fiche (CustomField.getConceptUri) */
+            conceptUri?: string;
+            constraints?: components["schemas"]["Constraints"];
+            query?: components["schemas"]["Query"];
+            /** @description Vrai si le champ n'est jamais modifiable, ni dans la fiche ni dans une liste (colonne readOnly du formulaire de détail, ex. le projet d'une UE) ; null = modifiable */
+            readOnly?: boolean;
+            /** @description Règles conditionnelles du champ dans le formulaire de détail de son entité (enabledWhen, requiredWhen, options, constraints — même langage que les colonnes du layout). Là où une liste n'a pas de layout, c'est ce qui permet de griser une cellule ou d'en borner la valeur ; null si le champ n'a aucune règle */
+            rules?: {
+                [key: string]: Record<string, never>;
+            };
+            vocabulary?: components["schemas"]["Vocabulary"];
+        };
+        /** @description Champs ajoutés à la volée à la fiche d'un enregistrement, et le panneau de chacun */
+        OnTheFlyFieldsResponse: {
+            /** @description Définition de chaque champ, indexée par id */
+            fields?: {
+                [key: string]: components["schemas"]["FieldResource"];
+            };
+            /** @description Où chaque champ s'affiche, dans l'ordre d'ajout */
+            placements?: components["schemas"]["Placement"][];
+        };
+        /** @description Un champ et le panneau où il s'affiche (null : le dernier panneau) */
+        Placement: {
+            fieldId?: string;
+            panel?: string;
+        };
+        /** @description Ce qu'une liste accepte sur la colonne du champ : sort=<id>:asc|desc, f.<id>… */
+        Query: {
+            /** @description Triable (sort=<id>:asc) ; une colonne multivaluée se trie par nombre de valeurs */
+            sortable?: boolean;
+            /**
+             * @description Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable), presence (géométrie : f.<id>.op=empty|not_empty seulement) ; null si aucun. f.<id>.op choisit un autre opérateur
+             * @enum {string}
+             */
+            filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | "presence";
+        };
+        /** @description Origine de la liste d'un champ de vocabulaire : un seul des trois jeux de champs est renseigné */
+        Source: {
+            /**
+             * @description FIELD_CODE : concepts configurés pour le field code ; BRANCH : sous-arbre d'un concept ; COLLECTION : collection du thésaurus
+             * @enum {string}
+             */
+            kind?: "FIELD_CODE" | "BRANCH" | "COLLECTION";
+            /** @description FIELD_CODE : le code du champ (ex. SIARU.TYPE) */
+            fieldCode?: string;
+            /** @description BRANCH : identifiant du concept racine de la branche */
+            topTermConceptId?: string;
+            /** @description COLLECTION : identifiant de la collection */
+            collectionId?: string;
+        };
+        /** @description Source, mode et état des concepts de la liste d'un champ de vocabulaire */
+        Vocabulary: {
+            source?: components["schemas"]["Source"];
+            /**
+             * @description FOLLOW : la liste suit sa source (un concept ajouté au thésaurus y apparaît, un concept retiré en sort) ; FROZEN : la liste est l'ensemble des concepts activés, la source ne l'a fait qu'initialiser
+             * @enum {string}
+             */
+            mode?: "FOLLOW" | "FROZEN";
+            /** @description FOLLOW : identifiants des concepts de la source désactivés pour ce champ (absents de la liste) ; vide si aucun. Null en FROZEN */
+            excludedConceptIds?: string[];
+            /** @description FROZEN : les concepts de la liste et leur état. Null en FOLLOW */
+            concepts?: components["schemas"]["ConceptStateEntry"][];
         };
         /** @description Création d'une étude */
         StudyCreateRequest: {
@@ -2539,6 +3341,8 @@ export interface components {
             projectId: string;
             /** @description Identifiant du concept de type d'étude (concept_id) */
             typeId: string;
+            /** @description Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet). */
+            identifier?: string;
         };
         /** @description Étude d'un projet */
         StudyResource: {
@@ -2576,6 +3380,157 @@ export interface components {
         };
         StudyResponse: {
             data?: components["schemas"]["StudyResource"];
+        };
+        /** @description Une fiche, désignée par sa collection d'API et son identifiant */
+        RelationEndRequest: {
+            /**
+             * @description Collection d'API de la fiche
+             * @example recording-units
+             * @enum {string}
+             */
+            resourceType?: "recording-units" | "finds" | "phases" | "containers" | "documents" | "studies" | "projects";
+            /**
+             * Format: int64
+             * @description Identifiant numérique de la fiche
+             * @example 12
+             */
+            resourceId?: number;
+        };
+        /** @description Un lien saisi depuis une fiche, par le champ d'un côté d'une relation */
+        RelationLinkCreateRequest: {
+            /**
+             * Format: int64
+             * @description Champ relation de saisie (ex. -328) : donne la définition et le côté. À défaut, definition et side
+             * @example -328
+             */
+            field?: number;
+            /**
+             * Format: int64
+             * @description Identifiant de la définition de relation, si field est absent
+             * @example 1
+             */
+            definition?: number;
+            /**
+             * @description Côté du champ de saisie : source (« Postérieur à ») ou target, son miroir (« Antérieur à »). Sans effet pour une relation symétrique
+             * @default source
+             * @enum {string}
+             */
+            side: "source" | "target";
+            record?: components["schemas"]["RelationEndRequest"];
+            other?: components["schemas"]["RelationEndRequest"];
+            /**
+             * Format: int64
+             * @description Relation complexe : le qualificatif tel que la fiche en cours de saisie le montre (identifiant de concept). Saisi depuis le miroir, c'est le concept miroir : le lien enregistre son correspondant
+             * @example 201
+             */
+            qualifier?: number;
+            /**
+             * @description Lien incertain
+             * @default false
+             */
+            uncertain: boolean;
+        };
+        /** @description Une fiche à une extrémité d'un lien */
+        RelationEndResponse: {
+            /** @example recording-units */
+            resourceType?: string;
+            /**
+             * Format: int64
+             * @example 12
+             */
+            resourceId?: number;
+        };
+        /** @description Un lien, enregistré une fois de la source vers la cible */
+        RelationLinkResponse: {
+            /** Format: int64 */
+            id?: number;
+            /**
+             * Format: int64
+             * @description Identifiant de la définition
+             */
+            definition?: number;
+            source?: components["schemas"]["RelationEndResponse"];
+            target?: components["schemas"]["RelationEndResponse"];
+            /**
+             * Format: int64
+             * @description Qualificatif vu de la source (identifiant de concept)
+             */
+            qualifier?: number;
+            /**
+             * Format: int64
+             * @description Qualificatif vu de la cible : son miroir dans les règles du projet
+             */
+            mirrorQualifier?: number;
+            uncertain?: boolean;
+            /** @description Règles enfreintes sans refus : une boucle qui passe par un lien incertain */
+            warnings?: components["schemas"]["RuleViolationResponse"][];
+        };
+        /** @description Une règle enfreinte : bloquante (l'écriture est refusée) ou avertissement */
+        RuleViolationResponse: {
+            /** @enum {string} */
+            rule?: "NO_CYCLE" | "SINGLE_CHOICE" | "EXCLUSION" | "ACCEPTED_KIND";
+            blocking?: boolean;
+            message?: string;
+            /** @description Les liens en cause : le chemin d'une boucle, ou les liens existants qu'une restriction casserait */
+            links?: number[];
+        };
+        /** @description Une relation créée depuis un champ relation, avec ses règles par défaut de la plateforme */
+        RelationDefinitionCreateRequest: {
+            /**
+             * Format: int64
+             * @description Champ relation du côté source
+             * @example -329
+             */
+            sourceField?: number;
+            /**
+             * Format: int64
+             * @description Champ relation existant du côté cible ; absent : il est créé avec targetFieldLabel. Ignoré pour une relation symétrique
+             * @example -328
+             */
+            targetField?: number;
+            /**
+             * @description Libellé du champ à créer du côté cible
+             * @example Antérieur à
+             */
+            targetFieldLabel?: string;
+            /** @enum {string} */
+            kind?: "simple" | "complex";
+            /** @description La relation est son propre miroir (un seul champ) */
+            symmetric?: boolean;
+            /** @description La relation range les fiches en arbre */
+            hierarchical?: boolean;
+            /**
+             * Format: int64
+             * @description Relation complexe : champ de vocabulaire à choix unique qui qualifie un lien
+             */
+            qualifierField?: number;
+            defaultRules?: components["schemas"]["RelationRulesRequest"];
+        };
+        /** @description L'identité d'une relation, globale */
+        RelationDefinitionResponse: {
+            /** Format: int64 */
+            id?: number;
+            /**
+             * Format: int64
+             * @description Champ du côté source
+             */
+            sourceField?: number;
+            /**
+             * Format: int64
+             * @description Champ du côté cible, le même pour une relation symétrique
+             */
+            targetField?: number;
+            /** @enum {string} */
+            kind?: "simple" | "complex";
+            symmetric?: boolean;
+            hierarchical?: boolean;
+            /**
+             * Format: int64
+             * @description Champ qualificatif d'une relation complexe
+             */
+            qualifierField?: number;
+            /** @description La relation a des liens : sa nature ne peut plus changer */
+            hasLinks?: boolean;
         };
         /** @description Valeur à appliquer à un champ. Utiliser 'value' pour les scalaires ; pour un champ multivalué, soit 'values' (remplace toute la liste), soit 'add'/'remove' (ajoute/retire des valeurs, sans toucher aux autres) — les deux formes ne se combinent pas. add/remove est la seule écriture sûre quand la valeur lue était incomplète (complete=false). */
         AnswerInput: {
@@ -2763,6 +3718,8 @@ export interface components {
              * @description Phase existante (phase_id) à laquelle la nouvelle UE est rattachée ; même projet obligatoire
              */
             phaseId?: number;
+            /** @description Identifiant complet (full_identifier) choisi par l'utilisateur. Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée). */
+            identifier?: string;
             fieldAnswers?: {
                 [key: string]: Record<string, never>;
             };
@@ -2854,31 +3811,6 @@ export interface components {
         };
         RecordingUnitResponse: {
             data?: components["schemas"]["RecordingUnitResource"];
-        };
-        /** @description Relation stratigraphique à créer entre l'UE de l'URL et une autre UE */
-        RecordingUnitStratigraphicRelationshipRequest: {
-            /**
-             * Format: int64
-             * @description Identifiant numérique recording_unit_id de l'autre UE
-             * @example 42
-             */
-            relatedRecordingUnitId?: number;
-            /**
-             * @description Où se tient l'autre UE par rapport à l'UE de l'URL : anterior (plus ancienne), posterior (plus récente) ou synchronous
-             * @enum {string}
-             */
-            position?: "anterior" | "posterior" | "synchronous";
-            /**
-             * Format: int64
-             * @description Concept du type de relation (vocabulaire SIARU.STRATI), lu de l'UE de l'URL vers l'autre UE ; facultatif
-             * @example 1234
-             */
-            typeConceptId?: number;
-            /**
-             * @description Relation incertaine
-             * @default false
-             */
-            uncertain: boolean;
         };
         /** @description Liaison hiérarchique vers une unité d'enregistrement déjà existante */
         RecordingUnitHierarchyLinkRequest: {
@@ -3072,6 +4004,38 @@ export interface components {
         ProjectResponse: {
             data?: components["schemas"]["ProjectResource"];
         };
+        /** @description Création d'une personne en attente de création de compte */
+        PersonCreateRequest: {
+            /**
+             * @description Prénom
+             * @example Marie
+             */
+            name: string;
+            /**
+             * @description Nom de famille
+             * @example Curie
+             */
+            lastname: string;
+        };
+        /** @description Utilisateur */
+        PersonResource: {
+            /**
+             * @description Identifiant personne (person_id)
+             * @example 42
+             */
+            id?: string;
+            /** @description Identifiant de connexion */
+            username?: string;
+            /** @description Prénom */
+            name?: string;
+            /** @description Nom de famille */
+            lastname?: string;
+            /** @description Vrai pour une personne créée à partir de son seul nom, en attente de création de compte */
+            accountPending?: boolean;
+        };
+        PersonResponse: {
+            data?: components["schemas"]["PersonResource"];
+        };
         /** @description Adresse postale ou géolocalisée (optionnel) */
         FullAddress: {
             label?: string;
@@ -3156,6 +4120,8 @@ export interface components {
             projectId: string;
             /** @description Identifiant du concept de type de phase (concept_id) */
             typeId: string;
+            /** @description Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet). */
+            identifier?: string;
             /** @description Titre de la phase */
             title?: string;
         };
@@ -3261,6 +4227,9 @@ export interface components {
              * @example 42
              */
             typeId: string;
+            /** @description Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet). */
+            identifier?: string;
+            geom?: components["schemas"]["LineStringDTO"] | components["schemas"]["MultiPointDTO"] | components["schemas"]["MultiPolygonDTO"] | components["schemas"]["PointDTO"] | components["schemas"]["PolygonDTO"];
             /** @description Valeurs par fieldId ({ value } / { values }) */
             answers?: {
                 [key: string]: components["schemas"]["AnswerInput"];
@@ -3286,7 +4255,7 @@ export interface components {
             /** @description Identifiant du projet (unité d'action) auquel appartient ce mobilier — ce que la fiche React résout son propre catalogue de types contre (GET /api/v1/projects/{id}/find-types), même convention que RecordingUnitResource.projectId. */
             projectId?: string;
             project?: components["schemas"]["ResourceRef"];
-            geom?: components["schemas"]["PointDTO"];
+            geom?: components["schemas"]["LineStringDTO"] | components["schemas"]["MultiPointDTO"] | components["schemas"]["MultiPolygonDTO"] | components["schemas"]["PointDTO"] | components["schemas"]["PolygonDTO"];
             /** @description Valeurs des champs formulaire, indexées par fieldId. Sur le détail, chaque entrée embarque sa définition (enveloppe FieldAnswer) ; sur la liste, valeurs brutes. */
             answers?: {
                 [key: string]: Record<string, never>;
@@ -3331,6 +4300,8 @@ export interface components {
             projectId: string;
             /** @description Identifiant du concept de catégorie (concept_id) */
             typeId: string;
+            /** @description Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet). */
+            identifier?: string;
             /** @description Titre du document */
             title?: string;
             /** @description Unités d'enregistrement auxquelles lier le document (du même projet) */
@@ -3344,12 +4315,50 @@ export interface components {
             /** @description Contenants auxquels lier le document (du même projet) */
             containerIds?: number[];
         };
+        /** @description Résultat d'un item du lot documents */
+        DocumentBatchItemResult: {
+            /** @description Clé client renvoyée telle quelle */
+            clientKey?: string;
+            /**
+             * @description created | failed
+             * @example created
+             */
+            status?: string;
+            document?: components["schemas"]["DocumentResource"];
+            /** @description Cibles effectivement liées */
+            linkedTargets?: components["schemas"]["DocumentBatchTargetRequest"][];
+            /** @description Cibles ignorées (doublon MD5) */
+            skippedTargets?: components["schemas"]["DocumentBatchTargetRequest"][];
+            /** @description Erreurs item ou par cible */
+            errors?: string[];
+        };
+        /** @description Réponse d'upload massif de documents */
+        DocumentBatchResponse: {
+            /** @description Résultats par item du manifeste */
+            results?: components["schemas"]["DocumentBatchItemResult"][];
+        };
+        /** @description Cible de rattachement d'un document */
+        DocumentBatchTargetRequest: {
+            /**
+             * @description Type de ressource cible
+             * @example recording-units
+             * @enum {string}
+             */
+            resourceType: "projects" | "recording-units" | "finds" | "places";
+            /**
+             * @description Identifiant de la cible (id numérique ou full_identifier selon le type)
+             * @example 187
+             */
+            id: string;
+        };
         /** @description Création d'un contenant */
         ContainerCreateRequest: {
             /** @description Clé du projet (unité d'action) : identifiant numérique (action_unit_id), full_identifier ou identifiant court dans une organisation accessible. */
             projectId: string;
             /** @description Identifiant du concept de type de contenant (concept_id) */
             typeId: string;
+            /** @description Identifiant choisi par l'utilisateur (la suggestion du formulaire, modifiée). Optionnel : absent ou vide, le serveur génère l'identifiant comme d'habitude. S'il est fourni, il est utilisé tel quel (unicité vérifiée dans le projet). */
+            identifier?: string;
         };
         /** @description Contenant d'un projet */
         ContainerResource: {
@@ -3388,6 +4397,162 @@ export interface components {
         };
         ContainerResponse: {
             data?: components["schemas"]["ContainerResource"];
+        };
+        /** @description Ajoute à chaque UE une relation stratigraphique avec une même UE, ou retire cette relation de chacune */
+        BulkStratigraphyRequest: {
+            /**
+             * @description Identifiants numériques des UE
+             * @example [
+             *       12,
+             *       13,
+             *       14
+             *     ]
+             */
+            ids?: number[];
+            /**
+             * Format: int64
+             * @description Identifiant numérique de l'autre UE
+             * @example 42
+             */
+            relatedRecordingUnitId?: number;
+            /**
+             * @description LINK : où se tient l'autre UE par rapport à chaque UE (anterior, posterior, synchronous)
+             * @enum {string}
+             */
+            position?: "anterior" | "posterior" | "synchronous";
+            /**
+             * Format: int64
+             * @description LINK : concept du type de relation (vocabulaire SIARU.STRATI) ; facultatif
+             */
+            typeConceptId?: number;
+            /**
+             * @description LINK : relation incertaine
+             * @default false
+             */
+            uncertain: boolean;
+            /**
+             * @description LINK : ajouter la relation ; UNLINK : la retirer (les UE ne sont pas supprimées)
+             * @enum {string}
+             */
+            mode?: "LINK" | "UNLINK";
+        };
+        /** @description Élément en échec d'une action en lot */
+        BulkFailureResource: {
+            /**
+             * Format: int64
+             * @description Identifiant de l'élément
+             * @example 13
+             */
+            id?: number;
+            /**
+             * Format: int32
+             * @description Statut HTTP de l'appel unitaire équivalent
+             * @example 409
+             */
+            status?: number;
+            /** @description Message lisible */
+            message?: string;
+        };
+        /** @description Action en lot exécutée en arrière-plan : avancement et bilan élément par élément */
+        BulkJobResource: {
+            /** @description Identifiant de la tâche, à interroger sur GET /api/v1/bulk/jobs/{id} */
+            id?: string;
+            /**
+             * @description RUNNING, DONE, FAILED ou CANCELLED
+             * @enum {string}
+             */
+            status?: "RUNNING" | "DONE" | "FAILED" | "CANCELLED";
+            /**
+             * Format: int32
+             * @description Nombre d'éléments à traiter
+             */
+            total?: number;
+            /**
+             * Format: int32
+             * @description Nombre d'éléments déjà traités
+             */
+            processed?: number;
+            /**
+             * Format: int32
+             * @description Nombre d'éléments traités avec succès
+             */
+            succeededCount?: number;
+            /**
+             * Format: int32
+             * @description Nombre d'éléments en échec
+             */
+            failedCount?: number;
+            /** @description Identifiants des éléments traités avec succès — à la fin seulement (vide tant que RUNNING) */
+            succeeded?: number[];
+            /** @description Éléments en échec — à la fin seulement (vide tant que RUNNING) */
+            failed?: components["schemas"]["BulkFailureResource"][];
+            /** @description Motif de l'arrêt, si FAILED */
+            error?: string;
+        };
+        BulkJobResponse: {
+            data?: components["schemas"]["BulkJobResource"];
+        };
+        /** @description Lie un document à chaque élément, ou retire ce lien de chacun */
+        BulkDocumentLinkRequest: {
+            /**
+             * @description Identifiants numériques des éléments
+             * @example [
+             *       12,
+             *       13,
+             *       14
+             *     ]
+             */
+            ids?: number[];
+            /**
+             * Format: int64
+             * @description Identifiant numérique du document
+             * @example 88
+             */
+            documentId?: number;
+            /**
+             * @description LINK : lier ; UNLINK : retirer le lien (le document n'est pas supprimé)
+             * @enum {string}
+             */
+            mode?: "LINK" | "UNLINK";
+        };
+        /** @description Modification en lot : la même mise à jour partielle appliquée à chaque élément */
+        BulkPatchRequest: {
+            /**
+             * @description Identifiants numériques des éléments à modifier
+             * @example [
+             *       12,
+             *       13,
+             *       14
+             *     ]
+             */
+            ids?: number[];
+            patch?: components["schemas"]["JsonNode"];
+        };
+        /** @description Mise à jour partielle, au format du PATCH unitaire de la collection (ex. { "answers": { "<fieldId>": { "add": [42] } } }). Un identifiant étant unique par élément, `identifier` est refusé. */
+        JsonNode: Record<string, never>;
+        /** @description Duplication en lot : chaque élément est copié avec ses relations, sans ses enfants */
+        BulkDuplicateRequest: {
+            /**
+             * @description Identifiants numériques des éléments à dupliquer
+             * @example [
+             *       12,
+             *       13,
+             *       14
+             *     ]
+             */
+            ids?: number[];
+        };
+        /** @description Suppression en lot d'éléments d'une même collection */
+        BulkDeleteRequest: {
+            /**
+             * @description Identifiants numériques des éléments à supprimer
+             * @example [
+             *       12,
+             *       13,
+             *       14
+             *     ]
+             */
+            ids?: number[];
         };
         /** @description Création d'un favori */
         BookmarkCreateRequest: {
@@ -3438,6 +4603,43 @@ export interface components {
             answers?: {
                 [key: string]: components["schemas"]["AnswerInput"];
             };
+        };
+        /** @description Le qualificatif et l'incertitude d'un lien ; ses deux fiches ne changent pas */
+        RelationLinkUpdateRequest: {
+            /**
+             * Format: int64
+             * @description Champ relation par lequel le lien est modifié : donne le côté. À défaut, side
+             * @example -329
+             */
+            field?: number;
+            /**
+             * @description Côté du champ par lequel le lien est modifié
+             * @default source
+             * @enum {string}
+             */
+            side: "source" | "target";
+            /**
+             * Format: int64
+             * @description Qualificatif vu de ce côté (identifiant de concept), ou null pour l'effacer
+             * @example 201
+             */
+            qualifier?: number;
+            /**
+             * @description Lien incertain
+             * @default false
+             */
+            uncertain: boolean;
+        };
+        /** @description La nature d'une relation, modifiable tant qu'elle n'a aucun lien */
+        RelationDefinitionUpdateRequest: {
+            /** @enum {string} */
+            kind?: "simple" | "complex";
+            hierarchical?: boolean;
+            /**
+             * Format: int64
+             * @description Champ qualificatif, ou null pour aucun
+             */
+            qualifierField?: number;
         };
         /** @description Mise à jour partielle d'une unité d'enregistrement */
         RecordingUnitPatchRequest: {
@@ -3516,6 +4718,26 @@ export interface components {
              */
             placeNumber?: number;
             geom?: components["schemas"]["LineStringDTO"] | components["schemas"]["MultiPointDTO"] | components["schemas"]["MultiPolygonDTO"] | components["schemas"]["PointDTO"] | components["schemas"]["PolygonDTO"];
+            /** @description Géométrie du lieu en WKT, ou en EWKT (SRID=…;) pour nommer son SRID ; un WKT sans SRID garde celui de la géométrie actuelle. Doit être un MultiPolygon. Ignoré quand geom est fourni. Champ absent = inchangé ; null explicite ou chaîne vide = supprime la géométrie */
+            geomWkt?: string;
+            /** @description Code INSEE de la commune; null explicite supprime la valeur */
+            inseeCode?: string;
+            /** @description Nom de la localité; null explicite supprime la valeur */
+            localityName?: string;
+            /** @description Numéro de carte du SHOM; null explicite supprime la valeur */
+            shomMapNumber?: string;
+            /** @description Rue de l'adresse; null explicite supprime la valeur */
+            addressStreet?: string;
+            /** @description Code postal de l'adresse; null explicite supprime la valeur */
+            addressPostcode?: string;
+            /** @description Commune de l'adresse ou de la parcelle; null explicite supprime la valeur */
+            addressCity?: string;
+            /** @description Section cadastrale de la parcelle; null explicite supprime la valeur */
+            parcelSection?: string;
+            /** @description Numéro de la parcelle; null explicite supprime la valeur */
+            parcelNumber?: string;
+            /** @description Commentaires; null explicite supprime la valeur */
+            comments?: string;
         };
         /** @description Mise à jour partielle d'une phase (réponses formulaire) */
         PhasePatchRequest: {
@@ -3544,6 +4766,7 @@ export interface components {
             answers?: {
                 [key: string]: components["schemas"]["AnswerInput"];
             };
+            geom?: components["schemas"]["LineStringDTO"] | components["schemas"]["MultiPointDTO"] | components["schemas"]["MultiPolygonDTO"] | components["schemas"]["PointDTO"] | components["schemas"]["PolygonDTO"];
             fieldAnswers?: {
                 [key: string]: Record<string, never>;
             };
@@ -3621,6 +4844,25 @@ export interface components {
             /** Format: int64 */
             matchCount?: number;
         };
+        UnitOption: {
+            /** Format: int64 */
+            id?: number;
+            label?: string;
+            symbol?: string;
+            dimension?: string;
+            systemBase?: boolean;
+        };
+        Option: {
+            /** Format: int64 */
+            id?: number;
+            label?: string;
+        };
+        ExistingMeasure: {
+            /** Format: int64 */
+            fieldId?: number;
+            label?: string;
+            unit?: string;
+        };
         /** @description Une étape du fil d'Ariane */
         BreadcrumbResource: {
             /**
@@ -3679,9 +4921,9 @@ export interface components {
             langCode?: string;
             vocabulary?: components["schemas"]["VocabularyDTO"];
             parentConcept?: components["schemas"]["ConceptDTO"];
+            altLabel?: boolean;
             /** @enum {string} */
             labelType?: "PREF_LABEL" | "ALT_LABEL";
-            altLabel?: boolean;
         };
         InstitutionDTO: {
             name?: string;
@@ -3707,9 +4949,10 @@ export interface components {
             /** Format: date-time */
             keyExpiresAt?: string;
             keyDescription?: string;
-            locked?: boolean;
+            mailVerified?: boolean;
             expired?: boolean;
             serviceAccount?: boolean;
+            locked?: boolean;
         };
         PersonDTO: {
             /** Format: int64 */
@@ -3727,8 +4970,8 @@ export interface components {
             email?: string;
             lastname?: string;
             username?: string;
-            enabled?: boolean;
             passToModify?: boolean;
+            enabled?: boolean;
         };
         /** @description Vocabulaires configurés pour une organisation (catalogue + concepts par field_code) */
         VocabulariesData: {
@@ -3797,22 +5040,6 @@ export interface components {
             data?: components["schemas"]["PersonResource"][];
             meta?: components["schemas"]["ListMeta"];
         };
-        /** @description Utilisateur */
-        PersonResource: {
-            /**
-             * @description Identifiant personne (person_id)
-             * @example 42
-             */
-            id?: string;
-            /** @description Identifiant de connexion */
-            username?: string;
-            /** @description Prénom */
-            name?: string;
-            /** @description Nom de famille */
-            lastname?: string;
-            /** @description Vrai pour une personne créée à partir de son seul nom, en attente de création de compte */
-            accountPending?: boolean;
-        };
         StudyListResponse: {
             data?: components["schemas"]["StudyResource"][];
             meta?: components["schemas"]["ListMeta"];
@@ -3862,6 +5089,43 @@ export interface components {
             total?: number;
             items?: components["schemas"]["Item"][];
         };
+        /** @description Les fiches que ce champ peut relier (l'autre côté) ; aucune : toute fiche */
+        AcceptedEnd: {
+            resourceType?: string;
+            /** Format: int64 */
+            subtype?: number;
+        };
+        /** @description Relation complexe : les qualificatifs tels que ce champ les montre, avec le concept que le lien enregistre. Vide quand la relation n'a pas de paire : le champ qualificatif propose alors ses concepts tels quels */
+        Qualifier: {
+            /** Format: int64 */
+            shown?: number;
+            /** Format: int64 */
+            stored?: number;
+        };
+        /** @description Ce qu'un champ relation est dans un projet : de quoi le saisir */
+        RelationFieldResponse: {
+            /** Format: int64 */
+            field?: number;
+            definition?: components["schemas"]["RelationDefinitionResponse"];
+            /**
+             * @description Le côté de ce champ (source pour une relation symétrique)
+             * @enum {string}
+             */
+            side?: "source" | "target";
+            /**
+             * Format: int64
+             * @description Le champ de l'autre côté, son miroir
+             */
+            mirrorField?: number;
+            /** @description Une fiche n'a qu'un lien par ce champ */
+            singleChoice?: boolean;
+            /** @description Les fiches que ce champ peut relier (l'autre côté) ; aucune : toute fiche */
+            accepts?: components["schemas"]["AcceptedEnd"][];
+            /** @description Relation complexe : les qualificatifs tels que ce champ les montre, avec le concept que le lien enregistre. Vide quand la relation n'a pas de paire : le champ qualificatif propose alors ses concepts tels quels */
+            qualifiers?: components["schemas"]["Qualifier"][];
+            /** @description Le projet interdit les boucles */
+            noCycle?: boolean;
+        };
         RecordingUnitListResponse: {
             data?: components["schemas"]["RecordingUnitResource"][];
             meta?: components["schemas"]["ListMeta"];
@@ -3907,6 +5171,21 @@ export interface components {
             /** @description Champ des UE postérieures */
             posterior?: string;
         };
+        /** @description Relations entre deux UE affichées du graphe (hors le centre), seulement avec full=true ; vide sinon. Une relation va de l'UE la plus récente (ou du parent) vers la plus ancienne (ou l'enfant). */
+        Link: {
+            /** @description UE d'où part la relation */
+            from?: string;
+            /** @description UE où elle arrive */
+            to?: string;
+            /**
+             * @description hierarchy, stratigraphy ou synchronous
+             * @enum {string}
+             */
+            kind?: "hierarchy" | "stratigraphy" | "synchronous";
+            type?: components["schemas"]["ResourceRef"];
+            /** @description Relation incertaine */
+            uncertain?: boolean;
+        };
         /** @description Liens d'une valeur multivaluée */
         Links: {
             /**
@@ -3939,97 +5218,38 @@ export interface components {
             posterior?: components["schemas"]["MultiValue"];
             others?: components["schemas"]["MultiValue"];
             fields?: components["schemas"]["Fields"];
+            /** @description Relations entre deux UE affichées du graphe (hors le centre), seulement avec full=true ; vide sinon. Une relation va de l'UE la plus récente (ou du parent) vers la plus ancienne (ou l'enfant). */
+            links?: components["schemas"]["Link"][];
         };
+        EntityMapFeatureResponse: {
+            feature?: components["schemas"]["Feature"];
+        };
+        /** @description null quand l'élément n'a pas de géométrie exploitable (absente, sans SRID ou SRID inconnu) */
+        Feature: {
+            id?: string;
+            /** @description Libellé affiché de l'élément (ex. identifiant complet d'une UE) */
+            label?: string;
+            type?: components["schemas"]["ResolvedConceptResource"];
+            /** @enum {string} */
+            validationStatus?: "INCOMPLETE" | "COMPLETE" | "VALIDATED" | "CANCELLED";
+            geometry?: components["schemas"]["JsonNode"];
+        } | null;
         FindListResponse: {
             data?: components["schemas"]["FindResource"][];
             meta?: components["schemas"]["ListMeta"];
         };
-        /** @description Un concept d'une liste figée et son état */
-        ConceptStateEntry: {
-            /** @description Identifiant du concept */
-            id?: string;
-            /**
-             * @description ENABLED : proposé ; DISABLED : écarté ; PENDING : nouveau dans la source, pas encore activé (non proposé)
-             * @enum {string}
-             */
-            state?: "ENABLED" | "DISABLED" | "PENDING";
+        EntityMapResponse: {
+            features?: components["schemas"]["Feature"][];
+            meta?: components["schemas"]["Meta"];
         };
-        /** @description Contraintes de saisie d'un champ */
-        Constraints: {
-            /**
-             * Format: double
-             * @description Borne basse (INTEGER, DECIMAL, MEASUREMENT)
-             */
-            min?: number;
-            /**
-             * Format: double
-             * @description Borne haute (INTEGER, DECIMAL, MEASUREMENT)
-             */
-            max?: number;
-            /** @description DATETIME : saisir aussi l'heure */
-            showTime?: boolean;
-            /**
-             * @description MEASUREMENT : symbole de l'unité par défaut du champ
-             * @example cm
-             */
-            unit?: string;
-            /**
-             * @description MEASUREMENT : symboles des unités que la saisie peut choisir (l'unité par défaut en fait partie) ; null si le champ n'a qu'une unité
-             * @example [
-             *       "m²",
-             *       "ha"
-             *     ]
-             */
-            units?: string[];
-            /** @description BOOLEAN : la réponse peut rester vide (trois états oui / non / sans réponse) */
-            allowNoAnswer?: boolean;
-        };
-        /** @description Définition d'un champ de formulaire */
-        FieldResource: {
-            /**
-             * @description Identifiant du champ (custom_field_id)
-             * @example 3
-             */
-            id?: string;
-            /**
-             * @description Type de ressource
-             * @example fields
-             * @enum {string}
-             */
-            resourceType?: "fields";
-            /** @description Libellé affichable, résolu selon Accept-Language */
-            label?: string;
-            /**
-             * @description Type de réponse : ensemble fermé en v1, le discriminant de FieldAnswer
-             * @enum {string}
-             */
-            answerType?: "TEXT" | "INTEGER" | "DECIMAL" | "DATETIME" | "BOOLEAN" | "MEASUREMENT" | "SELECT_ONE" | "SELECT_ONE_PERSON" | "SELECT_ONE_ACTION_UNIT" | "SELECT_ONE_SPATIAL_UNIT" | "SELECT_ONE_RECORDING_UNIT" | "SELECT_ONE_DOCUMENT" | "SELECT_ADDRESS" | "SELECT_MULTIPLE" | "SELECT_MULTIPLE_PERSON" | "SELECT_MULTIPLE_RECORDING_UNIT" | "SELECT_MULTIPLE_SPATIAL_UNIT" | "SELECT_MULTIPLE_SPATIAL_UNIT_TREE" | "SELECT_MULTIPLE_SPECIMEN" | "SELECT_MULTIPLE_CONTAINER" | "SELECT_MULTIPLE_PHASE" | "SELECT_MULTIPLE_STRATIGRAPHY";
-            /** @description Texte d'aide, résolu selon Accept-Language */
-            hint?: string;
-            /** @description Vrai si le champ est un champ système (binding direct sur l'entité) */
-            isSystemField?: boolean;
-            /** @description Nom de la propriété métier bindée si champ système (ex. openingDate) */
-            valueBinding?: string;
-            /** @description Code de vocabulaire (ex. SIARU.CHRONO) du champ, à titre informatif : la liste de ses valeurs se lit par identifiant de champ */
-            fieldCode?: string;
-            /** @description Vrai si un champ TEXT doit s'afficher sur plusieurs lignes (CustomFieldText.isTextArea) ; null pour les autres types de champ */
-            isTextArea?: boolean;
-            /**
-             * @description Classe d'icône affichée devant le libellé du champ dans la fiche (CustomField.getIcon)
-             * @example bi bi-question
-             */
-            icon?: string;
-            /** @description URI du concept du champ, cible du lien « Documentation » de la fiche (CustomField.getConceptUri) */
-            conceptUri?: string;
-            constraints?: components["schemas"]["Constraints"];
-            query?: components["schemas"]["Query"];
-            /** @description Vrai si le champ n'est jamais modifiable, ni dans la fiche ni dans une liste (colonne readOnly du formulaire de détail, ex. le projet d'une UE) ; null = modifiable */
-            readOnly?: boolean;
-            /** @description Règles conditionnelles du champ dans le formulaire de détail de son entité (enabledWhen, requiredWhen, options, constraints — même langage que les colonnes du layout). Là où une liste n'a pas de layout, c'est ce qui permet de griser une cellule ou d'en borner la valeur ; null si le champ n'a aucune règle */
-            rules?: {
-                [key: string]: Record<string, never>;
-            };
-            vocabulary?: components["schemas"]["Vocabulary"];
+        /** @description total : éléments du filtre dont la géométrie affichée est renseignée ; examined : éléments examinés (au plus le plafond) ; listTotal : éléments du filtre, géométrie renseignée ou non. Ceux examinés mais absents de features n'ont pas de géométrie exploitable (illisible, sans SRID ou SRID inconnu) ; listTotal - total n'ont pas de géométrie ; total > examined signifie que la carte est tronquée. */
+        Meta: {
+            /** Format: int64 */
+            total?: number;
+            /** Format: int32 */
+            examined?: number;
+            /** Format: int64 */
+            listTotal?: number;
         };
         /** @description Formulaire personnalisé pour le type d'unité d'enregistrement */
         FormResource: {
@@ -4042,16 +5262,6 @@ export interface components {
             /** @description Layout JSON (sections / lignes / colonnes / fieldId), sérialisé comme en base */
             layoutJson?: string;
         };
-        /** @description Ce qu'une liste accepte sur la colonne du champ : sort=<id>:asc|desc, f.<id>… */
-        Query: {
-            /** @description Triable (sort=<id>:asc) ; une colonne multivaluée se trie par nombre de valeurs */
-            sortable?: boolean;
-            /**
-             * @description Filtre accepté : contains (f.<id>=texte), range (f.<id>.from / f.<id>.to, nombres), date-range (idem, dates ISO), equals (f.<id>=true|false, oui/non), in (f.<id>=id répétable), presence (géométrie : f.<id>.op=empty|not_empty seulement) ; null si aucun. f.<id>.op choisit un autre opérateur
-             * @enum {string}
-             */
-            filterOp?: "contains" | "range" | "date-range" | "equals" | "in" | "presence";
-        };
         /** @description Formulaire de création d'unité d'enregistrement et listes de concepts par field_code */
         RecordingUnitCreateFormData: {
             recordingUnitType?: components["schemas"]["ResolvedConceptResource"];
@@ -4063,33 +5273,6 @@ export interface components {
         };
         RecordingUnitCreateFormResponse: {
             data?: components["schemas"]["RecordingUnitCreateFormData"];
-        };
-        /** @description Origine de la liste d'un champ de vocabulaire : un seul des trois jeux de champs est renseigné */
-        Source: {
-            /**
-             * @description FIELD_CODE : concepts configurés pour le field code ; BRANCH : sous-arbre d'un concept ; COLLECTION : collection du thésaurus
-             * @enum {string}
-             */
-            kind?: "FIELD_CODE" | "BRANCH" | "COLLECTION";
-            /** @description FIELD_CODE : le code du champ (ex. SIARU.TYPE) */
-            fieldCode?: string;
-            /** @description BRANCH : identifiant du concept racine de la branche */
-            topTermConceptId?: string;
-            /** @description COLLECTION : identifiant de la collection */
-            collectionId?: string;
-        };
-        /** @description Source, mode et état des concepts de la liste d'un champ de vocabulaire */
-        Vocabulary: {
-            source?: components["schemas"]["Source"];
-            /**
-             * @description FOLLOW : la liste suit sa source (un concept ajouté au thésaurus y apparaît, un concept retiré en sort) ; FROZEN : la liste est l'ensemble des concepts activés, la source ne l'a fait qu'initialiser
-             * @enum {string}
-             */
-            mode?: "FOLLOW" | "FROZEN";
-            /** @description FOLLOW : identifiants des concepts de la source désactivés pour ce champ (absents de la liste) ; vide si aucun. Null en FROZEN */
-            excludedConceptIds?: string[];
-            /** @description FROZEN : les concepts de la liste et leur état. Null en FOLLOW */
-            concepts?: components["schemas"]["ConceptStateEntry"][];
         };
         ProjectListResponse: {
             data?: components["schemas"]["ProjectResource"][];
@@ -4511,6 +5694,11 @@ export interface components {
         OrganizationCountsResponse: {
             data?: components["schemas"]["OrganizationCountsResource"];
         };
+        /** @description Suggestion d'identifiant pour une nouvelle entité */
+        IdentifierSuggestionResponse: {
+            /** @description Identifiant suggéré, sans consommation du compteur ; null quand le projet ne configure pas de format (l'identifiant est alors attribué à la création) */
+            suggestedIdentifier?: string | null;
+        };
         HomeAccessListResponse: {
             data?: components["schemas"]["HomeAccessResource"][];
             /** @description L'utilisateur peut ajouter et retirer des accès */
@@ -4602,22 +5790,6 @@ export interface components {
         };
         BookmarkStatusResponse: {
             bookmarked?: boolean;
-        };
-        /** @description Création d'une personne en attente de création de compte */
-        PersonCreateRequest: {
-            /**
-             * @description Prénom
-             * @example Marie
-             */
-            name: string;
-            /**
-             * @description Nom de famille
-             * @example Curie
-             */
-            lastname: string;
-        };
-        PersonResponse: {
-            data?: components["schemas"]["PersonResource"];
         };
     };
     responses: never;
@@ -4816,7 +5988,7 @@ export interface operations {
             };
         };
     };
-    delete: {
+    delete_1: {
         parameters: {
             query: {
                 organizationId: number;
@@ -5024,118 +6196,144 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    rules: {
         parameters: {
-            query?: never;
+            query?: {
+                institutionId?: number;
+                projectId?: number;
+            };
             header?: never;
             path: {
-                /** @description Clé d'UE : identifiant numérique (recording_unit_id) */
-                id: string;
-                /**
-                 * @description Identifiant numérique recording_unit_id de l'autre UE
-                 * @example 88
-                 */
-                relatedId: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecordingUnitStratigraphicRelationshipUpdateRequest"];
-            };
-        };
-        responses: {
-            /** @description Relation modifiée */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Requête invalide */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Non authentifié */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Interdit */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description UE ou relation introuvable */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Erreur interne */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    remove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Clé d'UE : identifiant numérique (recording_unit_id) */
-                id: string;
-                /**
-                 * @description Identifiant numérique recording_unit_id de l'autre UE
-                 * @example 88
-                 */
-                relatedId: number;
+                id: number;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Relation supprimée */
-            204: {
+            /** @description Règles */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
             };
             /** @description Non authentifié */
             401: {
                 headers: {
                     [name: string]: unknown;
                 };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+            /** @description Relation, projet ou institution introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+        };
+    };
+    saveRules: {
+        parameters: {
+            query?: {
+                institutionId?: number;
+                projectId?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description Règles enregistrées */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+            /** @description Règles invalides (paires miroir, exclusions) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+            /** @description Modification non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+            /** @description Relation, projet ou institution introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+            /** @description Des liens existants enfreignent ces règles (details) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRulesResponse"];
+                };
+            };
+        };
+    };
+    deleteRules: {
+        parameters: {
+            query?: {
+                institutionId?: number;
+                projectId?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Règles retirées */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content?: never;
             };
-            /** @description Interdit */
+            /** @description Modification non autorisée */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            /** @description UE ou relation introuvable */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Erreur interne */
-            500: {
+            /** @description Des liens enfreignent les règles du niveau au-dessus */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5261,7 +6459,7 @@ export interface operations {
             };
         };
     };
-    delete_5: {
+    delete_8: {
         parameters: {
             query: {
                 organizationId: number;
@@ -5492,6 +6690,115 @@ export interface operations {
     };
     list: {
         parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description recording-units, finds, phases, containers, documents ou studies */
+                resourceType: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+        };
+    };
+    add: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                resourceType: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OnTheFlyMeasurementRequest"];
+            };
+        };
+        responses: {
+            /** @description Ok : les champs de l'enregistrement après l'ajout */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Requête invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Interdit */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
             query: {
                 organizationId: number;
                 resourceType?: string;
@@ -5582,6 +6889,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -5714,6 +7023,126 @@ export interface operations {
             };
         };
     };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationLinkCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Lien créé ; une boucle par un lien incertain est dans warnings */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Type refusé, projets différents, lien sur soi, qualificatif invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Modification non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Relation ou fiche introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Lien déjà existant, ou règle enfreinte (details : la règle et les liens en cause) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationDefinitionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Relation créée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Champ invalide ou déjà côté d'une relation, qualificatif invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Réservé à l'administrateur de la plateforme */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+        };
+    };
     listRecordingUnits: {
         parameters: {
             query?: {
@@ -5727,6 +7156,8 @@ export interface operations {
                 fields?: string;
                 /** @description Vue arbre : seulement les UE racines (avec une recherche ou un filtre, les racines menant à une correspondance) ; chaque UE porte hasChildren et match. Les enfants : GET /recording-units/{id}/children?tree=true. */
                 tree?: boolean;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -5856,73 +7287,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecordingUnitResponse"];
                 };
-            };
-        };
-    };
-    add: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Clé d'UE : identifiant numérique (recording_unit_id) */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RecordingUnitStratigraphicRelationshipRequest"];
-            };
-        };
-        responses: {
-            /** @description Relation créée */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Requête invalide */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Non authentifié */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Interdit */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description UE introuvable ou hors périmètre */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Relation déjà existante ou cycle stratigraphique */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Erreur interne */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };
@@ -6453,6 +7817,8 @@ export interface operations {
                 tree?: boolean;
                 /** @description Avec tree=true : l'id d'un projet, pour avoir ses sous-projets accessibles (restreints à ceux menant à une correspondance quand la liste est filtrée). */
                 parent?: number;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -6502,7 +7868,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_3: {
         parameters: {
             query?: never;
             header?: {
@@ -6578,6 +7944,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectResponse"];
+                };
+            };
+        };
+    };
+    create_4: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Personne créée ou réutilisée */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Prénom ou nom manquant ou trop long */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Modification des données du projet non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Projet introuvable ou non accessible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
                 };
             };
         };
@@ -6662,6 +8101,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids séparés par des virgules. Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -6855,7 +8296,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_5: {
         parameters: {
             query?: never;
             header?: {
@@ -7004,6 +8445,92 @@ export interface operations {
             };
         };
     };
+    createPlaceDocument: {
+        parameters: {
+            query: {
+                title: string;
+                description?: string;
+                natureConceptId?: number;
+                scaleConceptId?: number;
+                formatConceptId?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /**
+                 * @description Identifiant numérique du lieu (spatial_unit_id).
+                 * @example 15
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Requête invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Interdit */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Lieu ou concept introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+        };
+    };
     fromSuggestion: {
         parameters: {
             query?: never;
@@ -7077,6 +8604,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -7209,7 +8738,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query: {
                 organizationId: number;
@@ -7251,7 +8780,7 @@ export interface operations {
             };
         };
     };
-    create_3: {
+    create_6: {
         parameters: {
             query?: never;
             header?: {
@@ -7315,6 +8844,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -7511,6 +9042,89 @@ export interface operations {
             };
         };
     };
+    createFindDocument: {
+        parameters: {
+            query: {
+                title: string;
+                description?: string;
+                natureConceptId?: number;
+                scaleConceptId?: number;
+                formatConceptId?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Clé du mobilier : specimen_id numérique ou full_identifier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Créé */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Requête invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Interdit */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Mobilier ou concept introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+        };
+    };
     listDocuments: {
         parameters: {
             query?: {
@@ -7522,6 +9136,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -7654,6 +9270,61 @@ export interface operations {
             };
         };
     };
+    batchUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    manifest: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Lot traité (voir results[].status) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentBatchResponse"];
+                };
+            };
+            /** @description Manifeste invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentBatchResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentBatchResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentBatchResponse"];
+                };
+            };
+        };
+    };
     listContainers_1: {
         parameters: {
             query?: {
@@ -7665,6 +9336,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (catalogue : GET /api/v1/organizations/{id}/…-types). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -7797,6 +9470,399 @@ export interface operations {
             };
         };
     };
+    linkStratigraphy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collection, ex. recording-units */
+                segment: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkStratigraphyRequest"];
+            };
+        };
+        responses: {
+            /** @description Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id} */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description ids vide ou trop nombreux, UE ou position absente */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Collection sans relations stratigraphiques */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Une action en lot de l'appelant est déjà en cours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
+    linkDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Collection, ex. recording-units */
+                segment: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkDocumentLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id} */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description ids vide ou trop nombreux, documentId absent */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Collection inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Une action en lot de l'appelant est déjà en cours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
+    patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Collection, ex. recording-units */
+                collection: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id} */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description ids vide ou trop nombreux, patch absent ou portant un identifiant */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Collection inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Une action en lot de l'appelant est déjà en cours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
+    duplicate_2: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Collection, ex. recording-units */
+                collection: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkDuplicateRequest"];
+            };
+        };
+        responses: {
+            /** @description Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id} */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description ids vide ou trop nombreux */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Collection sans duplication */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Une action en lot de l'appelant est déjà en cours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                /** @description Collection, ex. recording-units */
+                collection: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Tâche démarrée, à suivre sur GET /api/v1/bulk/jobs/{id} */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description ids vide ou trop nombreux */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Collection inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Une action en lot de l'appelant est déjà en cours */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
+    cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Arrêt demandé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Tâche inconnue, terminée ou démarrée par quelqu'un d'autre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     latest_1: {
         parameters: {
             query: {
@@ -7840,7 +9906,7 @@ export interface operations {
             };
         };
     };
-    create_4: {
+    create_7: {
         parameters: {
             query?: never;
             header?: {
@@ -7892,7 +9958,7 @@ export interface operations {
             };
         };
     };
-    delete_6: {
+    delete_9: {
         parameters: {
             query: {
                 resourceUri: string;
@@ -8214,11 +10280,273 @@ export interface operations {
             };
         };
     };
+    delete_2: {
+        parameters: {
+            query?: {
+                /**
+                 * @description Champ relation par lequel le lien est supprimé : donne le côté
+                 * @example -329
+                 */
+                field?: number;
+                /** @description Côté du champ par lequel le lien est supprimé, si field est absent (source par défaut) */
+                side?: string;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Identifiant du lien
+                 * @example 7
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lien supprimé */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Modification non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Lien introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /**
+                 * @description Identifiant du lien
+                 * @example 7
+                 */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationLinkUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Lien modifié */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Qualificatif invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Modification non autorisée */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Lien introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+            /** @description Règle enfreinte */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationLinkResponse"];
+                };
+            };
+        };
+    };
+    read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Relation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Relation inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+        };
+    };
+    delete_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Relation supprimée */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description La relation a des liens */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Réservé à l'administrateur de la plateforme */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Relation inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    update_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationDefinitionUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Relation modifiée */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description La relation a des liens, ou nature invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Réservé à l'administrateur de la plateforme */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+            /** @description Relation inconnue */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationDefinitionResponse"];
+                };
+            };
+        };
+    };
     getById_1: {
         parameters: {
             query?: {
                 /** @description Compteurs optionnels à inclure (ex. specimen). */
-                counts?: "specimen, children, parents, documents";
+                counts?: "specimen, children, parents, relationships, documents";
                 /** @description Liste d'identifiant de champs dont les réponses sont à inclure dans la réponse. Toutes les réponses sont envoyés si absent. */
                 includeOnlyFields?: string[];
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
@@ -8283,7 +10611,7 @@ export interface operations {
             };
         };
     };
-    delete_1: {
+    delete_4: {
         parameters: {
             query?: never;
             header?: {
@@ -8487,7 +10815,7 @@ export interface operations {
             };
         };
     };
-    delete_2: {
+    delete_5: {
         parameters: {
             query?: never;
             header?: {
@@ -8544,7 +10872,7 @@ export interface operations {
             };
         };
     };
-    patch: {
+    patch_1: {
         parameters: {
             query?: never;
             header?: {
@@ -8677,7 +11005,7 @@ export interface operations {
             };
         };
     };
-    delete_3: {
+    delete_6: {
         parameters: {
             query?: never;
             header?: {
@@ -8734,7 +11062,7 @@ export interface operations {
             };
         };
     };
-    patch_1: {
+    patch_2: {
         parameters: {
             query?: never;
             header?: {
@@ -9665,6 +11993,86 @@ export interface operations {
             };
         };
     };
+    measurementUnits: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                resourceType: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnitOption"][];
+                };
+            };
+        };
+    };
+    measurementConcepts: {
+        parameters: {
+            query?: {
+                kind?: string;
+                q?: string;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                resourceType: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Option"][];
+                };
+            };
+        };
+    };
+    existingMeasurements: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                resourceType: string;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExistingMeasure"][];
+                };
+            };
+        };
+    };
     getBreadcrumbs: {
         parameters: {
             query?: {
@@ -10036,6 +12444,56 @@ export interface operations {
             };
         };
     };
+    field: {
+        parameters: {
+            query: {
+                /**
+                 * @description Projet de la fiche
+                 * @example 7
+                 */
+                projectId: number;
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description Identifiant du champ
+                 * @example -329
+                 */
+                fieldId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Champ décrit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationFieldResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationFieldResponse"];
+                };
+            };
+            /** @description Champ sans relation, ou projet introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationFieldResponse"];
+                };
+            };
+        };
+    };
     getStructure: {
         parameters: {
             query?: never;
@@ -10198,7 +12656,10 @@ export interface operations {
     };
     getRelationGraph: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Graphe complet : jusqu'à 300 UE par zone au lieu de 30, et les relations entre les UE affichées (links) */
+                full?: boolean;
+            };
             header?: {
                 "Accept-Language"?: string;
             };
@@ -10244,6 +12705,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordingUnitRelationGraphResource"];
+                };
+            };
+        };
+    };
+    unitMap: {
+        parameters: {
+            query?: {
+                /** @description Colonne de géométrie (fieldId) : la géométrie de l'UE (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Colonne de géométrie invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
                 };
             };
         };
@@ -10317,6 +12830,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FindListResponse"];
+                };
+            };
+        };
+    };
+    organizationMap: {
+        parameters: {
+            query?: {
+                /** @description Organisation (obligatoire) */
+                organizationId?: number;
+                search?: string;
+                sort?: string;
+                /** @description Colonne de géométrie (fieldId) : la géométrie de l'UE (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description organizationId absent, tri, filtre ou colonne de géométrie invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation hors périmètre */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
                 };
             };
         };
@@ -10597,6 +13175,8 @@ export interface operations {
                 tree?: boolean;
                 /** @description Avec tree=true : l'id d'une UE, pour avoir ses enfants qui sont dans le projet (restreints à ceux menant à une correspondance quand la liste est filtrée). */
                 parent?: number;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -10653,6 +13233,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecordingUnitListResponse"];
+                };
+            };
+        };
+    };
+    projectMap: {
+        parameters: {
+            query?: {
+                search?: string;
+                sort?: string;
+                /** @description Colonne de géométrie (fieldId) : la géométrie de l'UE (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Tri, filtre ou colonne de géométrie invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Projet introuvable ou non accessible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
                 };
             };
         };
@@ -10733,6 +13369,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -10920,6 +13558,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -10976,6 +13616,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FindListResponse"];
+                };
+            };
+        };
+    };
+    projectMap_1: {
+        parameters: {
+            query?: {
+                search?: string;
+                sort?: string;
+                /** @description Colonne de géométrie (fieldId) : la géométrie du mobilier (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Tri, filtre ou colonne de géométrie invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Projet introuvable ou non accessible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
                 };
             };
         };
@@ -11172,6 +13868,8 @@ export interface operations {
                 sort?: string;
                 /** @description Projection des champs de formulaire dans answers : "all" ou une liste d'ids de champs séparés par des virgules (champs additionnels compris). Absent : pas de clé answers. */
                 fields?: string;
+                /** @description Comment search correspond : contains (l'identifiant contient le texte) ou prefix (il commence par le texte, ce que font les sélecteurs des champs). */
+                searchMode?: "contains" | "prefix";
                 /** @description Nombre de valeurs renvoyées pour chaque champ multivalué de answers. Chaque valeur multivaluée donne aussi total et complete ; si complete=false, la liste entière est à _links.values (GET /api/v1/{collection}/{id}/fields/{fieldId}/values). 0 = le total seulement. */
                 valuesLimit?: number;
             };
@@ -11563,6 +14261,67 @@ export interface operations {
             };
         };
     };
+    placeMap: {
+        parameters: {
+            query?: {
+                /** @description Colonne de géométrie (fieldId) : seule la géométrie du lieu existe (défaut). 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Colonne de géométrie invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Organisation du lieu hors périmètre */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Lieu introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+        };
+    };
     getChildren_1: {
         parameters: {
             query?: {
@@ -11687,6 +14446,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlaceSuggestionListResponse"];
+                };
+            };
+        };
+    };
+    organizationMap_1: {
+        parameters: {
+            query?: {
+                /** @description Organisation (obligatoire) */
+                organizationId?: number;
+                search?: string;
+                sort?: string;
+                /** @description Colonne de géométrie (fieldId) : seule la géométrie du lieu existe (défaut). 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description organizationId absent, tri, filtre ou colonne de géométrie invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation hors périmètre */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
                 };
             };
         };
@@ -11884,7 +14708,7 @@ export interface operations {
             query?: {
                 offset?: number;
                 limit?: number;
-                /** @description Champ de tri : id, name, identifier, creationDate ; direction asc ou desc (ex. name:asc, id:desc). */
+                /** @description Champ de tri : id, name, identifier, creationDate ; direction asc ou desc (ex. name:asc, id:desc). Répétable : chaque tri départage les égalités du précédent (ex. sort=identifier:asc&sort=name:asc). */
                 sort?: string[];
             };
             header?: never;
@@ -12540,6 +15364,91 @@ export interface operations {
             };
         };
     };
+    suggestIdentifier: {
+        parameters: {
+            query: {
+                /**
+                 * @description Collection de l'entité : recording-units, phases, containers, studies, documents ou finds.
+                 * @example phases
+                 */
+                entityType: string;
+                /**
+                 * @description Identifiant ou clé du projet (périmètre JWT) — toutes les entités sauf finds.
+                 * @example 10
+                 */
+                projectId?: string;
+                /**
+                 * @description Identifiant de l'UE (recording_unit_id) — finds uniquement.
+                 * @example 187
+                 */
+                recordingUnitId?: string;
+                /**
+                 * @description UE (recording_unit_id) sous laquelle la nouvelle UE sera créée — recording-units uniquement : les jetons du parent (NUM_PARENT, ID_PARENT) sont alors évalués. Rien n'est lié.
+                 * @example 187
+                 */
+                parentRecordingUnitId?: number;
+                /**
+                 * @description Identifiant du concept définissant le type de l'entité (concept_id).
+                 * @example 42
+                 */
+                typeId: string;
+            };
+            header?: {
+                /** @description Langue préférée (la configuration des identifiants est lue dans la langue de l'utilisateur). */
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok (suggestedIdentifier null quand le projet ne configure pas de format : l'identifiant est alors attribué à la création) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifierSuggestionResponse"];
+                };
+            };
+            /** @description Paramètres manquants ou invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifierSuggestionResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifierSuggestionResponse"];
+                };
+            };
+            /** @description Projet, UE ou type introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifierSuggestionResponse"];
+                };
+            };
+            /** @description Erreur interne */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdentifierSuggestionResponse"];
+                };
+            };
+        };
+    };
     latest: {
         parameters: {
             query: {
@@ -12628,6 +15537,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SiblingsResponse"];
+                };
+            };
+        };
+    };
+    findMap: {
+        parameters: {
+            query?: {
+                /** @description Colonne de géométrie (fieldId) : la géométrie du mobilier (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Colonne de géométrie invalide */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+            /** @description Introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapFeatureResponse"];
+                };
+            };
+        };
+    };
+    organizationMap_2: {
+        parameters: {
+            query?: {
+                /** @description Organisation (obligatoire) */
+                organizationId?: number;
+                search?: string;
+                sort?: string;
+                /** @description Colonne de géométrie (fieldId) : la géométrie du mobilier (défaut) ou un champ additionnel de type géométrie, dont la réponse (WKT ou EWKT) est reprojetée de même. 400 pour un autre champ. */
+                geometry?: number;
+            };
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description organizationId absent, tri, filtre ou colonne de géométrie invalides */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation hors périmètre */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
+                };
+            };
+            /** @description Organisation introuvable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityMapResponse"];
                 };
             };
         };
@@ -12861,6 +15887,46 @@ export interface operations {
             };
         };
     };
+    job: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+            /** @description Tâche inconnue, expirée ou démarrée par quelqu'un d'autre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkJobResponse"];
+                };
+            };
+        };
+    };
     status: {
         parameters: {
             query: {
@@ -12929,6 +15995,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthUserResponse"];
+                };
+            };
+        };
+    };
+    remove: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Accept-Language"?: string;
+            };
+            path: {
+                resourceType: string;
+                id: number;
+                fieldId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ok : les champs de l'enregistrement après le retrait */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Non authentifié */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Interdit */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
+                };
+            };
+            /** @description Introuvable ou hors périmètre */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnTheFlyFieldsResponse"];
                 };
             };
         };
@@ -13055,7 +16174,7 @@ export interface operations {
             };
         };
     };
-    delete_4: {
+    delete_7: {
         parameters: {
             query: {
                 organizationId: number;
@@ -13097,79 +16216,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    create_5: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Accept-Language"?: string;
-            };
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PersonCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Personne créée ou réutilisée */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Prénom ou nom manquant ou trop long */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Non authentifié */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Modification des données du projet non autorisée */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Projet introuvable ou non accessible */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Erreur interne */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
             };
         };
     };

@@ -7,6 +7,7 @@ import type {UnitOption} from "../../../components/relationLinks/api";
 import {
     addHierarchyLink,
     type HierarchyZone,
+    linkIdOf,
     removeHierarchyLink,
     removeStratigraphyLink,
     type StratigraphyZone,
@@ -83,13 +84,14 @@ export function useRelationLinkEditor({ unitId, projectId, organizationId, typeC
       setFailure(null);
       try {
         if (isHierarchy(zone)) await removeHierarchyLink(unitId, zone, ref.resourceId);
-        else await removeStratigraphyLink(unitId, ref.resourceId);
+        else if (isStratigraphy(zone) && fields?.[zone]) await removeStratigraphyLink(fields[zone], linkIdOf(ref));
+        else throw new Error("Champ stratigraphique inconnu");
         await changed();
       } catch (e) {
         setFailure(messageForError(e, t("recordingUnit.graph.failed")));
       }
     },
-  }), [unitId, changed]);
+  }), [unitId, fields, changed]);
 
   // Only a hierarchy link is added from a form; a stratigraphic one is edited in StratigraphyEditor.
   const addHierarchy = async (unit: UnitOption) => {

@@ -27,7 +27,14 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
     @Query("SELECT COUNT(s) FROM Specimen s WHERE s.recordingUnit.id = :recordingUnitId")
     Long countSpecimensByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
 
-    @Query("SELECT COUNT(r) FROM StratigraphicRelationship r WHERE r.unit1.id = :recordingUnitId OR r.unit2.id = :recordingUnitId")
+    /** The unit's stratigraphic links (order and synchrony), at either end. */
+    @Query(nativeQuery = true, value = """
+            SELECT COUNT(*) FROM relation_link l
+            JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id
+             AND d.fk_source_field_id IN (-328, -330)
+            WHERE (l.source_kind = 'RECORDING_UNIT' AND l.source_id = :recordingUnitId)
+               OR (l.target_kind = 'RECORDING_UNIT' AND l.target_id = :recordingUnitId)
+            """)
     long countStratigraphicRelationshipsByRecordingUnitId(@Param("recordingUnitId") Long recordingUnitId);
     @Query("SELECT r.id as id, COUNT(s) as cnt FROM RecordingUnit r LEFT JOIN r.specimenList s WHERE r.id IN :ids GROUP BY r.id")
     List<Object[]> countSpecimensByIds(@Param("ids") List<Long> ids);
@@ -71,9 +78,13 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     @Query(value = """
         SELECT ru_id, COUNT(*) FROM (
-            SELECT fk_recording_unit_1_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_1_id IN (:ids)
+            SELECT l.source_id AS ru_id FROM relation_link l
+            JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id AND d.fk_source_field_id IN (-328, -330)
+            WHERE l.source_kind = 'RECORDING_UNIT' AND l.source_id IN (:ids)
             UNION ALL
-            SELECT fk_recording_unit_2_id AS ru_id FROM stratigraphic_relationship WHERE fk_recording_unit_2_id IN (:ids)
+            SELECT l.target_id AS ru_id FROM relation_link l
+            JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id AND d.fk_source_field_id IN (-328, -330)
+            WHERE l.target_kind = 'RECORDING_UNIT' AND l.target_id IN (:ids)
         ) sub GROUP BY ru_id
         """, nativeQuery = true)
     List<Object[]> countRelationshipsByIds(@Param("ids") List<Long> ids);
@@ -156,14 +167,6 @@ public interface RecordingUnitRepository extends CrudRepository<RecordingUnit, L
 
     List<RecordingUnit> findByActionUnitIdAndFullIdentifierContainingIgnoreCaseOrderByFullIdentifierAsc(Long actionUnitId, String query, org.springframework.data.domain.Pageable pageable);
 
-    @Transactional
-    @Modifying
-    @Query(
-            nativeQuery = true,
-            value = "INSERT INTO stratigraphic_relationship(fk_recording_unit_1_id, fk_recording_unit_2_id, fk_relationship_concept_id) " +
-                    "VALUES (:recordingUnitId1, :recordingUnitId2, :conceptId)"
-    )
-    void saveStratigraphicRelationship(Long recordingUnitId1, Long recordingUnitId2, Long conceptId);
 
     /**
      * Returns the maximum identifier given to a recording unit in the context of an action unit

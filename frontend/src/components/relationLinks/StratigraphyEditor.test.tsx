@@ -20,7 +20,7 @@ async function flush() {
 beforeEach(() => {
   apiFetch.mockReset().mockImplementation(async (url: string) => {
     if (url.includes("/values")) {
-      return { data: [{ resourceId: "5", label: "US 5", qualifier: { position: "posterior", concept: { resourceId: "11", label: "coupe" }, uncertain: true } }] };
+      return { data: [{ resourceId: "5", label: "US 5", qualifier: { position: "posterior", concept: { resourceId: "11", label: "coupe" }, uncertain: true, linkId: 900 } }] };
     }
     if (url.includes("/projects/7/recording-units")) return { data: [{ id: 9, fullIdentifier: "US 9" }, { id: 42, fullIdentifier: "US 42" }] };
     return undefined;
@@ -86,7 +86,7 @@ describe("StratigraphyEditor", () => {
     });
     await flush();
 
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/stratigraphic-relationships/5", { method: "DELETE" });
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/relation-links/900?field=-329", { method: "DELETE" });
     expect(onChanged).toHaveBeenCalled();
   });
 
@@ -110,9 +110,9 @@ describe("StratigraphyEditor", () => {
     });
     await flush();
 
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/stratigraphic-relationships/5", {
-      method: "PUT",
-      body: { typeConceptId: 11, uncertain: false },
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/relation-links/900", {
+      method: "PATCH",
+      body: { field: -329, qualifier: 11, uncertain: false },
     });
     expect(onChanged).toHaveBeenCalled();
   });
@@ -132,15 +132,21 @@ describe("StratigraphyEditor", () => {
       (container.querySelector(".sia-inline-picker-item") as HTMLElement).click();
     });
     // Picked, not linked yet: the link waits for the confirmation.
-    expect(apiFetch).not.toHaveBeenCalledWith(expect.stringContaining("stratigraphic-relationships"), expect.objectContaining({ method: "POST" }));
+    expect(apiFetch).not.toHaveBeenCalledWith(expect.stringContaining("relation-links"), expect.objectContaining({ method: "POST" }));
     await act(async () => {
       button("Confirmer").click();
     });
     await flush();
 
-    expect(apiFetch).toHaveBeenCalledWith("/api/v1/recording-units/42/stratigraphic-relationships", {
+    expect(apiFetch).toHaveBeenCalledWith("/api/v1/relation-links", {
       method: "POST",
-      body: { relatedRecordingUnitId: 9, position: "posterior", typeConceptId: null, uncertain: false },
+      body: {
+        field: -329,
+        record: { resourceType: "recording-units", resourceId: 42 },
+        other: { resourceType: "recording-units", resourceId: 9 },
+        qualifier: null,
+        uncertain: false,
+      },
     });
     expect(onChanged).toHaveBeenCalled();
   });

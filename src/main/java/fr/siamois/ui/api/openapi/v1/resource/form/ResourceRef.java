@@ -79,14 +79,24 @@ public record ResourceRef(
                     + "synchrones de la fiche", allowableValues = {"anterior", "posterior", "synchronous"})
             String position,
 
-            @Schema(description = "Sens de lecture du concept (stratigraphic_relationship.concept_direction)")
+            @Schema(description = "Sens de lecture du concept : vrai quand il se lit depuis l'UE antérieure (unit1)")
             @Nullable Boolean conceptDirection,
 
             @Schema(description = "Relation asynchrone (antérieur/postérieur) ; false = synchrone")
             @Nullable Boolean asynchronous,
 
             @Schema(description = "Relation incertaine")
-            @Nullable Boolean uncertain
+            @Nullable Boolean uncertain,
+
+            @Schema(description = "Identifiant du lien (relation_link) : ce que /api/v1/relation-links modifie ou supprime")
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @Nullable Long linkId
     ) {
+
+        public StratigraphicQualifier(@Nullable ResourceRef concept, String role, String position,
+                                      @Nullable Boolean conceptDirection, @Nullable Boolean asynchronous,
+                                      @Nullable Boolean uncertain) {
+            this(concept, role, position, conceptDirection, asynchronous, uncertain, null);
+        }
     }
 }

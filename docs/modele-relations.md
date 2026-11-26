@@ -199,10 +199,11 @@ regles: ordre, défaut de la plateforme   # copiables et modifiables par institu
       coupe: est coupée par
       recouvre: est recouverte par
       s'appuie sur: est appuyée par
+      sur: sous
 definition: synchronie
   champ_source: "Synchrone"
   champ_cible:  "Synchrone"              # symétrique
-  relation: simple
+  relation: complexe                     # qualificatif facultatif : équivalent à, contemporain de…
 regles: synchronie, défaut de la plateforme
   types_source: [UE/US, UE/Fait]
   types_cible:  [UE/US, UE/Fait]
@@ -212,6 +213,10 @@ regles: synchronie, défaut de la plateforme
 Sur l'UE 12, champ « Postérieur à », on ajoute l'UE 5 avec le qualificatif « recouvre » : une ligne (ordre, UE 12 →
 UE 5, qualificatif = recouvre, incertain = non). La fiche de l'UE 12 affiche « recouvre UE 5 » ; celle de l'UE 5,
 dans « Antérieur à », « est recouverte par UE 12 ».
+
+Dans l'application actuelle, ces champs s'appellent autrement : « Postérieur à » est le champ système `-328`
+« Antérieur » (sur une UE, les UE qui lui sont antérieures) et « Antérieur à » le `-329` « Postérieur ». Le qualificatif
+est facultatif : un lien d'ordre sans qualificatif dit seulement « postérieur à » (docs/reprise-stratigraphie.md).
 
 L'ordre se modélise comme **une seule relation avec qualificatif**, pas comme plusieurs relations « Recoupe »,
 « Couvre »… : c'est ce qui permet au contrôle de boucle de voir toute la stratigraphie.
@@ -289,8 +294,8 @@ SIAMOIS, à partir de l'export des relations.
 
 ### 6.1 Configuration fournie par le module archéologie
 
-Les deux définitions du §3.6 et leurs règles par défaut de la plateforme, sur les champs système actuels : `-329`
-Postérieur à et `-328` Antérieur à (définition ordre), `-330` Synchrone (définition synchronie). Le qualificatif de
+Les deux définitions du §3.6 et leurs règles par défaut de la plateforme, sur les champs système actuels : `-328`
+« Antérieur » (côté source, porté par l'UE postérieure) et `-329` « Postérieur » (son miroir) (définition ordre), `-330` Synchrone (définition synchronie). Le qualificatif de
 l'ordre est stocké sur le lien ; plus tard, la durée de la relation (au plus court, au plus long) ira dans un
 formulaire du lien. Sur l'UE, les bornes de datation sont de simples champs.
 

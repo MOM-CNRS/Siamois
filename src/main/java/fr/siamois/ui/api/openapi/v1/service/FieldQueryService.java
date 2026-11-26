@@ -18,7 +18,6 @@ import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldRulesJson;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
 import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
 import fr.siamois.domain.models.relation.RelationDefinition;
 import fr.siamois.domain.models.relation.RelationEndKind;
@@ -96,7 +95,6 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FieldQueryService {
 
-    private static final String IS_ASYNCHRONOUS = "isAsynchronous";
 
 
     /** The {@link fr.siamois.domain.models.form.config.FormConfigAnswer} property naming each owner. */
@@ -534,20 +532,24 @@ public class FieldQueryService {
     }
 
     /**
-     * The stratigraphic relationships of {@code unit} whose other unit stands at {@code position}
-     * relative to it, and, when {@code otherIds} is given, is one of those. A relationship whose order
-     * is unknown (null asynchronous) counts as asynchronous, as everywhere else.
+     * The links of the stratigraphy (docs/reprise-stratigraphie.md) where {@code unit}'s other unit stands at
+     * {@code position}, and, when {@code otherIds} is given, is one of those: the order goes from the posterior unit
+     * to the anterior one, the synchrony either way.
      */
-    private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<StratigraphicRelationship> rel,
+    private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<RelationLink> link,
                                                     Path<?> unit, String position, @Nullable List<Long> otherIds) {
-        Predicate asynchronous = cb.or(cb.isNull(rel.get(IS_ASYNCHRONOUS)), cb.isTrue(rel.get(IS_ASYNCHRONOUS)));
-        Predicate unit1IsOwner = cb.and(cb.equal(rel.get("unit1"), unit), otherIs(rel, "unit2", otherIds));
-        Predicate unit2IsOwner = cb.and(cb.equal(rel.get("unit2"), unit), otherIs(rel, "unit1", otherIds));
+        Path<Object> sourceField = link.get("definition").get("sourceField").get("id");
+        Predicate units = cb.and(cb.equal(link.get("sourceKind"), RelationEndKind.RECORDING_UNIT),
+                cb.equal(link.get("targetKind"), RelationEndKind.RECORDING_UNIT));
+        Predicate ownerIsSource = cb.and(cb.equal(link.get("sourceId"), unit.get("id")), otherIs(cb, link, "targetId", otherIds));
+        Predicate ownerIsTarget = cb.and(cb.equal(link.get("targetId"), unit.get("id")), otherIs(cb, link, "sourceId", otherIds));
+        Predicate order = cb.equal(sourceField, RelationField.Stratigraphy.ORDER_SOURCE_FIELD);
         return switch (position) {
-            // The owner is the older, first, unit: the other one is posterior to it.
-            case "posterior" -> cb.and(asynchronous, unit1IsOwner);
-            case "anterior" -> cb.and(asynchronous, unit2IsOwner);
-            default -> cb.and(cb.isFalse(rel.get(IS_ASYNCHRONOUS)), cb.or(unit1IsOwner, unit2IsOwner));
+            // The other unit is posterior to the owner: the owner is the order's target.
+            case "posterior" -> cb.and(units, order, ownerIsTarget);
+            case "anterior" -> cb.and(units, order, ownerIsSource);
+            default -> cb.and(units, cb.equal(sourceField, RelationField.Stratigraphy.SYNCHRONY_FIELD),
+                    cb.or(ownerIsSource, ownerIsTarget));
         };
     }
 
@@ -581,8 +583,9 @@ public class FieldQueryService {
         return cb.and(ofDefinition, side.ownerIsSource() ? fromSource : fromTarget);
     }
 
-    private static Predicate otherIs(Root<StratigraphicRelationship> rel, String otherUnit, @Nullable List<Long> otherIds) {
-        return otherIds == null ? rel.get(otherUnit).isNotNull() : rel.get(otherUnit).get("id").in(otherIds);
+    private static Predicate otherIs(CriteriaBuilder cb, Root<RelationLink> link, String otherEnd,
+                                     @Nullable List<Long> otherIds) {
+        return otherIds == null ? cb.conjunction() : link.get(otherEnd).in(otherIds);
     }
 
     // ========== Filter ==========
@@ -668,7 +671,7 @@ public class FieldQueryService {
         if (position != null) {
             // Related to at least one of them (to any unit at all, for "not empty"), at that position.
             Subquery<Integer> related = query.subquery(Integer.class);
-            Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
+            Root<RelationLink> rel = related.from(RelationLink.class);
             List<Long> otherIds = parsed.match() == Match.PRESENT ? null : parsed.ids();
             related.select(cb.literal(1)).where(stratigraphicPredicate(cb, rel, root, position, otherIds));
             return cb.exists(related);
@@ -773,7 +776,7 @@ public class FieldQueryService {
         String position = stratigraphicPosition(root.getJavaType(), target.attribute);
         if (position != null) {
             Subquery<Long> count = query.subquery(Long.class);
-            Root<StratigraphicRelationship> rel = count.from(StratigraphicRelationship.class);
+            Root<RelationLink> rel = count.from(RelationLink.class);
             count.select(cb.count(rel)).where(stratigraphicPredicate(cb, rel, root, position, null));
             return count;
         }

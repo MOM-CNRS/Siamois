@@ -24,18 +24,29 @@ public class RelationFieldRepository {
             + "CAST(NULL AS BIGINT) AS concept_id, CAST(NULL AS VARCHAR) AS concept_external_id, CAST(NULL AS BOOLEAN) AS uncertain "
             + "FROM recording_unit_hierarchy h WHERE h.fk_parent_id IN (:ids) AND h.fk_child_id IN (:ids) "
             + "UNION ALL "
-            + "SELECT CASE WHEN r.asynchronous = FALSE THEN 'synchronous' ELSE 'stratigraphy' END, "
-            + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_1_id ELSE r.fk_recording_unit_2_id END, "
-            + "CASE WHEN r.asynchronous = FALSE THEN r.fk_recording_unit_2_id ELSE r.fk_recording_unit_1_id END, "
-            + "r.fk_relationship_concept_id, c.external_id, r.uncertain "
-            + "FROM stratigraphic_relationship r LEFT JOIN concept c ON c.concept_id = r.fk_relationship_concept_id "
-            + "WHERE r.fk_recording_unit_1_id IN (:ids) AND r.fk_recording_unit_2_id IN (:ids)";
+            + "SELECT CASE WHEN d.fk_source_field_id = " + RelationField.Stratigraphy.SYNCHRONY_FIELD
+            + " THEN 'synchronous' ELSE 'stratigraphy' END, l.source_id, l.target_id, "
+            + "l.fk_qualifier_concept_id, c.external_id, l.uncertain "
+            + "FROM relation_link l "
+            + "JOIN relation_definition d ON d.relation_definition_id = l.fk_relation_definition_id "
+            + "AND d.fk_source_field_id IN (" + RelationField.Stratigraphy.ORDER_SOURCE_FIELD + ", "
+            + RelationField.Stratigraphy.SYNCHRONY_FIELD + ") "
+            + "LEFT JOIN concept c ON c.concept_id = l.fk_qualifier_concept_id "
+            + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT' "
+            + "AND l.source_id IN (:ids) AND l.target_id IN (:ids)";
 
 
     /** One value of a relation, and — for a stratigraphic one — what the relation says of it. */
     public record Row(long ownerId, long targetId, @Nullable String label,
                       @Nullable String role, @Nullable Long conceptId, @Nullable String conceptExternalId,
-                      @Nullable Boolean asynchronous, @Nullable Boolean conceptDirection, @Nullable Boolean uncertain) {
+                      @Nullable Boolean asynchronous, @Nullable Boolean conceptDirection, @Nullable Boolean uncertain,
+                      @Nullable Long linkId) {
+
+        public Row(long ownerId, long targetId, @Nullable String label, @Nullable String role, @Nullable Long conceptId,
+                   @Nullable String conceptExternalId, @Nullable Boolean asynchronous, @Nullable Boolean conceptDirection,
+                   @Nullable Boolean uncertain) {
+            this(ownerId, targetId, label, role, conceptId, conceptExternalId, asynchronous, conceptDirection, uncertain, null);
+        }
     }
 
     /** A value of one of several relations read together, with the name its relation goes by there. */
@@ -67,7 +78,7 @@ public class RelationFieldRepository {
         Map<Long, Preview> out = new LinkedHashMap<>();
         if (ownerIds == null || ownerIds.isEmpty()) return out;
         String sql = "SELECT owner_id, target_id, label, role, concept_id, concept_external_id, asynchronous, "
-                + "concept_direction, uncertain, total FROM ("
+                + "concept_direction, uncertain, link_id, total FROM ("
                 + "SELECT v.*, row_number() OVER (PARTITION BY v.owner_id ORDER BY lower(v.label) NULLS LAST, v.target_id) AS rn, "
                 + "count(*) OVER (PARTITION BY v.owner_id) AS total FROM (" + valuesSql(relation) + ") v "
                 + "WHERE v.owner_id IN (:owners)) ranked "
@@ -81,7 +92,7 @@ public class RelationFieldRepository {
         for (Object result : query.getResultList()) {
             Object[] cols = (Object[]) result;
             Row row = toRow(cols);
-            totals.put(row.ownerId(), ((Number) cols[9]).longValue());
+            totals.put(row.ownerId(), ((Number) cols[10]).longValue());
             if (limit > 0) rows.computeIfAbsent(row.ownerId(), k -> new ArrayList<>()).add(row);
         }
         totals.forEach((owner, total) -> out.put(owner, new Preview(rows.getOrDefault(owner, List.of()), total)));
@@ -205,7 +216,7 @@ public class RelationFieldRepository {
         return toRow(cols, 0);
     }
 
-    /** The row held by the nine columns that start at {@code from}. */
+    /** The row held by the ten columns that start at {@code from}. */
     private static Row toRow(Object[] cols, int from) {
         return new Row(
                 ((Number) cols[from]).longValue(),
@@ -216,6 +227,7 @@ public class RelationFieldRepository {
                 (String) cols[from + 5],
                 (Boolean) cols[from + 6],
                 (Boolean) cols[from + 7],
-                (Boolean) cols[from + 8]);
+                (Boolean) cols[from + 8],
+                cols[from + 9] == null ? null : ((Number) cols[from + 9]).longValue());
     }
 }

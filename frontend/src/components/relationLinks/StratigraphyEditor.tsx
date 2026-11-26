@@ -9,6 +9,7 @@ import {t} from "../../i18n";
 import {useOpenEntity} from "../../panels/pane/entityNavigation";
 import {
     addStratigraphyLink,
+    linkIdOf,
     removeStratigraphyLink,
     searchProjectUnits,
     type StratigraphyZone,
@@ -23,7 +24,7 @@ import {useToastOnChange} from "../../notify/NotifyProvider";
 interface StratigraphyRef {
   resourceId: string;
   label?: string | null;
-  qualifier?: { concept?: { resourceId?: string; label?: string | null } | null; uncertain?: boolean | null } | null;
+  qualifier?: { concept?: { resourceId?: string; label?: string | null } | null; uncertain?: boolean | null; linkId?: number | null } | null;
 }
 
 type Form = { kind: "add"; unit: PickerOption | null; qualifier: Qualifier } | { kind: "edit"; ref: StratigraphyRef; qualifier: Qualifier };
@@ -36,7 +37,7 @@ const qualifierOf = (ref: StratigraphyRef): Qualifier => {
 export interface StratigraphyEditorProps {
   // The field that holds this side of the stratigraphy: its values are the chips, its list gives the types.
   fieldId: string;
-  // Where the units of this field stand relative to the unit being edited.
+  // Where the units of this field stand relative to the unit being edited (the field says it to the server).
   position: StratigraphyZone;
   unitId: string | number;
   projectId?: string | null;
@@ -54,9 +55,9 @@ export interface StratigraphyEditorProps {
  * chips — the label opens the unit's fiche, the cross removes the link — plus, as the only addition,
  * a pencil that edits the link's type and uncertainty, and a search to add a unit. Nothing else: no
  * header, no footer, it is the content of a cell's editing overlay, not a form of its own. Each
- * change is written at once, by the unit's stratigraphic-relationships endpoints.
+ * change is written at once, through /relation-links by this field.
  */
-export function StratigraphyEditor({ fieldId, position, unitId, projectId, organizationId, typeConceptId, onChanged, onClose }: StratigraphyEditorProps) {
+export function StratigraphyEditor({ fieldId, unitId, projectId, organizationId, typeConceptId, onChanged, onClose }: StratigraphyEditorProps) {
   const queryClient = useQueryClient();
   const openEntity = useOpenEntity();
   const [form, setForm] = useState<Form | null>(null);
@@ -89,11 +90,11 @@ export function StratigraphyEditor({ fieldId, position, unitId, projectId, organ
   };
 
   const body = (q: Qualifier) => ({ typeConceptId: q.type ? Number(q.type.id) : null, uncertain: q.uncertain });
-  const link = (unit: PickerOption, q: Qualifier) => run(() => addStratigraphyLink(unitId, position, unit.id, body(q)));
-  const remove = (ref: StratigraphyRef) => run(() => removeStratigraphyLink(unitId, ref.resourceId));
+  const link = (unit: PickerOption, q: Qualifier) => run(() => addStratigraphyLink(fieldId, unitId, unit.id, body(q)));
+  const remove = (ref: StratigraphyRef) => run(() => removeStratigraphyLink(fieldId, linkIdOf(ref)));
   const save = () => {
     if (!form) return;
-    if (form.kind === "edit") void run(() => updateStratigraphyLink(unitId, form.ref.resourceId, body(form.qualifier)));
+    if (form.kind === "edit") void run(() => updateStratigraphyLink(fieldId, linkIdOf(form.ref), body(form.qualifier)));
     else if (form.unit) void link(form.unit, form.qualifier);
   };
 

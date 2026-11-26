@@ -95,10 +95,12 @@ public class RelationLinksControllerApi {
     })
     public ResponseEntity<Void> delete(
             @Parameter(description = "Identifiant du lien", example = "7") @PathVariable("id") Long id,
-            @Parameter(description = "Côté du champ par lequel le lien est supprimé (source par défaut)")
+            @Parameter(description = "Champ relation par lequel le lien est supprimé : donne le côté", example = "-329")
+            @RequestParam(value = "field", required = false) Long field,
+            @Parameter(description = "Côté du champ par lequel le lien est supprimé, si field est absent (source par défaut)")
             @RequestParam(value = "side", required = false) String side) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        relationOpenApiService.deleteLink(id, side, caller);
+        relationOpenApiService.deleteLink(id, field, side, caller);
         return ResponseEntity.noContent().build();
     }
 }
