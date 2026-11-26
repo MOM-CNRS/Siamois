@@ -24,6 +24,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Version des dépendances -->
+        <!-- Testcontainers géré par Spring Boot (1.19.8) ne parle pas à Docker 29 (API trop ancienne). -->
+        <testcontainers.version>1.21.4</testcontainers.version>
 
         <lombok.version>1.18.38</lombok.version>
         <joinfaces.version>5.5.4</joinfaces.version>
@@ -192,6 +194,19 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- PostgreSQL in Docker for the tests of what only the database does (triggers, partial indexes,
+             recursive queries): the other tests have no database. Skipped when Docker is not available. -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 

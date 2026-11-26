@@ -7,6 +7,7 @@ import fr.siamois.domain.models.settings.DocumentationThesaurus;
 import fr.siamois.domain.models.settings.ProjectCodeSource;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.ConceptFieldStateRepository;
+import fr.siamois.domain.services.relation.RelationRuleService;
 import fr.siamois.infrastructure.database.repositories.form.config.FieldFormConfigRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigGroupRepository;
 import fr.siamois.infrastructure.database.repositories.form.config.FormConfigRepository;
@@ -21,7 +22,8 @@ import java.util.*;
 /**
  * Copies the configuration of an existing project (templates {@code project:<id>}): the project's thesaurus
  * overrides, then for each of its form configurations the layout groups, field settings (state, order, width,
- * rules, units, vocabulary restrictions) and concept states, with groups and form configs remapped to the copies.
+ * rules, units, vocabulary restrictions) and concept states, with groups and form configs remapped to the copies,
+ * and the project's own relation rule sets.
  * Runtime data (identifier counters, answers) and project members are not copied: the new project starts at 1.
  * Runs in the creation transaction, so a failed copy cancels the project.
  */
@@ -38,6 +40,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
     private final DocumentationThesaurusRepository documentationThesaurusRepository;
     private final ProjectCodeSourceRepository projectCodeSourceRepository;
     private final ProjectThesaurusAssigner thesaurusAssigner;
+    private final RelationRuleService relationRuleService;
 
     @Override
     public boolean supports(String templateId) {
@@ -74,6 +77,7 @@ public class ProjectCopyTemplateApplier implements ProjectTemplateApplier {
         for (FormConfig sourceConfig : formConfigRepository.findAllByActionUnitId(sourceId)) {
             copyFormConfig(sourceConfig, target);
         }
+        relationRuleService.copyProjectRules(sourceId, target);
         log.info("Project {} configured from project {}", newProjectId, sourceId);
     }
 
