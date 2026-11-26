@@ -122,33 +122,6 @@
                             });
                         };
                         attempt(10);
-                        this.bindDropzone();
-                    },
-                    bindDropzone: function () {
-                        var $zone = $('.sia-bulk-doc-dialog .sia-bulk-dropzone');
-                        if (!$zone.length) {
-                            return;
-                        }
-                        var dragDepth = 0;
-                        $zone.off('.siaBulkDrop')
-                            .on('dragenter.siaBulkDrop', function (e) {
-                                e.preventDefault();
-                                dragDepth += 1;
-                                $zone.addClass('is-dragover');
-                            })
-                            .on('dragover.siaBulkDrop', function (e) {
-                                e.preventDefault();
-                            })
-                            .on('dragleave.siaBulkDrop', function () {
-                                dragDepth = Math.max(0, dragDepth - 1);
-                                if (dragDepth === 0) {
-                                    $zone.removeClass('is-dragover');
-                                }
-                            })
-                            .on('drop.siaBulkDrop', function () {
-                                dragDepth = 0;
-                                $zone.removeClass('is-dragover');
-                            });
                     }
                 };
                 //]]>
@@ -243,37 +216,104 @@
                     flex-direction: column;
                     gap: 0.85rem;
                 }
-                .sia-bulk-dropzone {
-                    position: relative;
+                /*
+                 * Dropzone = the p:fileUpload widget itself (same pattern as modern-dropzone).
+                 * PrimeFaces binds drag/drop to .ui-fileupload; do not wrap it under a sibling overlay.
+                 */
+                .sia-bulk-dropzone.ui-fileupload {
+                    position: relative !important;
+                    min-height: 9.5rem !important;
+                    margin: 0 !important;
+                    border: 1.5px dashed #b7c9bc !important;
+                    border-radius: 14px !important;
+                    background:
+                        radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #f3f8f4 55%, #eef5f0 100%) !important;
+                    overflow: hidden !important;
+                    cursor: pointer !important;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
+                    box-shadow: none !important;
+                }
+                .sia-bulk-dropzone.ui-fileupload:hover,
+                .sia-bulk-dropzone.ui-fileupload.ui-state-drag {
+                    border-color: var(--main-color, #2d6a4f) !important;
+                    box-shadow: inset 0 0 0 1px rgba(45, 106, 79, 0.1) !important;
+                    background:
+                        radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eaf5ec 60%, #e3f0e7 100%) !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-buttonbar {
+                    position: absolute !important;
+                    inset: 0 !important;
+                    z-index: 2 !important;
+                    display: block !important;
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    box-shadow: none !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-choose {
+                    position: absolute !important;
+                    inset: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    border-radius: 0 !important;
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    cursor: pointer !important;
+                    overflow: hidden !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-choose .ui-button-text,
+                .sia-bulk-dropzone .ui-fileupload-choose .ui-icon,
+                .sia-bulk-dropzone .ui-fileupload-choose .ui-button-icon-left {
+                    display: none !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-choose input[type="file"] {
+                    /*
+                     * Do not let the native input capture drops: browsers then fire change with
+                     * incomplete multi-file batches. Clicks still work — PF chooseButton.click
+                     * calls show() which programmatically opens this input.
+                     */
+                    position: absolute !important;
+                    top: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    left: 0 !important;
+                    width: 100% !important;
+                    height: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    opacity: 0 !important;
+                    font-size: 16px !important;
+                    pointer-events: none !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-content {
+                    position: relative !important;
+                    z-index: 1 !important;
+                    border: none !important;
+                    background: transparent !important;
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    min-height: 9.5rem !important;
+                    pointer-events: none !important;
+                }
+                .sia-bulk-dropzone .ui-fileupload-empty {
+                    display: flex !important;
+                    width: 100%;
                     min-height: 9.5rem;
-                    border: 1.5px dashed #b7c9bc;
-                    border-radius: 14px;
-                    background:
-                        radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #f3f8f4 55%, #eef5f0 100%);
-                    overflow: hidden;
-                    cursor: pointer;
-                    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
                 }
-                .sia-bulk-dropzone:hover,
-                .sia-bulk-dropzone.is-dragover {
-                    border-color: var(--main-color, #2d6a4f);
-                    box-shadow: inset 0 0 0 1px rgba(45, 106, 79, 0.1);
-                    background:
-                        radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #eaf5ec 60%, #e3f0e7 100%);
-                }
-                /* Decorative only — clicks / drops go to the invisible file input above. */
                 .sia-bulk-dropzone-visual {
-                    position: relative;
-                    z-index: 1;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     gap: 0.75rem;
+                    width: 100%;
                     min-height: 9.5rem;
                     padding: 1.35rem 1.25rem;
                     text-align: center;
-                    pointer-events: none;
                 }
                 .sia-bulk-dropzone-icon {
                     display: inline-flex;
@@ -329,66 +369,6 @@
                 }
                 .sia-bulk-dropzone-browse .pi {
                     font-size: 0.9rem;
-                }
-                /*
-                 * Invisible full-area chooser on top of the visual.
-                 * Keep the content panel display:none — forcing it visible blocks clicks.
-                 */
-                .sia-bulk-dropzone .ui-fileupload {
-                    position: absolute !important;
-                    inset: 0 !important;
-                    z-index: 2;
-                    margin: 0 !important;
-                    border: none !important;
-                    background: transparent !important;
-                    box-shadow: none !important;
-                }
-                .sia-bulk-dropzone .ui-fileupload-buttonbar {
-                    position: absolute !important;
-                    inset: 0 !important;
-                    display: block !important;
-                    background: transparent !important;
-                    border: none !important;
-                    padding: 0 !important;
-                    margin: 0 !important;
-                    box-shadow: none !important;
-                }
-                .sia-bulk-dropzone .ui-fileupload-choose {
-                    position: absolute !important;
-                    inset: 0 !important;
-                    width: 100% !important;
-                    height: 100% !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    border: none !important;
-                    border-radius: 0 !important;
-                    background: transparent !important;
-                    box-shadow: none !important;
-                    cursor: pointer !important;
-                    overflow: hidden !important;
-                }
-                .sia-bulk-dropzone .ui-fileupload-choose .ui-button-text,
-                .sia-bulk-dropzone .ui-fileupload-choose .ui-icon,
-                .sia-bulk-dropzone .ui-fileupload-choose .ui-button-icon-left {
-                    display: none !important;
-                }
-                .sia-bulk-dropzone .ui-fileupload-choose input[type="file"] {
-                    position: absolute !important;
-                    top: 0 !important;
-                    right: 0 !important;
-                    bottom: 0 !important;
-                    left: 0 !important;
-                    width: 100% !important;
-                    height: 100% !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    opacity: 0 !important;
-                    cursor: pointer !important;
-                    font-size: 100px !important;
-                }
-                .sia-bulk-dropzone .ui-fileupload-content {
-                    display: none !important;
-                    pointer-events: none !important;
                 }
 
                 .sia-bulk-split {
@@ -912,30 +892,34 @@
 
             <h:panelGroup id="bulkDialogContent" layout="block" styleClass="sia-bulk-layout">
 
-                <div class="sia-bulk-dropzone">
-                    <div class="sia-bulk-dropzone-visual" aria-hidden="true">
-                        <span class="sia-bulk-dropzone-icon">
-                            <i class="pi pi-cloud-upload"/>
-                        </span>
-                        <div class="sia-bulk-dropzone-copy">
-                            <p class="sia-bulk-dropzone-title">#{langBean.msg('documents.bulk.dropTitle')}</p>
-                            <p class="sia-bulk-dropzone-hint">#{langBean.msg('documents.bulk.uploadHint')}</p>
+                <p:fileUpload listener="#{documentBulkImportBean.handleFileUpload}"
+                              mode="advanced"
+                              multiple="true"
+                              auto="true"
+                              sequential="true"
+                              dragDrop="true"
+                              process="@this"
+                              update="bulkDocumentImport:bulkBody bulkDocumentImport:bulkFooterActions bulkDocumentImport:bulkReadyCount"
+                              oncomplete="if (PF('bulkDocumentImportDiag')) { PF('bulkDocumentImportDiag').initPosition(); }"
+                              label="#{langBean.msg('documents.bulk.chooseFiles')}"
+                              sizeLimit="#{documentBulkImportBean.maxFileSize()}"
+                              styleClass="sia-bulk-dropzone">
+                    <f:facet name="empty">
+                        <div class="sia-bulk-dropzone-visual">
+                            <span class="sia-bulk-dropzone-icon" aria-hidden="true">
+                                <i class="pi pi-cloud-upload"/>
+                            </span>
+                            <div class="sia-bulk-dropzone-copy">
+                                <p class="sia-bulk-dropzone-title">#{langBean.msg('documents.bulk.dropTitle')}</p>
+                                <p class="sia-bulk-dropzone-hint">#{langBean.msg('documents.bulk.uploadHint')}</p>
+                            </div>
+                            <span class="sia-bulk-dropzone-browse">
+                                <i class="pi pi-folder-open"/>
+                                <span>#{langBean.msg('documents.bulk.chooseFiles')}</span>
+                            </span>
                         </div>
-                        <span class="sia-bulk-dropzone-browse">
-                            <i class="pi pi-folder-open"/>
-                            <span>#{langBean.msg('documents.bulk.chooseFiles')}</span>
-                        </span>
-                    </div>
-                    <p:fileUpload listener="#{documentBulkImportBean.handleFileUpload}"
-                                  mode="advanced"
-                                  multiple="true"
-                                  auto="true"
-                                  dragDrop="true"
-                                  update="bulkDocumentImport:bulkBody bulkDocumentImport:bulkFooterActions bulkDocumentImport:bulkReadyCount"
-                                  oncomplete="if (PF('bulkDocumentImportDiag')) { PF('bulkDocumentImportDiag').initPosition(); }"
-                                  label="#{langBean.msg('documents.bulk.chooseFiles')}"
-                                  sizeLimit="#{documentBulkImportBean.maxFileSize()}"/>
-                </div>
+                    </f:facet>
+                </p:fileUpload>
 
                 <h:panelGroup id="bulkBody" layout="block">
 

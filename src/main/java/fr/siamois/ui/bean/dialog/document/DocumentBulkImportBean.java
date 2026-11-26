@@ -280,7 +280,12 @@ public class DocumentBulkImportBean implements Serializable {
         }
     }
 
-    public void handleFileUpload(FileUploadEvent event) {
+    /**
+     * One request per file (PrimeFaces). Synchronized because the bean is session-scoped and
+     * multi-select / multi-drop used to fire parallel requests that raced on {@link #rows}.
+     * Prefer {@code sequential="true"} on the widget so uploads run one after another.
+     */
+    public synchronized void handleFileUpload(FileUploadEvent event) {
         UploadedFile file = event.getFile();
         if (file == null) {
             return;
