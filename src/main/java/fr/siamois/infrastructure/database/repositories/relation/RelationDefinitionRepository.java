@@ -12,4 +12,5 @@ public interface RelationDefinitionRepository extends JpaRepository<RelationDefi
     /** The definition a relation field is a side of, whichever side. */
     @Query("select d from RelationDefinition d where d.sourceField.id = :fieldId or d.targetField.id = :fieldId")
     Optional<RelationDefinition> findByField(@Param("fieldId") Long fieldId);
+
 }

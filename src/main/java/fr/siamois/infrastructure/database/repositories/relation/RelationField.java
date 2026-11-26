@@ -21,7 +21,7 @@ import java.util.Optional;
  * are stored and which table holds its targets; the stratigraphic one also carries the relation's
  * own columns (concept, direction, certainty) and the owner's side of it.
  */
-public enum RelationField {
+public enum RelationField implements RelationSource {
 
     RECORDING_UNIT_PARENTS(RecordingUnit.class, "parents",
             "SELECT h.fk_child_id AS owner_id, h.fk_parent_id AS target_id, " + NoQualifier.COLUMNS
@@ -114,6 +114,7 @@ public enum RelationField {
     }
 
     /** Its targets' API resourceType. */
+    @Override
     public String resourceType() {
         return target.resourceType;
     }
@@ -123,11 +124,13 @@ public enum RelationField {
      * other end owns it — a find's recording unit, containers, phases) or a qualified one (a
      * stratigraphic relationship is more than a target).
      */
+    @Override
     public boolean readOnly() {
         return readOnly;
     }
 
     /** Whether its references carry their relation's own columns (type, uncertainty): the stratigraphic ones. */
+    @Override
     public boolean qualified() {
         return isStratigraphic();
     }
@@ -142,6 +145,7 @@ public enum RelationField {
      * or {@code synchronous} — or null for a field that isn't stratigraphic.
      */
     @Nullable
+    @Override
     public String stratigraphicPosition() {
         return switch (this) {
             case RECORDING_UNIT_ANTERIOR -> "anterior";
@@ -158,6 +162,16 @@ public enum RelationField {
 
     String pairsSql() {
         return pairsSql;
+    }
+
+    /** Every (owner, target) pair, with its target's label and the relation's own columns. */
+    @Override
+    public String valuesSql() {
+        return "SELECT p.owner_id, p.target_id, " + targetLabel() + " AS label, p.role, p.concept_id, "
+                + "c.external_id AS concept_external_id, p.asynchronous, p.concept_direction, p.uncertain "
+                + "FROM (" + pairsSql() + ") p "
+                + "JOIN " + targetTable() + " t ON t." + targetKey() + " = p.target_id "
+                + "LEFT JOIN concept c ON c.concept_id = p.concept_id";
     }
 
     String targetTable() {

@@ -49,7 +49,8 @@ class FieldValuesServiceTest {
                 mock(ContainerOpenApiService.class), relationFieldService, mock(RecordingUnitListProjectionService.class),
                 mock(FindListProjectionService.class), phaseListProjectionService, mock(DocumentListProjectionService.class),
                 mock(ContainerListProjectionService.class),
-                mock(ProjectListProjectionService.class), customFieldRepository);
+                mock(ProjectListProjectionService.class), customFieldRepository,
+                new RelationSourceResolver(new fr.siamois.domain.services.relation.RelationFieldIndex(mock(fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository.class))));
         PhaseDTO phase = new PhaseDTO();
         phase.setId(7L);
         when(phaseOpenApiService.requireAccessible(eq(7L), any(), any())).thenReturn(phase);

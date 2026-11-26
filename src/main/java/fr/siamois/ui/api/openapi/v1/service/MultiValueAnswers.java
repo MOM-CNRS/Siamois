@@ -58,6 +58,7 @@ public class MultiValueAnswers {
     private static final Map<Class<?>, Map<String, CustomField>> SYSTEM_FIELDS = indexSystemFields();
 
     private final RelationFieldService relationFieldService;
+    private final RelationSourceResolver relationSourceResolver;
 
     private static Map<Class<?>, Map<String, RelationField>> indexRelationFields() {
         Map<Class<?>, Map<String, RelationField>> out = new LinkedHashMap<>();
@@ -133,7 +134,30 @@ public class MultiValueAnswers {
                 if (answers != null) answers.put(fieldId, withValue(answers.get(fieldId), preview));
             });
         }
+        // The configurable relation fields the page projects: the links of their definition, read the same way.
+        relationSourceResolver.configurable(ownerType, fieldIds).forEach((fieldId, relation) -> {
+            Map<Long, MultiValue> previews = relationFieldService.previews(relation, ownerIds, limit, lang,
+                    ownerId -> valuesHref(ownerType, ownerId, fieldId));
+            previews.forEach((ownerId, preview) -> {
+                Map<String, Object> answers = out.get(ownerId);
+                if (answers != null) answers.put(fieldId, withValue(answers.get(fieldId), preview));
+            });
+        });
         return out;
+    }
+
+    /**
+     * The fields a list page shapes: those its projector recognised, plus the field ids the request named, which
+     * is how a configurable relation field (an additional field, without answers of its own) gets its preview.
+     */
+    public static Set<String> withRequested(@Nullable Set<String> fieldIds, @Nullable String fieldsParam) {
+        if (fieldsParam == null || fieldsParam.isBlank()) return fieldIds;
+        Set<String> out = fieldIds == null ? new java.util.LinkedHashSet<>() : new java.util.LinkedHashSet<>(fieldIds);
+        for (String raw : fieldsParam.split(",")) {
+            String id = raw.trim();
+            if (!id.isEmpty() && id.matches("-?\\d+")) out.add(id);
+        }
+        return out.isEmpty() ? fieldIds : out;
     }
 
     /** {@link #shape} for a single owner — a detail. */

@@ -67,6 +67,6 @@ public class RecordingUnitListProjectionService {
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(recordingUnitAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.RECORDING_UNIT, rowIds, fieldsParam, fieldIds, lang);
         return new RecordingUnitListProjection(labels,
-                multiValueAnswers.shape(RecordingUnit.class, answers, fieldIds, valuesLimit, lang));
+                multiValueAnswers.shape(RecordingUnit.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 }

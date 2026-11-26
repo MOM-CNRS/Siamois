@@ -1,6 +1,10 @@
 package fr.siamois.domain.services.relation;
 
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.VocabularyMode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldSelectOneFromFieldCode;
 import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.models.relation.RelationEndKind;
 import fr.siamois.domain.models.relation.RelationKind;
 import fr.siamois.domain.models.relation.RelationLink;
@@ -10,6 +14,7 @@ import fr.siamois.domain.services.relation.RelationLinkException.Reason;
 import fr.siamois.domain.services.relation.RelationLinkService.CreateRequest;
 import fr.siamois.domain.services.relation.RelationLinkService.End;
 import fr.siamois.domain.services.relation.RelationLinkService.UpdateRequest;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationLinkQueries;
@@ -48,9 +53,11 @@ class RelationLinkServiceTest {
     private final RelationEndpointResolver endpointResolver = mock(RelationEndpointResolver.class);
     private final RelationWriteAuthorizer authorizer = mock(RelationWriteAuthorizer.class);
     private final ConceptRepository conceptRepository = mock(ConceptRepository.class);
+    private final FieldConfigurationService fieldConfigurationService = mock(FieldConfigurationService.class);
 
     private final RelationLinkService service = new RelationLinkService(definitionRepository, linkRepository,
-            linkQueries, exclusionRepository, ruleResolver, endpointResolver, authorizer, conceptRepository);
+            linkQueries, exclusionRepository, ruleResolver, endpointResolver, authorizer, conceptRepository,
+            fieldConfigurationService);
 
     private final PersonDTO caller = new PersonDTO();
     private RelationDefinition order;
@@ -168,6 +175,19 @@ class RelationLinkServiceTest {
         rules(inclusion, RelationRuleSet.none(inclusion));
 
         assertRefused(new CreateRequest(12L, RelationSide.SOURCE, end(us12), end(us5), 201L, false),
+                Reason.INVALID_QUALIFIER);
+    }
+
+    @Test
+    void theQualifierMustBeOfferedByTheQualifierFieldInTheProject() {
+        CustomFieldSelectOneFromFieldCode qualifierField = new CustomFieldSelectOneFromFieldCode();
+        qualifierField.setId(-331L);
+        order.setQualifierField(qualifierField);
+        when(fieldConfigurationService.describeVocabulary(qualifierField, PROJECT, null)).thenReturn(
+                new FieldVocabularyConfig(null, null, null, null, VocabularyMode.FROZEN, Map.of(201L, ConceptState.ENABLED)));
+
+        service.create(new CreateRequest(10L, RelationSide.SOURCE, end(us12), end(us5), 201L, false), caller, REACH);
+        assertRefused(new CreateRequest(10L, RelationSide.SOURCE, end(us12), end(us5), 202L, false),
                 Reason.INVALID_QUALIFIER);
     }
 

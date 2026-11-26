@@ -20,6 +20,8 @@ public final class OpenApiTags {
     public static final String BOOKMARK = "Favoris";
     public static final String VIEW = "Vues";
     public static final String HISTORY = "Historique";
+    public static final String RELATION = "Relations";
+    public static final String RELATION_CONFIG = "Relations - Configuration";
 
     private OpenApiTags() {
     }

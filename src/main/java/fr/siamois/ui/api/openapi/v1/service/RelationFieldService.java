@@ -2,7 +2,9 @@ package fr.siamois.ui.api.openapi.v1.service;
 
 import fr.siamois.domain.services.vocabulary.ConceptLabelBatchResolver;
 import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationFieldRepository.Row;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
@@ -45,7 +47,7 @@ public class RelationFieldService {
      * @param valuesHref the URL of an owner's full list, for a preview that isn't complete
      */
     @Transactional(readOnly = true)
-    public Map<Long, MultiValue> previews(RelationField relation, Collection<Long> ownerIds, int limit, String lang,
+    public Map<Long, MultiValue> previews(RelationSource relation, Collection<Long> ownerIds, int limit, String lang,
                                           LongFunction<String> valuesHref) {
         Map<Long, RelationFieldRepository.Preview> previews = relationFieldRepository.previews(relation, ownerIds, limit);
         Map<Long, String> conceptLabels = conceptLabels(previews.values().stream()
@@ -65,7 +67,7 @@ public class RelationFieldService {
 
     /** One owner's values from {@code offset}, at most {@code limit}, those whose label contains {@code search}. */
     @Transactional(readOnly = true)
-    public ValuesPage page(RelationField relation, long ownerId, int offset, int limit,
+    public ValuesPage page(RelationSource relation, long ownerId, int offset, int limit,
                            @Nullable String search, boolean ascending, String lang) {
         List<Row> rows = relationFieldRepository.page(relation, ownerId, offset, limit, search, ascending);
         long total = relationFieldRepository.count(relation, ownerId, search);
@@ -81,7 +83,7 @@ public class RelationFieldService {
      * @param byLabel sorted by label (then relation) rather than by relation (then label)
      */
     @Transactional(readOnly = true)
-    public KindedPage pageAcross(Map<String, RelationField> kinds, long ownerId, int offset, int limit,
+    public KindedPage pageAcross(Map<String, ? extends RelationSource> kinds, long ownerId, int offset, int limit,
                                  @Nullable String search, boolean byLabel, boolean ascending, String lang) {
         List<RelationFieldRepository.KindedRow> rows =
                 relationFieldRepository.pageAcross(kinds, ownerId, offset, limit, search, byLabel, ascending);
@@ -129,8 +131,11 @@ public class RelationFieldService {
                 Objects.requireNonNullElseGet(labels.get(conceptId), () -> "[" + externalId + "]"));
     }
 
-    private static ResourceRef toRef(RelationField relation, Row row, Map<Long, String> conceptLabels) {
+    private static ResourceRef toRef(RelationSource relation, Row row, Map<Long, String> conceptLabels) {
         String id = String.valueOf(row.targetId());
+        if (relation instanceof DefinitionRelation configurable) {
+            return configurableRef(configurable, row, conceptLabels);
+        }
         if (!relation.qualified()) {
             return new ResourceRef(id, relation.resourceType(), row.label());
         }
@@ -138,6 +143,19 @@ public class RelationFieldService {
                 : conceptRef(row.conceptId(), row.conceptExternalId(), conceptLabels);
         return new ResourceRef(id, relation.resourceType(), row.label(), new ResourceRef.StratigraphicQualifier(
                 concept, row.role(), positionOf(row), row.conceptDirection(), row.asynchronous(), row.uncertain()));
+    }
+
+    /**
+     * A value of a configurable relation: its kind is that of its row (the other end may be of any kind), its
+     * qualifier is already the owner's view of it, and every link has its uncertainty. The role is the side the
+     * owner stands on; there is no stratigraphic position nor direction.
+     */
+    private static ResourceRef configurableRef(DefinitionRelation relation, Row row, Map<Long, String> conceptLabels) {
+        ResourceRef concept = row.conceptId() == null ? null
+                : conceptRef(row.conceptId(), row.conceptExternalId(), conceptLabels);
+        String side = relation.symmetric() ? null : relation.side().name().toLowerCase();
+        return new ResourceRef(String.valueOf(row.targetId()), row.role(), row.label(),
+                new ResourceRef.StratigraphicQualifier(concept, side, null, null, null, row.uncertain()));
     }
 
     /**

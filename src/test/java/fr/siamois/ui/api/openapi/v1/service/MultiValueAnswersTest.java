@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class MultiValueAnswersTest {
 
     private final RelationFieldService relations = mock(RelationFieldService.class);
-    private final MultiValueAnswers answers = new MultiValueAnswers(relations);
+    private final MultiValueAnswers answers = new MultiValueAnswers(relations, org.mockito.Mockito.mock(RelationSourceResolver.class));
 
     private static final String PARENTS = id("parents");
     private static final String STRATIGRAPHY = id("posteriorRelationships");

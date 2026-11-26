@@ -37,9 +37,10 @@ class RelationDefinitionServiceTest {
     private final CustomFieldRepository fieldRepository = mock(CustomFieldRepository.class);
     private final RelationRuleService ruleService = mock(RelationRuleService.class);
     private final RelationConfigAuthorizer configAuthorizer = mock(RelationConfigAuthorizer.class);
+    private final RelationFieldIndex fieldIndex = mock(RelationFieldIndex.class);
 
     private final RelationDefinitionService service = new RelationDefinitionService(definitionRepository,
-            linkRepository, fieldRepository, ruleService, configAuthorizer);
+            linkRepository, fieldRepository, ruleService, configAuthorizer, fieldIndex);
 
     private final PersonDTO caller = new PersonDTO();
 
@@ -61,6 +62,7 @@ class RelationDefinitionServiceTest {
         assertThat(definition.getTargetField()).isInstanceOf(CustomFieldRelation.class);
         assertThat(definition.getTargetField().getLabel()).isEqualTo("Antérieur à");
         verify(ruleService).saveWithoutPermission(definition, RelationScope.platform(), NO_RULES);
+        verify(fieldIndex).evict();
     }
 
     @Test

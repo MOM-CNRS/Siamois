@@ -1,11 +1,16 @@
 package fr.siamois.domain.services.relation;
 
+import fr.siamois.domain.models.form.config.ConceptState;
+import fr.siamois.domain.models.form.config.VocabularyMode;
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import fr.siamois.domain.models.relation.RelationDefinition;
 import fr.siamois.domain.models.relation.RelationEndKind;
 import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.relation.RelationSide;
 import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.FieldVocabularyConfig;
 import fr.siamois.domain.services.relation.RelationLinkException.Reason;
+import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.dto.entity.PersonDTO;
 import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationLinkQueries;
@@ -13,6 +18,7 @@ import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepo
 import fr.siamois.infrastructure.database.repositories.relation.RelationRuleExclusionRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Hibernate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -49,6 +55,7 @@ public class RelationLinkService {
     private final RelationEndpointResolver endpointResolver;
     private final RelationWriteAuthorizer authorizer;
     private final ConceptRepository conceptRepository;
+    private final FieldConfigurationService fieldConfigurationService;
 
     /**
      * @param side      the side of the field the link is entered through
@@ -92,7 +99,7 @@ public class RelationLinkService {
 
         RelationRuleSet rules = ruleResolver.rulesFor(definition, projectId);
         requireAccepted(rules, source, target);
-        Concept qualifier = qualifierOf(definition, rules, request.qualifier(), fromTarget);
+        Concept qualifier = qualifierOf(definition, rules, request.qualifier(), fromTarget, projectId);
 
         if (definition.isSymmetric() && source.isAfter(target)) {
             RelationEndpoint swapped = source;
@@ -134,7 +141,7 @@ public class RelationLinkService {
         requireCanEditLink(definition, request.side(), source, target, caller);
 
         RelationRuleSet rules = ruleResolver.rulesFor(definition, link.getProjectId());
-        link.setQualifier(qualifierOf(definition, rules, request.qualifier(), fromTarget));
+        link.setQualifier(qualifierOf(definition, rules, request.qualifier(), fromTarget, link.getProjectId()));
         List<RuleViolation> warnings = List.of();
         if (link.isUncertain() && !request.uncertain() && rules.forbidsCycles() && !definition.isSymmetric()) {
             // A cycle this link only took part in as uncertain becomes a refusal once the link is certain.
@@ -217,16 +224,32 @@ public class RelationLinkService {
                 "Ce genre de fiche n'est pas accepté de ce côté de la relation");
     }
 
-    /** The qualifier to store: none for a simple relation; for a complex one, the source's view of the picked concept. */
+    /**
+     * The qualifier to store: none for a simple relation; for a complex one, the source's view of the picked concept,
+     * which the qualifier field must offer in the project (as for any answer of that field).
+     */
     private Concept qualifierOf(RelationDefinition definition, RelationRuleSet rules, @Nullable Long picked,
-                                boolean fromTarget) {
+                                boolean fromTarget, long projectId) {
         if (picked == null) return null;
         if (definition.isSimple()) {
             throw new RelationLinkException(Reason.INVALID_QUALIFIER, "Une relation simple n'a pas de qualificatif");
         }
         Long stored = fromTarget ? rules.qualifierForMirror(picked) : picked;
-        return conceptRepository.findById(stored).orElseThrow(() ->
+        Concept concept = conceptRepository.findById(stored).orElseThrow(() ->
                 new RelationLinkException(Reason.INVALID_QUALIFIER, "Qualificatif inconnu : " + stored));
+        if (Hibernate.unproxy(definition.getQualifierField()) instanceof CustomFieldConcept field
+                && !offered(fieldConfigurationService.describeVocabulary(field, projectId, null), stored)) {
+            throw new RelationLinkException(Reason.INVALID_QUALIFIER,
+                    "Ce qualificatif n'est pas proposé pour cette relation dans ce projet");
+        }
+        return concept;
+    }
+
+    /** Whether a field's vocabulary in a project offers a concept: the rule the answers of the field follow. */
+    private static boolean offered(@Nullable FieldVocabularyConfig vocabulary, Long conceptId) {
+        if (vocabulary == null) return true;
+        ConceptState state = vocabulary.states().get(conceptId);
+        return vocabulary.mode() == VocabularyMode.FROZEN ? state == ConceptState.ENABLED : state != ConceptState.DISABLED;
     }
 
     /** Blocking violations refuse the write; the warnings come back with the stored link. */

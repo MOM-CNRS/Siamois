@@ -59,7 +59,7 @@ public class PhaseListProjectionService {
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(PhaseDTO::getId).filter(java.util.Objects::nonNull).toList();
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(phaseAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.PHASE, rowIds, fieldsParam, fieldIds, lang);
-        return new PhaseListProjection(labels, multiValueAnswers.shape(Phase.class, answers, fieldIds, valuesLimit, lang));
+        return new PhaseListProjection(labels, multiValueAnswers.shape(Phase.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 
     /**

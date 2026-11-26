@@ -173,6 +173,9 @@ relation_link (id, fk_relation_definition_id,
   (`fk_action_unit_id`) : c'est lui qui désigne les règles à suivre, et qui permet de vérifier une restriction de
   règles contre les liens des projets concernés sans jointure sur chaque table métier. Les lieux, qui ne
   dépendent pas d'un projet, ne sont pas acceptés pour l'instant (cas à traiter plus tard).
+- **Lecture** : un champ relation se lit comme les champs relation actuels (aperçu et total par fiche dans les listes,
+  page des valeurs, filtre « a un lien vers » et tri par nombre de liens). Chaque côté lit les mêmes liens ; le
+  qualificatif vu de la cible est son miroir dans les règles du projet du lien.
 - Un lien vers une fiche que l'utilisateur ne peut pas ouvrir reste visible ; l'ouvrir donne l'erreur que gère déjà le
   système de permissions.
 

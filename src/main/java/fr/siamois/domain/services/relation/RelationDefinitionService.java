@@ -34,6 +34,7 @@ public class RelationDefinitionService {
     private final CustomFieldRepository fieldRepository;
     private final RelationRuleService ruleService;
     private final RelationConfigAuthorizer configAuthorizer;
+    private final RelationFieldIndex fieldIndex;
 
     /**
      * @param sourceFieldId    the relation field the definition is created from
@@ -78,6 +79,7 @@ public class RelationDefinitionService {
         applyIdentity(definition, new IdentityUpdate(request.kind(), request.hierarchical(), request.qualifierFieldId()));
         RelationDefinition saved = definitionRepository.save(definition);
         ruleService.saveWithoutPermission(saved, RelationScope.platform(), request.defaultRules());
+        fieldIndex.evict();
         return saved;
     }
 
@@ -94,7 +96,9 @@ public class RelationDefinitionService {
             throw invalid("Une relation symétrique ne peut pas être hiérarchique");
         }
         applyIdentity(definition, update);
-        return definitionRepository.save(definition);
+        RelationDefinition saved = definitionRepository.save(definition);
+        fieldIndex.evict();
+        return saved;
     }
 
     /** Refused while the definition has links: they must be deleted first, explicitly. Its fields stay. */
@@ -107,6 +111,7 @@ public class RelationDefinitionService {
         }
         ruleService.deleteAllOf(definition);
         definitionRepository.delete(definition);
+        fieldIndex.evict();
     }
 
     private void applyIdentity(RelationDefinition definition, IdentityUpdate update) {
