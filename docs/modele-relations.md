@@ -1,345 +1,349 @@
 # Modèle des relations — système cible
 
-Comment Siamois relie ses entités entre elles : quelle famille de relation pour quel besoin, et la
-liste complète des tables de relation du système final (existantes, à créer, à supprimer).
+Comment Siamois relie ses entités entre elles, et ce que deviennent les tables de relation actuelles.
 
-## 1. Principe : trois familles, pas une table unique
+> **Statut : conception révisée le 26/11/2026 (modèle minimal), non implémentée.** Elle remplace la version du
+> 25/11/2026 (pivot d'entités, prédicats, catalogue de règles) et celle du 14/10/2026 (trois familles, une FK par type
+> d'entité dans `relation_link`). La branche `feat/relation-link`, qui implémentait la version du 14/10, n'est pas en
+> production : on n'en reprend que des morceaux de code. Points ouverts en §10.
 
-Réunir toutes les relations dans une seule table polymorphe `relation(source_type, source_id,
-target_type, target_id)` a été écarté :
+## 1. Principe
 
-- **pas de vraie clé étrangère** possible vers plusieurs tables : l'intégrité (orphelins, cascade)
-  reposerait sur des triggers ou sur le code, alors que l'architecture annonce l'inverse ;
-- **JPA** ne sait pas mapper une relation polymorphe : `@ManyToMany`, et avec lui le tri/filtre
-  générique des listes (`FieldQueryService`, qui lit le métamodèle JPA), ne fonctionneraient plus ;
-- **une hiérarchie a des règles** (pas de cycle, même type des deux côtés, parcours récursif) simples
-  dans une table dédiée, à coups de triggers dans une table générique.
+Objectif de fond : un cœur générique, avec l'archéologie comme module, pour pouvoir sortir Siamois de
+l'archéologie. Le modèle reste volontairement simple :
 
-À la place, chaque relation relève d'une famille, choisie selon ce qu'elle est :
+- **un champ est soit un attribut, soit une relation** ;
+- une **définition de relation** porte ce qui concerne les deux côtés d'une relation, et désigne ses deux champs, un
+  par côté (§3) ;
+- une **table de liens unique**, `relation_link`, **polymorphe** : chaque extrémité est désignée par son type et son
+  identifiant (§3.4).
 
-| Famille | Quand | Stockage |
+Pas de table pivot d'entités. Elle ne servirait qu'à donner de vraies clés étrangères aux liens ; l'intégrité est tenue
+autrement (§3.4). Les types non archéologiques partageront plus tard **une seule** table « autre », que le lien
+polymorphe couvre directement. Si un pivot devient utile, la migration de `relation_link` sera mécanique (deux
+colonnes remplies par jointure sur le type et l'identifiant).
+
+Restent **hors** de ce mécanisme : les liens vers des concepts et des personnes, les tables hiérarchiques actuelles
+(migrées plus tard, §7) et les tables de configuration (§9).
+
+## 2. Trois niveaux de configuration
+
+| Niveau | Porte | Portée |
 |---|---|---|
-| **A. Structurelle** | Relation voulue par le modèle de données, identique pour tous | Une table dédiée par relation, vraies FK |
-| **B. Document** | Lien N–N d'un document vers une entité principale ; un projet de rattachement obligatoire | Une table de liaison par type d'entité (le document la possède), vraies FK ; le projet est une colonne du document |
-| **C. Configurable** | Toute autre relation, voulue par la plateforme (stratigraphie) ou par une institution, simple ou avec attributs | Une **définition de relation** (configuration) + une table de liens `relation_link` avec une vraie FK par type d'entité (voir §4) |
+| le champ (`custom_field`) | **une face** : libellé, type « relation » | global |
+| la **définition de relation** | **les deux faces** : ses deux champs, les types acceptés de chaque côté, simple ou complexe, symétrique, hiérarchique, interdire les boucles, choix unique ou multiple de chaque côté, exclusions, formulaire du lien, qualificatif et correspondances | **globale, une par paire de champs** |
+| la configuration de formulaire (`field_form_config`) | **une face dans un formulaire** : actif, obligatoire, position, largeur | par institution ou projet, et par type |
 
-L'ancienne famille « qualifiée » (stratigraphie) et l'ancienne famille « champ additionnel de type
-référence » sont **fusionnées dans la famille C** : la relation stratigraphique n'est qu'une définition
-complexe fournie par défaut.
+On définit une relation sur une entité : la définition est globale, comme le champ. Modifier une définition système
+(la stratigraphie) la modifie pour toutes les institutions. Les options de relation ne peuvent pas vivre dans
+`field_form_config`, qui varie par type : les liens d'une relation obéissent aux mêmes règles quel que soit le
+formulaire où on les saisit.
 
-Côté lecture, le choix est neutre : l'API décrit chaque relation par sa requête
-(`RelationField` / `RelationFieldRepository`), et toutes les valeurs multiples sont servies de la même
-façon (`MultiValue` : aperçu + total, liste complète à `GET /api/v1/{collection}/{id}/fields/{fieldId}/values`).
+## 3. Champs relation et définitions
 
-### « Hiérarchique » : une propriété de la relation, pas de la ligne
+### 3.1 Attribut ou relation
 
-Le caractère hiérarchique est porté par la **table** (famille A) ou par la **définition** (famille C),
-jamais par un drapeau sur chaque ligne. Une relation hiérarchique implique :
+Un champ de formulaire est soit un **attribut** (texte, nombre, concept…), soit une **relation** vers d'autres fiches.
+Une relation est **simple** (un lien sans information en plus, hiérarchique ou non) ou **complexe** (chaque lien a son
+propre formulaire : qualificatif, dates, commentaire…).
 
-- source et cible **du même type d'entité**, et un seul type cible : dès que la cible inclut un autre type,
-  l'option est désactivée ;
-- **pas de cycle**, vérifié à l'écriture (requête récursive) ;
-- polyhiérarchie autorisée (plusieurs parents), sauf règle de cardinalité contraire (le contenant n'a qu'un parent) ;
-- affichage en arbre, parcours des ancêtres / descendants.
+### 3.2 La définition
 
-« Hiérarchique » n'est pas « sans cycle » : une relation d'ordre (stratigraphie) doit être acyclique sans
-être une hiérarchie (voir règles, §4.6).
+```
+relation_definition      (id, fk_source_field_id, fk_target_field_id,
+                          kind (simple/complexe), symmetric, hierarchical, no_cycle,
+                          source_unique, target_unique,
+                          fk_link_form_config_id, fk_qualifier_field_id)
+relation_definition_kind (fk_relation_definition_id, side, kind, fk_subtype_concept_id)
+relation_mirror_concept  (fk_relation_definition_id, fk_concept_id, fk_mirror_concept_id)
+relation_exclusion       (fk_relation_definition_id, fk_excluded_definition_id)
+```
 
-## 2. Famille A — relations structurelles (tables dédiées)
-
-### Hiérarchies
-
-| Table | Relie | Colonnes | Statut |
-|---|---|---|---|
-| `recording_unit_hierarchy` | UE parent → UE enfant | `fk_parent_id`, `fk_child_id` | existe |
-| `specimen_hierarchy` | mobilier parent → mobilier enfant (ex. objet issu d'un lot) | `fk_parent_id`, `fk_child_id` | existe |
-| `action_hierarchy` | projet parent → projet enfant | `fk_parent_id`, `fk_child_id` | existe |
-| `spatial_hierarchy` | lieu parent → lieu enfant | `fk_parent_id`, `fk_child_id` | existe |
-| `container` (colonne `parent`) | contenant parent → contenant enfant (hiérarchie simple, un seul parent) | FK `parent` dans la table | existe |
-
-### Liens non hiérarchiques entre entités principales
-
-| Table | Relie | Cardinalité | Statut |
-|---|---|---|---|
-| `recording_unit_phase` | UE ↔ phases | N–N | existe |
-| `specimen_phase` | mobilier ↔ phases | N–N | existe |
-| `specimen_container` | mobilier ↔ contenants | N–N | existe |
-| `action_unit_spatial_context` | projet ↔ lieux (contexte spatial, en plus du lieu principal) | N–N | existe |
-| `specimen.fk_recording_unit_id` | mobilier → son UE | N–1 (colonne, pas de table) | existe |
-| `specimen_movement.fk_specimen_id` | mouvement → mobilier | N–1 (colonne) | existe — **à revoir si un mouvement concerne plusieurs mobiliers** (lot envoyé en étude) : table `movement_specimen` N–N |
-
-### Liens vers des personnes
-
-| Table | Relie | Statut |
-|---|---|---|
-| `recording_unit_contributors` | UE ↔ personnes (contributeurs) | existe |
-| `specimen_authors` | mobilier ↔ personnes (auteurs) | existe |
-| `specimen_collectors` | mobilier ↔ personnes (collecteurs) | existe |
-
-### Liens vers des concepts (valeurs contrôlées multiples des champs système)
-
-| Table | Relie | Statut |
-|---|---|---|
-| `action_unit_period` | projet ↔ concepts (périodes) | existe |
-| `action_unit_subject` | projet ↔ concepts (sujets) | existe |
-| `phase_period` | phase ↔ concepts (périodes) | existe |
-| `phase_keyword` | phase ↔ concepts (mots-clés) | existe |
-| `specimen_material` | mobilier ↔ concepts (matériaux) | existe |
-| `specimen_material_class` | mobilier ↔ concepts (classes de matériau) | existe |
-
-### Autres
-
-| Table | Relie | Statut |
-|---|---|---|
-| `specimen_group_attribution` | mobilier ↔ groupes (lots) | existe |
-| `recording_unit_on_the_fly_fields` | UE ↔ champs ajoutés à la volée | existe |
-
-## 3. Famille B — documents : une table de liaison par type d'entité
-
-Un document appartient à **un seul projet** (colonne `siamois_document.fk_action_unit_id`, obligatoire pour
-l'application, unique avec l'identifiant : `uk_document_project_identifier`) et peut être lié à **plusieurs
-entités** du projet, de **types différents** (N–N, facultatif). Chaque type d'entité a sa propre table de
-liaison, avec deux vraies FK ; c'est le **document** qui porte la collection (`@ManyToMany`, `@NotAudited`).
-
-| Table | Relie | Statut |
-|---|---|---|
-| `recording_unit_document` | document ↔ UE | existe (contrainte d'unicité sur le seul document retirée) |
-| `specimen_document` | document ↔ mobilier | existe (idem) |
-| `spatial_unit_document` | document ↔ lieu | existe (idem) |
-| `phase_document` | document ↔ phase | créée |
-| `container_document` | document ↔ contenant | créée |
-| `study_document` | document ↔ étude | créée (côté `Document.studies`) ; `specimen_study_document` n'est plus mappée, sa table reste orpheline en base |
-| `action_unit_document` | document ↔ projet | **supprimée** : remplacée par la colonne de rattachement ; la migration a repris ses liens |
-
-**Pourquoi pas une table unique `document_link`** (une colonne FK par type, une seule renseignée) — l'option
-d'abord retenue ici :
-
-- avec une collection JPA par type sur une même table, Hibernate **supprime puis recrée** toutes les lignes du
-  document quand l'une des collections change : les liens des autres types seraient perdus ;
-- le tri et le filtre génériques des listes (`FieldQueryService`) lisent le métamodèle JPA : ils ont besoin
-  d'un `@ManyToMany` par type, donc d'une table par type ;
-- un nouveau type d'entité coûte une table et une collection, ce qui reste léger pour un modèle qui n'en a
-  que cinq.
-
-Le projet n'est pas un lien : c'est le rattachement du document, qui détermine l'organisation, les droits
-(`PROJECT_EDIT_DOCUMENTS`…) et la configuration de la table (catégorie = type de la table configurable
-`DOCUMENT`).
-
-**Migration** (à l'origine `changelog/versions/2026.10.01-0.xml`, aujourd'hui fondu dans le schéma initial `changelog/init/dll-init.sql`) : le projet d'un document existant vient, dans cet ordre,
-de `action_unit_document`, de l'UE liée, de l'UE du mobilier lié, ou du seul projet dont le contexte spatial
-contient le lieu lié. Les documents restés sans projet gardent `NULL` : ils apparaissent dans les listes de
-l'organisation (lecture seule, fiche introuvable) et sont à rattacher à la main. L'identifiant des documents
-existants est `DOC-<id>`.
-
-Documents pour les mouvements : jamais créés. `ru_study_document`, que `DocumentRepository` citait mais qui
-n'existait pas en base, a été retiré du code.
-
-## 4. Famille C — relations configurables
-
-> **Statut : conception arrêtée (14/10/2026), non implémentée.** Les points encore ouverts sont en §4.9.
-
-Une relation configurable relie deux types d'entités quelconques, sans migration. Elle est décrite par une
-**définition de relation** (objet de configuration), et ses liens sont stockés dans une table commune.
-
-### 4.1 Définition de relation
-
-Une définition porte :
-
-- les **types d'entités source et cible** autorisés ;
-- le **mode** : *simple* (un lien sans attribut) ou *complexe* (le lien porte un formulaire) ;
-- le **caractère hiérarchique** (relation simple seulement, §1) ;
-- le **miroir** (§4.3) ;
-- ses **côtés** : un concept par côté (§4.2).
-
-### 4.2 Les côtés sont des concepts
-
-Chaque côté d'une définition référence un **concept de thésaurus**, comme les champs système sont
-déjà identifiés par des concepts. Le nom du champ affiché sur la fiche est le libellé du concept (donc traduit).
-
-- La relation d'ordre stratigraphique a deux côtés : les concepts **antérieur** et **postérieur**.
-- Le synchrone a un seul côté : le concept **synchrone**, qui est son propre miroir.
-- La hiérarchie des UE a deux côtés : **parent** et **enfant**.
-
-Ces concepts sont créés par migration dans le **thésaurus système**, en lecture seule pour les institutions :
-un concept qui disparaît ou change d'identité casserait les listes et l'écran graphe (§4.8). Une relation
-d'institution utilise des concepts de son propre thésaurus, avec le même mécanisme.
-
-Le couplage des deux côtés (antérieur ↔ postérieur) est porté par **la définition**, pas déduit des liens
-entre concepts du thésaurus (`concept_related`) : une modification du thésaurus ne doit pas casser le miroir.
-
-### 4.3 Miroir
-
-Un lien est stocké **une seule fois** ; l'autre côté en est une vue, jamais une seconde ligne.
-
-| Miroir | Effet | Exemple |
-|---|---|---|
-| aucun | le lien n'apparaît que sur la fiche d'origine | — |
-| soi-même (symétrique) | un seul champ, qui est son propre miroir ; types source et cible identiques | synchrone |
-| autre champ | deux champs, un par côté ; libellé et emplacement réglés par type cible via la configuration de formulaire | antérieur / postérieur |
-
-- Le miroir est **en lecture seule par défaut** (droits : éditer depuis la fiche cible modifie des données
-  d'un autre périmètre). L'édition peut être autorisée par option.
-- Orientation : chaque champ appartient à un côté, donc le champ où l'on saisit donne le sens du lien.
-  Pour l'ordre : source = postérieur, cible = antérieur. Pour une relation symétrique, la ligne est ordonnée
-  par identifiant (contrainte d'unicité) pour éviter (A,B) et (B,A). « Soi-même » est refusé si les types
-  source et cible diffèrent.
-
-### 4.4 Relation complexe : attributs et types
-
-Le lien d'une relation complexe porte un **formulaire configurable**, avec le même moteur de champs que les
-fiches. Deux sortes de champs :
-
-- **champs partagés** : champs ordinaires du lien (incertitude, commentaire, champ de vocabulaire…),
-  identiques vus des deux côtés ; un « type » unique, indépendant du côté, n'est que l'un d'eux ;
-- **type par côté** : propriété d'un champ miroir. Chaque côté d'une relation à miroir *autre champ* peut
-  avoir son propre champ type, avec son propre vocabulaire. Le lien stocke alors deux valeurs de type.
-  Un miroir « soi-même » n'a qu'un seul côté, donc un seul type.
-
-Les deux types sont reliés par une **correspondance, concept par concept, suggérée ou imposée** : choisir
-*recoupe* d'un côté préremplit (suggéré) ou force (imposé) *est recoupé par* de l'autre. Pour la
-stratigraphie, la correspondance est imposée ; pour une relation à rôles indépendants, elle est suggérée ou
-absente. Si elle n'est que suggérée, les deux valeurs peuvent diverger : c'est voulu.
-
-Le moteur de règles de champs reçoit à cette occasion un mécanisme générique : « quand le champ X vaut v,
-préremplir ou imposer le champ Y à w ».
-
-### 4.5 Stockage
-
-Une table commune `relation_link`, avec **une FK nullable par type d'entité, à la source et à la cible**
-(contrainte : exactement une renseignée de chaque côté), les colonnes de type par côté, et la définition.
-Les vraies FK sont conservées ; le lien est une entité mappée en `@OneToMany` (et non `@ManyToMany`), ce qui
-évite le piège d'Hibernate qui supprime puis recrée les lignes d'une collection partagée. Des index partiels
-par paire de types compensent la table creuse.
-
-**Les deux champs miroir ne sont pas des réponses de champ.** Ce sont deux lectures de la même ligne :
-le champ du côté source filtre sur la colonne source, celui du côté cible sur la colonne cible (même mécanisme
-que les champs inverses système, via `RelationField` / `RelationFieldRepository`). Les extrémités ne passent
-donc pas par `custom_field_answer_*`. Les types par côté sont deux colonnes de la ligne. Les attributs partagés
-du formulaire du lien sont des réponses ordinaires : `form_config_answer` reçoit une colonne
-`fk_relation_link_id`, avec la même contrainte d'unicité `(fk_relation_link_id, fk_form_config_id)` que les
-autres types d'entité, soit un seul jeu de réponses par lien, partagé par les deux côtés. Conséquence : le
-tri et le filtre génériques de `FieldQueryService`, qui lisent les réponses, ne couvrent pas ces relations ;
-il faut écrire l'équivalent (filtrer par « a un lien vers X », trier par identifiant de l'entité liée).
-
-Tables ajoutées : `relation_definition`, `relation_definition_kind` (types source et cible autorisés),
-`relation_link`, `relation_type_mapping` (correspondance entre types des deux côtés, suggérée ou imposée),
-`relation_rule` et sa liaison aux définitions. Le formulaire du lien est une configuration de formulaire
-rattachée à la définition (à vérifier : comment `FormConfig` se rattache à un type d'entité).
-
-Les relations simples vers des concepts et des personnes peuvent rester dans les tables de réponses
-`custom_field_answer_*_answers` existantes ; la bascule de ces tables vers `relation_link` est à trancher (§4.9).
-
-Hiérarchies système (`*_hierarchy`, `container.parent`) : inchangées (famille A), lues par le même
-mécanisme de `RelationFieldRepository`. Une relation **configurée** déclarée hiérarchique, elle, stocke ses
-liens dans `relation_link` (un seul type cible, requête récursive pour le cycle et le parcours, index sur
-(définition, source) et (définition, cible)). La vue en arbre lit donc deux sources, derrière une couche
-d'accès commune ; une UE peut avoir son axe système et un axe configuré, la vue choisit son axe.
-
-### 4.6 Règles de relation
-
-Petit catalogue de types de règles (pas de langage d'expressions), objets de configuration à part qui
-référencent une ou plusieurs définitions :
-
-| Règle | Exemple |
+| Option | Effet |
 |---|---|
-| cardinalité par paire | deux UE n'ont qu'un lien entre elles, par définition ou toutes définitions confondues |
-| cardinalité par entité | un seul parent ; au plus N liens synchrones |
-| **pas de cycle** | A postérieur à B postérieur à A |
-| exclusion entre définitions | une paire ne peut pas être à la fois « asynchrone » et « synchrone » |
+| deux champs | un par côté ; une relation symétrique désigne le même champ des deux côtés. Un champ n'appartient qu'à une définition |
+| types acceptés de chaque côté | type d'entité et sous-type facultatif (UE/US, UE/Fait…), plusieurs par côté. Sans type, toute fiche (comme un pointeur non typé de Heurist) |
+| choix unique ou multiple | réglé **de chaque côté** : un projet a une commune (unique), une commune a plusieurs projets (multiple) |
+| hiérarchique | la relation range les fiches en arbre ; implique « interdire les boucles » |
+| interdire les boucles | pas de boucle dans les liens de la définition (§4.1) |
+| exclusive avec | d'autres définitions : une même paire ne peut pas être liée par les deux (§4.2) |
+| formulaire du lien | pour une relation complexe ; l'un de ses champs peut être le qualificatif (§3.3) |
 
-Chaque règle a une **gravité** : bloquante ou avertissement. Vérification dans le service d'écriture
-(pas de contrainte SQL possible entre définitions) ; un verrou sur la paire dans la transaction si les
-écritures concurrentes comptent. Les liens existants qui violent une règle ajoutée après coup ne sont pas
-supprimés : ils sont signalés sur la fiche et listés par un audit. Contrôle **direct seulement** : la
-transitivité (A avant B, B avant C, A synchrone de C) est hors périmètre.
+Un champ s'utilise sur plusieurs types : le même champ « Postérieur à » est placé dans le formulaire des US et dans
+celui des faits. Les types acceptés et les formulaires où le champ est placé doivent concorder : placer un champ sur
+le formulaire d'un type non accepté déclenche un avertissement, et la configuration propose d'ajouter ce type.
 
-### 4.7 Relation stratigraphique : définitions fournies par défaut
+**Parcours** : on crée et on modifie une définition **depuis la configuration d'un champ**. Dans le formulaire d'un
+type, on ajoute un champ de type « relation » ; son côté accepte le type courant (et d'autres si on veut) ; on choisit
+les types de l'autre côté, les options, et le champ de l'autre côté (existant ou créé). Ensuite, les deux champs mènent
+à la même définition. L'écran de configuration est hors de cette itération : le backend expose ce parcours en API.
 
-`stratigraphic_relationship` devient deux définitions prédéfinies UE ↔ UE, non supprimables, dont seuls
-les libellés et le vocabulaire sont configurables :
+**Plus tard, si besoin** : des champs différents selon le type d'un même côté (« Postérieur (fait) »). Il suffira de
+remplacer les deux champs de la définition par une table (définition, côté, type, champ) ; les liens pointent vers la
+définition et ne changent pas.
 
-| Définition | Miroir | Champs sur la fiche UE | Vocabulaire des types |
-|---|---|---|---|
-| Ordre (asynchrone) | autre champ | **Antérieur** (côté cible) et **Postérieur** (côté source) | « recoupe » / « est recoupé par », « recouvre » / « est recouvert par »… ; correspondance imposée |
-| Synchrone | soi-même | **Synchrone** | « égal à », « contemporain de », « se lie à » |
+### 3.3 Qualificatif et miroir
 
-Le type est facultatif : le champ où l'on saisit donne déjà l'ordre. Un concept applicable aux deux (« s'appuie
-sur ») figure dans les deux vocabulaires. L'ordre porte la règle « pas de cycle ». Les anciennes colonnes
-`concept_direction`, `asynchronous`, `uncertain` sont reprises ainsi : le concept avec sa direction va dans le
-type du côté actif et son réciproque dans l'autre ; « incertain » devient un champ du formulaire du lien ;
-`asynchronous` est à clarifier (§4.9). La migration est faite **en dernier**, pour que la définition
-prédéfinie serve de cas de test ; d'ici là l'ancienne table continue de fonctionner (champs `-328` à `-330`, un par côté, voir §4.8 bis).
+Sur une relation complexe, un attribut peut **qualifier** le lien (« recoupe ») ; sa valeur vue de l'autre fiche est
+son **miroir** (« est recoupé par »).
 
-### 4.8 Affichage
+- Le qualificatif est un champ de concept du formulaire du lien. Son vocabulaire vient d'une **branche** du
+  thésaurus ; celui du miroir vient d'une **autre branche**.
+- `relation_mirror_concept` déclare quel concept est le miroir de quel autre.
+- **On ne stocke que le qualificatif** ; le miroir s'en déduit toujours, donc les deux ne peuvent pas diverger.
+- **Sans correspondance déclarée, le miroir est le même concept** (comme le terme inverse par défaut de Heurist).
+- Choisir le miroir depuis la fiche d'en face (« est recoupé par ») enregistre son correspondant (« recoupe »).
 
-**Tables.** Catégorie de table « Relation », avec **un type de table par définition** (les colonnes du formulaire
-du lien diffèrent). Une table contient : les deux extrémités, le type, les champs du lien. Un même composant
-React sert deux usages : la **liste autonome** (les deux extrémités) et la **liste intégrée à une fiche**
-(ancrée sur l'entité courante, n'affichant que l'extrémité opposée). Un lien se modifie dans un dialogue ou
-un panneau latéral, pas dans un nouveau panneau principal.
+### 3.4 Les liens
 
-**Libellé de ligne.** Le type du côté regardé s'affiche devant l'entité liée : « recoupe UE 12 » sur une
-fiche, « est recoupé par UE 7 » sur l'autre. Option de colonne : automatique (défaut), colonne séparée,
-préfixe de l'entité, masqué (liste déjà filtrée par côté). Le filtre sur un type porte sur la paire de concepts
-corrélés, avec les deux libellés affichés. Feuilles d'export : une forme centrée sur le lien (une ligne par
-lien, forme active) et une forme centrée sur l'entité (colonne « Relations » concaténée, libellés du côté
-de la ligne) ; le module d'export gagne un `EntityKind` « Relation ».
+```
+relation_link (id, fk_relation_definition_id,
+               source_kind, source_id, target_kind, target_id,
+               uncertain,                       -- NOT NULL, faux par défaut
+               simple)                          -- copie de la définition, pour l'index d'unicité
+```
 
-**Écran graphe d'UE (plus tard).** Écran propre aux UE, centré sur une UE, profondeur 1 : parent en haut,
-enfant en bas, antérieur et postérieur de part et d'autre, synchrone, et une zone « reste » bornée (compteur
-et lien vers la liste). Les zones sont identifiées par les concepts système (§4.2) ; lecture unifiée des liens
-d'une UE par union sur les deux côtés. Il se distingue de la matrice de Harris (graphe d'un site entier, en
-couches, qui s'appuie sur l'absence de cycle de l'ordre).
+- Le lien pointe vers la **définition**, pas vers un champ : les deux champs lisent les mêmes lignes, chacun par son
+  côté. Le champ de l'autre côté est le « miroir » de la relation.
+- **Polymorphe** : une extrémité est un couple (type, identifiant). Le service d'écriture vérifie que la fiche existe ;
+  un **trigger AFTER DELETE** sur chaque table métier supprime les liens de la fiche supprimée (fonction unique dans
+  `changelog/pgplsql/`, posée sur chaque table).
+- **Toute relation peut être incertaine** (`uncertain` obligatoire).
+- **Pas de doublon dans une définition** pour une relation simple. Un index partiel ne peut pas lire la définition :
+  `relation_link` porte donc une copie `simple` (renseignée à l'écriture depuis la définition), et un **index unique
+  partiel** (définition, source_kind, source_id, target_kind, target_id) `WHERE simple` garantit l'unicité en base,
+  y compris entre deux écritures simultanées. Deux définitions différentes peuvent relier la même paire, sauf exclusion
+  (§4.2). Une relation **complexe** accepte plusieurs liens entre les deux mêmes fiches, comme Heurist.
+- Relation symétrique : la paire est rangée (type, identifiant) croissant **avant l'insertion**, donc (A, B) et (B, A)
+  donnent la même ligne et l'index ci-dessus attrape aussi le doublon inversé.
+- Attributs d'un lien complexe : réponses ordinaires, via une colonne `fk_relation_link_id` ajoutée à
+  `form_config_answer`, unique avec `fk_form_config_id`.
+- `relation_link` est **audité** (Envers).
+- **Même projet, implicitement** : les deux fiches appartiennent au même projet. Le projet de chaque extrémité est
+  résolu **par type**, en un seul endroit (`RelationEndpointResolver.resolveProjectId`) : UE, mobilier, phase,
+  contenant, étude et document portent `fk_action_unit_id` ; un projet est son propre projet. Les lieux, qui ne
+  dépendent pas d'un projet, ne sont pas acceptés pour l'instant (cas à traiter plus tard).
+- Un lien vers une fiche que l'utilisateur ne peut pas ouvrir reste visible ; l'ouvrir donne l'erreur que gère déjà le
+  système de permissions.
 
-### 4.8 bis Graphe des relations d'une UE (livré sur le modèle actuel)
+### 3.5 Exemple : la stratigraphie en trois champs
 
-L'onglet « Graphe » de la fiche UE dessine l'UE au centre : parentes en haut, enfants en bas, relations
-stratigraphiques à droite (postérieures au-dessus, synchrones à la hauteur de l'UE, antérieures en dessous),
-« autres relations » à gauche (vide : réservé aux relations configurables). Il lit **un seul contrat** :
-`GET /api/v1/recording-units/{id}/relation-graph`, des zones `parents`, `children`, `anterior`, `synchronous`,
-`posterior`, `others`, chacune un aperçu borné (`values`, `total`, `complete`). Le contrat ne cite ni table ni
-identifiant de champ : le back lit chaque zone par `RelationFieldService`, donc **à la bascule sur `relation_link`
-seul le branchement de `RelationField` change** (la zone `others` se remplira alors des relations configurables).
+```yaml
+definition: ordre
+  champ_source: "Postérieur à"          # placé sur les formulaires US et Fait
+  champ_cible:  "Antérieur à"           # placé sur les formulaires US et Fait
+  types_source: [UE/US, UE/Fait]
+  types_cible:  [UE/US, UE/Fait]
+  relation: complexe
+  interdire_les_boucles: true
+  exclusive_avec: [synchronie]
+  qualificatif:                          # branche « relation vers une unité antérieure »
+    vocabulaire: [comble, coupe, recouvre, s'appuie sur]
+    miroir:                              # branche « relation vers une unité postérieure »
+      comble: est comblée par
+      coupe: est coupée par
+      recouvre: est recouverte par
+      s'appuie sur: est appuyée par
+definition: synchronie
+  champ_source: "Synchrone"
+  champ_cible:  "Synchrone"              # symétrique
+  types_source: [UE/US, UE/Fait]
+  types_cible:  [UE/US, UE/Fait]
+  relation: simple
+  exclusive_avec: [ordre]
+```
 
-L'écriture de la stratigraphie existe, sur l'ancienne table, pour que le graphe et le champ « Relations
-stratigraphiques » de la fiche soient éditables dès maintenant : `POST`, `PUT` et `DELETE` sur
-`/api/v1/recording-units/{id}/stratigraphic-relationships` (position, type facultatif, incertain ; doublon, cycle
-et unités de deux opérations refusés). Ces endpoints et `RecordingUnitStratigraphyWriteService` sont **à remplacer**
-par `/relation-links` à la bascule ; le front (`components/relationLinks`) n'en dépend que par `api.ts`.
-Convention posée : le type est lu de l'UE de l'URL vers l'autre UE (`concept_direction` vrai quand l'UE de l'URL
-est la première du lien) ; à confirmer avec le point ouvert sur `concept_direction` ci-dessous.
+Sur l'UE 12, champ « Postérieur à », on ajoute l'UE 5 avec le qualificatif « recouvre » : une ligne (ordre, UE 12 →
+UE 5, incertain = non) et une réponse « recouvre ». La fiche de l'UE 12 affiche « recouvre UE 5 » ; celle de l'UE 5,
+dans « Antérieur à », « est recouverte par UE 12 ».
 
-**Trois champs, un par côté.** La fiche UE porte maintenant trois champs système (`-328` Antérieur, `-329` Postérieur,
-`-330` Synchrone, qui remplacent `-327`), chacun lu par son propre `RelationField` (`RECORDING_UNIT_ANTERIOR`,
-`_POSTERIOR`, `_SYNCHRONOUS`) : c'est exactement la forme « un champ par côté » du §4.7, déjà servie sur l'ancienne
-table. Chaque champ est aussi un champ de vocabulaire (`CustomFieldConceptFromFieldCode`) : sa liste de types est celle
-de son field code (`SIARU.STRATI.ANTERIOR`, `.POSTERIOR`, `.SYNCHRONOUS`, lus à travers `SIARU.STRATI` tant que le
-thésaurus ne les définit pas), ou la branche ou la collection que le projet lui impose, comme tout champ de vocabulaire
-(tiroir de configuration, `GET /organizations/{id}/concepts?fieldId=`). La migration Liquibase `2026.10.16-0` reporte la
-configuration de `-327` (actif, obligatoire, groupe, position, largeur) sur les trois nouveaux champs.
+L'ordre se modélise comme **une seule relation avec qualificatif**, pas comme plusieurs relations « Recoupe »,
+« Couvre »… : c'est ce qui permet au contrôle de boucle de voir toute la stratigraphie.
 
-**Liste.** La même fiche a une vue en liste des relations (`GET /recording-units/{id}/relations`, §api-changes) : une
-ligne par relation, avec le type de relation (parent, enfant, antérieur, postérieur, synchrone) comme colonne
-filtrable. Comme le graphe, elle lit des `RelationField` : elle ne change pas à la bascule sur `relation_link`.
+## 4. Contrôles
 
-### 4.9 Points ouverts
+Principes communs : vérification dans le service d'écriture (donc aussi pour l'import et l'API) ; un lien incertain
+qui participe à une violation la transforme en avertissement ; le sélecteur de saisie ne propose que les cibles
+compatibles ; une définition ne peut pas être modifiée d'une façon que ses liens existants violeraient (§4.4).
 
-- Sens exact de l'ancienne colonne `asynchronous` (ordre inconnu ?) et nom définitif de la définition d'ordre
-  (« Asynchrone » ou « Antériorité »).
-- Comment les concepts système sont référencés (identifiant externe stable ou identifiant de base) : reprendre
-  la convention des champs système, dont `-328` à `-330`.
-- Une relation complexe peut-elle être hiérarchique ? (retenu : non, mais la règle « pas de cycle » existe.)
-- Zone « reste » du graphe : UE seulement (recommandé) ou aussi mobilier, phases, documents.
-- Liste autonome des liens dès le départ, ou listes intégrées seulement (recommandé).
-- Les relations simples vers concepts et personnes restent-elles dans les tables de réponses ou passent-elles
-  dans `relation_link` ?
-- Droits d'édition du miroir et visibilité d'un lien dont la cible est hors du périmètre de l'utilisateur.
-- Vocabulaire des définitions créées par une institution : qui peut créer une définition (institution ou
-  administrateur de la plateforme).
-- Reportés : détection des contradictions entre définitions, hiérarchies à types mixtes, colonnes avancées
-  empruntées à l'entité liée.
+| Règle | Protection |
+|---|---|
+| doublon (relation simple) | index unique partiel + contrôle applicatif |
+| choix unique, exclusion, boucle | contrôle applicatif sous verrou du projet |
+| même projet, fiche existante, types acceptés | résolution des deux extrémités par le service |
 
-## 5. Tables de relation hors données archéologiques
+### 4.1 Interdire les boucles
+
+Sur les liens d'une définition. Pour ajouter A → B, on vérifie qu'aucun chemin ne mène déjà de B à A :
+
+```sql
+-- Peut-on ajouter (:source_kind, :source_id) → (:target_kind, :target_id) dans la définition :def ?
+WITH RECURSIVE atteint(kind, id) AS (
+    SELECT :target_kind, :target_id
+  UNION                              -- chaque fiche n'est visitée qu'une fois
+    SELECT l.target_kind, l.target_id
+    FROM atteint a
+    JOIN relation_link l ON l.source_kind = a.kind AND l.source_id = a.id
+    WHERE l.fk_relation_definition_id = :def
+)
+SELECT EXISTS (SELECT 1 FROM atteint WHERE kind = :source_kind AND id = :source_id);
+```
+
+- Exemple : A antérieur à B, B antérieur à C ; « C antérieur à A » est refusé, avec le chemin : « C est postérieur à
+  B, et B est postérieur à A ; C ne peut donc pas être antérieur à A. »
+- Bloquant si tous les liens de la boucle sont certains, avertissement sinon.
+- Verrou applicatif `pg_advisory_xact_lock` sur le projet le temps de vérifier et d'écrire.
+- Index (définition, source), (définition, cible).
+- Les tables hiérarchiques actuelles gardent leur contrôle (`HierarchyCycleGuard`) tant qu'elles ne sont pas migrées.
+- **Plus tard** : le synchrone comme équivalence (A synchrone de B, B < C, C < A n'est pas vu par le contrôle minimal).
+  L'ajouter ne demandera ni migration ni changement de `relation_link`.
+
+### 4.2 Exclusion
+
+Une même paire ne peut pas être liée, dans un sens ou dans l'autre, par deux définitions déclarées exclusives (l'ordre
+et la synchronie). Contrôle direct, par une requête sur la paire.
+
+### 4.3 Types acceptés et choix unique
+
+- Type et sous-type de chaque extrémité vérifiés à l'écriture, et revérifiés quand le sous-type d'une fiche change.
+- Choix unique d'un côté : au plus un lien de ce côté pour une fiche. Le minimum relève du champ obligatoire.
+
+### 4.4 Modifier ou supprimer une définition
+
+- **Supprimer une définition qui a des liens est refusé.** Il faut d'abord supprimer ses liens, par une action explicite.
+  Ses deux champs forment avec elle un tout : on ne supprime pas l'un des deux en laissant la définition incomplète.
+- **Restreindre une option est refusé si des liens existants la violent** : retirer un type accepté encore utilisé,
+  passer un côté en choix unique alors que des fiches ont plusieurs liens, cocher « interdire les boucles » sur des
+  liens qui en contiennent, déclarer une exclusion entre deux définitions qui relient déjà la même paire. Le refus
+  liste les liens en cause. Élargir une option (ajouter un type, passer en choix multiple) est toujours possible.
+
+## 5. Comparer des champs différents
+
+Le modèle ne cherche pas à rendre comparables deux façons de saisir la même chose. Dans les vues en liste, le champ
+est une colonne ; un futur mécanisme de **fusion de colonnes** permettra de déclarer qu'un champ A correspond à la
+valeur B de la colonne C. Les déductions (relations redondantes, héritage, séquences, dates) se feront hors de
+SIAMOIS, à partir de l'export des relations.
+
+## 6. Stratigraphie et reprise de l'existant
+
+### 6.1 Configuration fournie par le module archéologie
+
+Les deux définitions du §3.5, sur les champs système actuels : `-329` Postérieur à et `-328` Antérieur à (définition
+ordre), `-330` Synchrone (définition synchronie). Formulaire du lien d'ordre : le qualificatif, et plus tard la durée
+de la relation (au plus court, au plus long). Sur l'UE, les bornes de datation sont de simples champs.
+
+Les vocabulaires existants s'y prêtent déjà : la branche « relation vers une unité antérieure » (comble, coupe,
+recouvre, s'appuie sur) et la branche « relation vers une unité postérieure » (est comblée par, est coupée par, est
+recouverte par, est appuyée par) sont des **paires un à un** de concepts distincts. La branche synchrone n'a pas
+besoin de correspondance.
+
+**Les concepts sont désignés par leur `external_id`, jamais par leur identifiant de base**, qui varie d'une base à
+l'autre (ou, à défaut, par leur appartenance aux branches des field codes `SIARU.STRATI.*`). Les identifiants des
+champs système (`-328`, `-329`, `-330`) sont, eux, fixes par construction.
+
+### 6.2 Reprise de `stratigraphic_relationship`
+
+Aujourd'hui, une ligne stocke un seul concept, et `concept_direction` dit depuis quelle UE il se lit (vrai : depuis
+`unit1`) ; la fiche d'en face n'affiche que le numéro.
+
+**Étape 0, bloquante, avant d'écrire la migration** :
+
+- auditer le trigger `order_strat_relationship` et `StratiTriggerInitializer` : ce qu'ils contrôlent ou modifient, pour
+  que le nouveau mécanisme le reprenne ou que la perte soit actée (le code actuel indique qu'il ignore en silence
+  l'insertion d'une paire inversée) ;
+- inventorier les concepts **réellement utilisés** dans `stratigraphic_relationship` (distincts de ceux seulement
+  présents dans les vocabulaires), avec leur sens (`concept_direction`), et la table de correspondance qui en découle :
+  ancien concept → définition, sens, qualificatif ;
+- fixer, par un test, quelle colonne de l'ancienne table est l'UE postérieure.
+
+La reprise :
+
+1. `asynchronous` vrai → lien de la définition ordre, faux → synchronie ; `uncertain` → colonne.
+2. Chaque lien d'ordre est remis dans le sens de la relation : **source = l'UE postérieure**.
+3. Le concept devient la réponse « qualificatif » du lien, **toujours pris dans la branche du qualificatif** : un
+   concept de la branche miroir (« est recouverte par ») est remplacé par son correspondant (« recouvre »).
+4. L'ancienne liste commune (`SIARU.STRATI`) reçoit des paires explicites (coupe / est coupée par, sur / sous,
+   englobe / est englobée par, regroupe / est regroupée dans) ; ses termes sans inverse gardent le même concept.
+5. Un **rapport de migration** liste les concepts utilisés sans correspondance connue (repris tels quels) et les termes
+   qui ressemblent à de la hiérarchie (regroupe, englobe).
+6. **L'ancienne table est gardée, en lecture seule, jusqu'à la livraison suivante** : plus aucun code n'y écrit, le
+   trigger `order_strat_relationship` et `StratiTriggerInitializer` sont retirés, et l'on peut comparer anciens et
+   nouveaux liens, ou revenir en arrière. Elle n'est supprimée que par un changelog ultérieur, une fois la reprise
+   validée. **`stratigraphic_relationship_aud` est gardée** dans tous les cas.
+7. Comptages avant et après : lignes de l'ancienne table = liens ordre + synchronie ; liens incertains ; liens par
+   qualificatif.
+
+La reprise a été conçue sans base réelle (la base locale ne compte que 59 liens, dont un typé) : elle s'appuie sur les
+correspondances connues et sur le rapport.
+
+### 6.3 Phases et séquences : des sous-types d'UE (prévu)
+
+L'UE est une entité générique, à laquelle les phases pouvaient déjà être rangées. Phases et séquences deviendront des
+sous-types d'UE, reliés aux US et aux faits par une relation hiérarchique « regroupe » ; comme la définition ordre
+n'accepte que US et Fait, elles n'entrent pas dans le contrôle de boucle. La migration de la table `phase` (prévue, non
+faite) devra être précédée d'une revue du code qui suppose qu'une UE est une unité stratigraphique : listes et
+compteurs, stratigraphie et graphe, export SDA, numérotation, vue en arbre. La mise en séquences n'est pas tranchée.
+
+### 6.4 Livré sur le modèle actuel : graphe et liste des relations d'une UE
+
+L'onglet « Graphe » de la fiche UE lit **un seul contrat** : `GET /api/v1/recording-units/{id}/relation-graph`, des
+zones `parents`, `children`, `anterior`, `synchronous`, `posterior`, `others`, chacune un aperçu borné. Le back lit
+chaque zone par `RelationFieldService` : **à la bascule, seul le branchement de `RelationField` change** (la zone
+`others` se remplira des autres relations). L'écriture actuelle (`/stratigraphic-relationships`,
+`RecordingUnitStratigraphyWriteService`) est **à remplacer** par `/relation-links` ; le front (`components/relationLinks`)
+n'en dépend que par `api.ts`. La liste des relations (`GET /recording-units/{id}/relations`) lit elle aussi des
+`RelationField`.
+
+## 7. Ce que deviennent les autres tables actuelles
+
+> **À trancher : la migration des champs système qui pointent vers une autre fiche.** Au-delà des trois champs
+> stratigraphiques, de nombreux champs système sont en fait des relations, stockés en table ou en colonne. Leur
+> migration vers le modèle de relations n'est pas décidée ; rien n'est prévu dans l'itération en cours.
+>
+> | Fiche | Champ système | Stockage actuel |
+> |---|---|---|
+> | UE, phase, étude, document, contenant, mobilier | Projet | colonne `fk_action_unit_id` |
+> | Mobilier | UE d'origine | colonne `fk_recording_unit_id` |
+> | UE | Fait partie de / Contient | `recording_unit_hierarchy` |
+> | Mobilier | Fait partie de / Contient | `specimen_hierarchy` |
+> | UE, mobilier | Phases | `recording_unit_phase`, `specimen_phase` |
+> | Mobilier | Contenants | `specimen_container` |
+> | Étude | UE, mobilier étudiés | `study_recording_unit`, `study_specimen` |
+> | Document | UE, mobilier, lieux, phases, contenants | tables `*_document` |
+> | Projet | Contexte spatial | `action_unit_spatial_context` |
+> | UE | Lieu | colonne `fk_spatial_unit_id` |
+> | Projet | Lieu principal | colonne |
+> | Contenant | Lieu | colonne |
+> | Document, mobilier | Lieu de stockage | colonne |
+>
+> Plusieurs champs sont déjà des miroirs sans le dire (les UE d'un projet ou d'une phase, le mobilier d'une UE ou d'un
+> contenant). Questions à trancher : quels champs restent des **rattachements** en colonne (projet, UE d'origine du
+> mobilier ?) et lesquels deviennent des relations ; les champs vers des **lieux** attendent la décision sur les lieux.
+
+Les tables ci-dessous **restent en place**, avec leur fonctionnement actuel. Si leur migration est décidée, elle se fera
+**plus tard, au cas par cas**, le jour où une relation configurée doit les remplacer :
+
+| Aujourd'hui | Plus tard |
+|---|---|
+| `recording_unit_hierarchy`, `specimen_hierarchy`, `action_hierarchy`, `spatial_hierarchy`, `container.parent` | relations hiérarchiques ; la vue en arbre et `HierarchyCycleGuard` suivent. Mesurer les requêtes récursives avant |
+| `custom_field_answer_action_unit_answers`, `custom_field_answer_spatial_unit_answers` | relations (choix unique ou multiple) ; une ligne par valeur, les valeurs d'une même fiche réparties sur plusieurs formulaires étant fusionnées |
+| `recording_unit_phase`, `specimen_phase`, `specimen_container`, `action_unit_spatial_context`, `specimen_group_attribution`, `study_recording_unit`, `study_specimen` | relations système |
+| tables `*_document` | à trancher avec les documents |
+| liens vers des personnes et des concepts | inchangés |
+| `specimen.fk_recording_unit_id`, `siamois_document.fk_action_unit_id` | restent des colonnes : ce sont des rattachements, pas des liens |
+
+## 8. Conséquences pour l'audit (Envers)
+
+- `relation_link` est audité : la stratigraphie garde un historique après la bascule. L'historique **antérieur** reste
+  dans `stratigraphic_relationship_aud`, conservée pour pouvoir le reprendre plus tard.
+- **Les liens supprimés avec leur fiche ne sont pas audités.** Le trigger de suppression agit en SQL, hors d'Envers ;
+  c'est déjà le cas aujourd'hui, puisque `ProjectDeletionService` supprime `stratigraphic_relationship` en SQL natif.
+  Seuls les liens supprimés par l'utilisateur, à travers le service, laissent une révision. C'est un choix assumé.
+- Les tables métier ne changent pas : aucune conséquence sur leur historique.
+- Les attributs d'un lien complexe sont des réponses de champ, non auditées comme les autres réponses. À traiter avec
+  le chantier d'audit.
+
+## 9. Tables de relation hors données archéologiques
 
 Pour mémoire — vocabulaires, droits et configuration, non concernés par ce modèle :
 
@@ -352,20 +356,44 @@ Pour mémoire — vocabulaires, droits et configuration, non concernés par ce m
 | `person_profile_assignment` | personne ↔ profil, dans un périmètre (table porteuse de données) |
 | `field_form_config` / `field_form_config_concept` | configuration de formulaire ↔ champs / concepts autorisés |
 
-## 6. Chantiers qui en découlent
+## 10. Points ouverts et plus tard
 
-1. ~~**Liens de documents**~~ **Fait (01–02/10/2026).** Voir §3 : table de liaison par type, projet obligatoire,
-   `ru_study_document` retiré de `DocumentRepository`. Reste à faire avec la table d'études unique et la
-   table des mouvements : leurs documents.
-2. ~~**Table d'études unique**~~ **Fait (14/10/2026), côté backend et API.** `study` (entité `Study`, tables de
-   liaison `study_recording_unit` et `study_specimen`, `study_document`) remplace `specimen_study`, supprimée
-   sans reprise de données car inutilisée. Trois types par défaut, dont « Traitement par défaut » qui porte les
-   colonnes de la feuille 8 du référentiel SDA (voir `StudyDefaults`). Reste : le front React, les onglets
-   « études » des fiches UE et mobilier, la liste d'organisation et la feuille `traitement` de l'export.
-3. **Mouvements** : décider si un mouvement concerne un seul mobilier (colonne actuelle) ou plusieurs
-   (`movement_specimen`).
-4. **Relations configurables** (famille C, §4) : définition de relation, `relation_link`, concepts système
-   (antérieur, postérieur, synchrone, parent, enfant), miroir, type par côté et correspondance, règles de
-   relation, catégorie de table « Relation » ; en dernier, migration de `stratigraphic_relationship`.
-5. **Thésaurus** : les concepts `TBL_*_Document` restent (une table de liaison par type) ; ajouter
-   `TBL_concept` et `TBL_vocabulaire`.
+Ouverts :
+
+- La migration des champs système qui pointent vers une autre fiche (§7) : lesquels restent des rattachements en
+  colonne, lesquels deviennent des relations.
+
+- Qui modifie une définition système, puisque la modifier touche toutes les institutions (proposé : l'administrateur
+  de la plateforme seulement).
+- Les lieux, qui ne dépendent pas d'un projet : relations entre projets et lieux.
+- Classement de `spatial_unit`, `container`, `siamois_document` : cœur ou module archéologie.
+- Phase : niveau de mise en séquences ou période chronologique indépendante ; la mise en séquences elle-même.
+- Documents : tables de liaison actuelles ou relation.
+
+Plus tard (s'ajoutent sans migrer `relation_link`, sauf le pivot) :
+
+- l'écran de configuration des relations (frontend) ;
+- le synchrone comme équivalence dans le contrôle de boucle ;
+- des champs différents selon le type d'un même côté ;
+- le lien complexe comme fiche à part entière (documents, étiquettes, liens vers un lien) ;
+- la fusion de colonnes pour comparer des champs différents ;
+- la table « autre » des types non archéologiques ; un pivot d'entités si un besoin transverse le justifie (migration
+  mécanique de `relation_link`) ;
+- la migration des tables hiérarchiques et de liaison (§7) ;
+- les vues de relations (onglet « Lieux » d'un projet, graphe généralisé) ;
+- l'export sémantique (CIDOC-CRM / CRMarchaeo) et le traitement externe des déductions.
+
+## 11. Chantiers
+
+1. ~~**Liens de documents**~~ **Fait (01–02/10/2026)** : table de liaison par type, projet obligatoire.
+2. ~~**Table d'études unique**~~ **Fait (14/10/2026), backend et API.** Reste le front, les onglets « études » des
+   fiches UE et mobilier, la liste d'organisation et la feuille `traitement` de l'export.
+3. **Mouvements** : un seul mobilier par mouvement (actuel) ou plusieurs (`movement_specimen`).
+4. **Relations** (§2 à §4), en étapes avec critère de sortie : socle de données (tables, trigger, index), écriture
+   (contrôles, verrou, cycle de vie des définitions), API, lecture. Le cœur SQL (trigger, requête de boucle, index
+   partiel, écritures simultanées) est couvert par des **tests sur PostgreSQL (Testcontainers)** : les tests actuels
+   n'ont pas de base de données.
+5. **Bascule de la stratigraphie** (§6.1, §6.2) : étape 0 d'audit et d'inventaire, reprise, ancienne table gardée en
+   lecture seule jusqu'à la livraison suivante.
+6. **Autres migrations** (§7), au cas par cas.
+7. **Phases et séquences comme sous-types d'UE** (§6.3) : revue du code, puis migration de `phase`.
