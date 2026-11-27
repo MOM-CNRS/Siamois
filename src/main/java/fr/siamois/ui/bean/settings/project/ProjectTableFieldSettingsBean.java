@@ -89,6 +89,14 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         this.typeSourceBean = typeSourceBean;
     }
 
+    /** Set by Spring, like the publisher, lazily (it reads this bean back); null where the bean is built by hand. */
+    private transient RelationFieldDrawerBean relationDrawer;
+
+    @Autowired(required = false)
+    void setRelationDrawer(@org.springframework.context.annotation.Lazy RelationFieldDrawerBean relationDrawer) {
+        this.relationDrawer = relationDrawer;
+    }
+
     private void openTypeSource(ConfigurableTable table) {
         if (typeSourceBean != null) {
             typeSourceBean.open(project, table);
@@ -1003,6 +1011,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         draftIsSystem = false;
         loadDraftOptions(FieldOptions.NONE);
         resetDraftParams();
+        if (relationDrawer != null) {
+            relationDrawer.close();
+            relationDrawer.startCreation();
+        }
         drawerOpen = true;
     }
 
@@ -1045,9 +1057,19 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * edit there (name, type and description are locked). The conditional rules are saved separately, after this.
      */
     public void saveDrawerIfEditable() {
+        // an existing relation first: its identity and the project's rules. Saving the field reopens it,
+        // which reloads the relation as stored; a refused rule keeps the drawer as it is, with the reason.
+        if (relationDrawer != null && relationDrawer.isOpen() && !relationDrawer.saveIfOpen()) {
+            return;
+        }
         if (!draftIsSystem || isDraftConfigurable() || isDraftMeasurement()) {
             saveDrawer();
         }
+    }
+
+    /** Whether the open field is a relation (a new one, or a side of one), whose sections the drawer shows. */
+    public boolean isDraftRelation() {
+        return draftType == FieldType.RELATION || draftType == FieldType.SELECT_MULTIPLE_STRATIGRAPHY;
     }
 
     /**
@@ -1199,6 +1221,10 @@ public class ProjectTableFieldSettingsBean implements Serializable {
     }
 
     public boolean isDraftConfigurable() {
+        if (draftType == FieldType.RELATION) {
+            // a complex relation is qualified by the field itself: its vocabulary lists the qualifiers
+            return relationDrawer != null && relationDrawer.isComplex();
+        }
         return draftType != null && draftType.isConfigurable();
     }
 
@@ -1663,7 +1689,9 @@ public class ProjectTableFieldSettingsBean implements Serializable {
             return;
         }
         formLayoutService.ensureOwnLayout(project.getId(), selectedTable, selectedTypeName);
-        if (draftOriginalName == null) {
+        if (draftOriginalName == null && draftType == FieldType.RELATION) {
+            if (!createRelationField()) return;
+        } else if (draftOriginalName == null) {
             tableFieldConfigService.createField(project.getId(), selectedTable, selectedTypeName, draftName, draftType, draftDescription, options);
         } else {
             tableFieldConfigService.updateField(project.getId(), selectedTable, selectedTypeName, draftOriginalName,
@@ -1837,6 +1865,21 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         return new ConceptFieldTarget(formConfigLocal.get(), customFieldConcept);
     }
 
+    /**
+     * A new relation field, its definition and the field of the other side, at once; false (with the reason in the
+     * drawer) when the relation is refused, in which case nothing was created.
+     */
+    private boolean createRelationField() {
+        if (relationDrawer == null) return false;
+        try {
+            relationDrawer.createField(selectedTable, selectedTypeName, draftName, draftDescription);
+            return true;
+        } catch (fr.siamois.domain.services.relation.RelationLinkException e) {
+            drawerErrorMessage = e.getMessage();
+            return false;
+        }
+    }
+
     public boolean isDraftCreateMode() {
         return draftOriginalName == null;
     }
@@ -1846,7 +1889,11 @@ public class ProjectTableFieldSettingsBean implements Serializable {
      * beside the type, not a type of its own.
      */
     public List<FieldType> getFieldTypeOptions() {
-        return FieldType.userCreatableTypes().stream().filter(t -> !t.isMultiple()).toList();
+        // a relation field is created as such, and keeps its type: the drawer offers no switch to or from it
+        if (!isDraftCreateMode() && draftType == FieldType.RELATION) return List.of(FieldType.RELATION);
+        return FieldType.userCreatableTypes().stream().filter(t -> !t.isMultiple())
+                .filter(t -> isDraftCreateMode() || t != FieldType.RELATION)
+                .toList();
     }
 
     /** The family the type menu shows for the open field (a multiple-valued type shows as its single sibling). */
@@ -1861,6 +1908,7 @@ public class ProjectTableFieldSettingsBean implements Serializable {
         }
         boolean multiple = draftType != null && draftType.isMultiple();
         FieldType family = FieldType.valueOf(name);
+        if (!isDraftCreateMode() && (draftType == FieldType.RELATION) != (family == FieldType.RELATION)) return;
         draftType = multiple && family.supportsMultiple() ? family.multipleVariant() : family;
     }
 

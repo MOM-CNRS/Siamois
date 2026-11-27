@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class RelationDefinitionServiceTest {
@@ -45,7 +47,7 @@ class RelationDefinitionServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(configAuthorizer.canEditDefinitions(caller)).thenReturn(true);
+        when(configAuthorizer.canEditDefinition(anyBoolean(), any(), eq(caller))).thenReturn(true);
         when(definitionRepository.findByField(anyLong())).thenReturn(Optional.empty());
         when(definitionRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(fieldRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -55,7 +57,7 @@ class RelationDefinitionServiceTest {
     @Test
     void createsTheOtherSideAndThePlatformDefaultRulesFromAField() {
         RelationDefinition definition = service.create(new CreateRequest(-329L, null, "Antérieur à",
-                RelationKind.SIMPLE, false, false, null, NO_RULES), caller);
+                RelationKind.SIMPLE, false, false, null, NO_RULES), null, caller);
 
         assertThat(definition.getSourceField().getId()).isEqualTo(-329L);
         assertThat(definition.getTargetField()).isInstanceOf(CustomFieldRelation.class);
@@ -67,7 +69,7 @@ class RelationDefinitionServiceTest {
     @Test
     void aSymmetricRelationUsesItsFieldForBothSides() {
         RelationDefinition definition = service.create(new CreateRequest(-329L, null, null,
-                RelationKind.SIMPLE, true, false, null, NO_RULES), caller);
+                RelationKind.SIMPLE, true, false, null, NO_RULES), null, caller);
 
         assertThat(definition.getTargetField()).isSameAs(definition.getSourceField());
         assertThat(definition.isSymmetric()).isTrue();
@@ -77,11 +79,11 @@ class RelationDefinitionServiceTest {
     void refusesAFieldThatIsNotARelationOrAlreadyASide() {
         field(-1L, new CustomFieldText());
         assertInvalid(() -> service.create(new CreateRequest(-1L, null, "x", RelationKind.SIMPLE, false, false,
-                null, NO_RULES), caller));
+                null, NO_RULES), null, caller));
 
         when(definitionRepository.findByField(-329L)).thenReturn(Optional.of(new RelationDefinition()));
         assertInvalid(() -> service.create(new CreateRequest(-329L, null, "x", RelationKind.SIMPLE, false, false,
-                null, NO_RULES), caller));
+                null, NO_RULES), null, caller));
     }
 
     @Test
@@ -90,20 +92,39 @@ class RelationDefinitionServiceTest {
         field(-3L, new CustomFieldText());
 
         assertInvalid(() -> service.create(new CreateRequest(-329L, null, "x", RelationKind.SIMPLE, false, false,
-                -2L, NO_RULES), caller));
+                -2L, NO_RULES), null, caller));
         assertInvalid(() -> service.create(new CreateRequest(-329L, null, "x", RelationKind.COMPLEX, false, false,
-                -3L, NO_RULES), caller));
+                -3L, NO_RULES), null, caller));
         RelationDefinition definition = service.create(new CreateRequest(-329L, null, "x", RelationKind.COMPLEX,
-                false, false, -2L, NO_RULES), caller);
+                false, false, -2L, NO_RULES), null, caller);
         assertThat(definition.getQualifierField().getId()).isEqualTo(-2L);
     }
 
     @Test
+    void aComplexRelationFieldCanBeItsOwnQualifier() {
+        RelationDefinition definition = service.create(new CreateRequest(-329L, null, "x", RelationKind.COMPLEX,
+                false, false, -329L, NO_RULES), 7L, caller);
+
+        assertThat(definition.getQualifierField().getId()).isEqualTo(-329L);
+    }
+
+    @Test
+    void aRelationOfSystemFieldsAsksForThePlatformAdministrator() {
+        CustomFieldRelation system = new CustomFieldRelation();
+        system.setIsSystemField(true);
+        field(-500L, system);
+        when(configAuthorizer.canEditDefinition(eq(true), eq(7L), eq(caller))).thenReturn(false);
+
+        assertThatThrownBy(() -> service.create(new CreateRequest(-500L, null, "x", RelationKind.SIMPLE, false, false,
+                null, NO_RULES), 7L, caller)).isInstanceOf(RelationLinkException.class);
+    }
+
+    @Test
     void onlyThePlatformAdministratorEditsDefinitions() {
-        when(configAuthorizer.canEditDefinitions(caller)).thenReturn(false);
+        when(configAuthorizer.canEditDefinition(anyBoolean(), any(), eq(caller))).thenReturn(false);
 
         assertThatThrownBy(() -> service.create(new CreateRequest(-329L, null, "x", RelationKind.SIMPLE, false,
-                false, null, NO_RULES), caller)).isInstanceOfSatisfying(RelationLinkException.class,
+                false, null, NO_RULES), null, caller)).isInstanceOfSatisfying(RelationLinkException.class,
                 e -> assertThat(e.getReason()).isEqualTo(Reason.FORBIDDEN));
     }
 
@@ -112,8 +133,8 @@ class RelationDefinitionServiceTest {
         RelationDefinition definition = existing(10L);
         when(linkRepository.existsByDefinitionId(10L)).thenReturn(true);
 
-        assertInvalid(() -> service.updateIdentity(10L, new IdentityUpdate(RelationKind.SIMPLE, true, null), caller));
-        service.updateIdentity(10L, new IdentityUpdate(RelationKind.SIMPLE, false, null), caller);
+        assertInvalid(() -> service.updateIdentity(10L, new IdentityUpdate(RelationKind.SIMPLE, true, null), null, caller));
+        service.updateIdentity(10L, new IdentityUpdate(RelationKind.SIMPLE, false, null), null, caller);
         verify(definitionRepository).save(definition);
     }
 
@@ -122,10 +143,10 @@ class RelationDefinitionServiceTest {
         RelationDefinition definition = existing(10L);
         when(linkRepository.existsByDefinitionId(10L)).thenReturn(true);
 
-        assertInvalid(() -> service.delete(10L, caller));
+        assertInvalid(() -> service.delete(10L, null, caller));
 
         when(linkRepository.existsByDefinitionId(10L)).thenReturn(false);
-        service.delete(10L, caller);
+        service.delete(10L, null, caller);
         verify(ruleService).deleteAllOf(definition);
         verify(definitionRepository).delete(definition);
     }

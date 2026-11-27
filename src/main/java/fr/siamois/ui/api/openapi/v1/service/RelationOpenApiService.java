@@ -143,29 +143,36 @@ public class RelationOpenApiService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public RelationDefinitionResponse createDefinition(RelationDefinitionCreateRequest body, ProjectApiCaller caller) {
+    public RelationDefinitionResponse createDefinition(RelationDefinitionCreateRequest body, @Nullable Long projectId,
+                                                       ProjectApiCaller caller) {
         if (body == null || body.sourceField() == null || body.kind() == null) {
             throw badRequest("sourceField et kind sont obligatoires");
         }
         RelationDefinition created = definitionService.create(new RelationDefinitionService.CreateRequest(
                 body.sourceField(), body.targetField(), body.targetFieldLabel(), relationKindOf(body.kind()),
                 Boolean.TRUE.equals(body.symmetric()), Boolean.TRUE.equals(body.hierarchical()), body.qualifierField(),
-                specOf(body.defaultRules())), caller.person());
+                specOf(body.defaultRules())), configuredFrom(projectId, caller), caller.person());
         return definitionOf(created);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public RelationDefinitionResponse updateDefinition(Long id, RelationDefinitionUpdateRequest body,
-                                                       ProjectApiCaller caller) {
+                                                       @Nullable Long projectId, ProjectApiCaller caller) {
         if (body == null || body.kind() == null) throw badRequest("kind est obligatoire");
         return definitionOf(definitionService.updateIdentity(id, new RelationDefinitionService.IdentityUpdate(
                 relationKindOf(body.kind()), Boolean.TRUE.equals(body.hierarchical()), body.qualifierField()),
-                caller.person()));
+                configuredFrom(projectId, caller), caller.person()));
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteDefinition(Long id, ProjectApiCaller caller) {
-        definitionService.delete(id, caller.person());
+    public void deleteDefinition(Long id, @Nullable Long projectId, ProjectApiCaller caller) {
+        definitionService.delete(id, configuredFrom(projectId, caller), caller.person());
+    }
+
+    /** The project a definition is configured from, once the caller is known to reach it; null for none. */
+    @Nullable
+    private Long configuredFrom(@Nullable Long projectId, ProjectApiCaller caller) {
+        return projectId == null ? null : requireReachable(projectId, caller).getId();
     }
 
     // ---- rules ----

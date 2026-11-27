@@ -27,12 +27,23 @@ export function removeHierarchyLink(id: string | number, zone: HierarchyZone, re
 
 // POST /relation-links — links `unitId` to `relatedId` through `fieldId`.
 export function addStratigraphyLink(fieldId: string | number, unitId: string | number, relatedId: string | number, body: StratigraphyBody): Promise<void> {
+  return addRelationLink(fieldId, { collection: "recording-units", id: unitId }, { collection: "recording-units", id: relatedId }, body);
+}
+
+// A record at one end of a link: its API collection and its id.
+export interface RecordEnd {
+  collection: string;
+  id: string | number;
+}
+
+// POST /relation-links — links the record being edited to another, of any kind, through `fieldId`.
+export function addRelationLink(fieldId: string | number, record: RecordEnd, other: RecordEnd, body: StratigraphyBody): Promise<void> {
   return apiFetch<void>("/api/v1/relation-links", {
     method: "POST",
     body: {
       field: Number(fieldId),
-      record: { resourceType: "recording-units", resourceId: Number(unitId) },
-      other: { resourceType: "recording-units", resourceId: Number(relatedId) },
+      record: { resourceType: record.collection, resourceId: Number(record.id) },
+      other: { resourceType: other.collection, resourceId: Number(other.id) },
       qualifier: body.typeConceptId ?? null,
       uncertain: !!body.uncertain,
     },
@@ -86,4 +97,46 @@ export async function createdUnitOption(id: string | number): Promise<UnitOption
   } catch {
     return { id: String(id), label: String(id) };
   }
+}
+
+// The API collection of each kind of record a relation can link, by registry key, and back.
+export const RELATION_COLLECTIONS: Record<string, string> = {
+  recordingUnit: "recording-units",
+  find: "finds",
+  phase: "phases",
+  container: "containers",
+  document: "documents",
+  study: "studies",
+  project: "projects",
+};
+
+export const entityKeyOfCollection = (collection: string): string | undefined =>
+  Object.entries(RELATION_COLLECTIONS).find(([, c]) => c === collection)?.[0];
+
+// What a relation field is in a project (GET /relation-fields/{fieldId}): the records it links, whether a
+// record has only one link through it, and its qualifiers as it shows them.
+export interface RelationFieldDescription {
+  field: number;
+  side: "source" | "target";
+  mirrorField: number;
+  singleChoice: boolean;
+  accepts: { resourceType: string; subtype?: number | null }[];
+  qualifiers: { shown: number; stored: number }[];
+  noCycle: boolean;
+}
+
+export function getRelationField(fieldId: string | number, projectId: string | number): Promise<RelationFieldDescription> {
+  return apiFetch<RelationFieldDescription>(`/api/v1/relation-fields/${fieldId}?projectId=${encodeURIComponent(String(projectId))}`);
+}
+
+interface RecordRowsBody {
+  data: { id: string | number; fullIdentifier?: string | null; identifier?: string | null; title?: string | null; name?: string | null }[];
+}
+
+// The records of one kind of a project matching a search, for the picker of a record to link (one page).
+export async function searchProjectRecords(collection: string, projectId: string | number, q: string): Promise<UnitOption[]> {
+  const query = new URLSearchParams({ offset: "0", limit: "20" });
+  if (q) query.set("search", q);
+  const body = await apiFetch<RecordRowsBody>(`/api/v1/projects/${projectId}/${collection}?${query.toString()}`);
+  return body.data.map((row) => ({ id: String(row.id), label: row.fullIdentifier ?? row.title ?? row.name ?? row.identifier ?? String(row.id) }));
 }

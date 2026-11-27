@@ -12,6 +12,8 @@ public interface RelationLinkRepository extends JpaRepository<RelationLink, Long
 
     boolean existsByDefinitionId(Long definitionId);
 
+    long countByDefinitionId(Long definitionId);
+
     /** The stratigraphic links (order, synchrony) between two recording units, either way. */
     @Query("select l from RelationLink l where l.definition.sourceField.id in (-328L, -330L) "
             + "and l.sourceKind = fr.siamois.domain.models.relation.RelationEndKind.RECORDING_UNIT "

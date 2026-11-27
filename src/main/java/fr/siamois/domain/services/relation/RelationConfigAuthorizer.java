@@ -1,6 +1,9 @@
 package fr.siamois.domain.services.relation;
 
 import fr.siamois.domain.models.UserInfo;
+import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
+import org.springframework.lang.Nullable;
 import fr.siamois.domain.models.permissions.PermissionConstants;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
@@ -22,9 +25,28 @@ public class RelationConfigAuthorizer {
     private final ProfilePermissionService profilePermissionService;
     private final InstitutionRepository institutionRepository;
     private final InstitutionMapper institutionMapper;
+    private final ActionUnitRepository actionUnitRepository;
 
     public boolean canEditDefinitions(PersonDTO caller) {
         return profilePermissionService.hasInstancePermission(caller, PermissionConstants.INSTANCE_MANAGE_SETTINGS);
+    }
+
+    /**
+     * Whether a person may create or change the identity of a relation, configured from a project: the platform
+     * administrator always; anyone who configures the project, unless the relation is between system fields.
+     *
+     * @param system    the relation is between system fields (the stratigraphy)
+     * @param projectId the project it is configured from, or null outside any project (the API's platform face)
+     */
+    public boolean canEditDefinition(boolean system, @Nullable Long projectId, PersonDTO caller) {
+        if (canEditDefinitions(caller)) return true;
+        if (system || projectId == null) return false;
+        return actionUnitRepository.findById(projectId)
+                .map(ActionUnit::getCreatedByInstitution)
+                .map(institutionMapper::convert)
+                .map(institution -> profilePermissionService.hasProjectSettingsPermission(
+                        new UserInfo(institution, caller, null), projectId))
+                .orElse(false);
     }
 
     public boolean canEditRules(RelationScope scope, PersonDTO caller) {

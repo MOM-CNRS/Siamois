@@ -527,6 +527,98 @@ class ProjectTableFieldSettingsBeanTest {
     }
 
     /** A successful save tells the user so, through the Faces context and PrimeFaces: neither exists outside a request. */
+    // ---- relation fields ----
+
+    @Test
+    void aRelationIsOfferedToANewFieldOnly_andARelationFieldKeepsItsType() {
+        ProjectTableFieldSettingsBean bean = beanWithUnits(mock(TableFieldConfigService.class), mock(FormLayoutService.class));
+        bean.openDrawerForCreate();
+        assertThat(bean.getFieldTypeOptions()).contains(FieldType.RELATION);
+
+        bean.openDrawerForEdit(TypeFieldFormConfig.builder().name("Contient").type(FieldType.RELATION).build());
+        assertThat(bean.getFieldTypeOptions()).containsExactly(FieldType.RELATION);
+        bean.setDraftTypeName("TEXT");
+        assertThat(bean.getDraftType()).isEqualTo(FieldType.RELATION);
+        assertThat(bean.isDraftRelation()).isTrue();
+
+        bean.openDrawerForEdit(TypeFieldFormConfig.builder().name("Note").type(FieldType.TEXT).build());
+        assertThat(bean.getFieldTypeOptions()).doesNotContain(FieldType.RELATION);
+        bean.setDraftTypeName("RELATION");
+        assertThat(bean.getDraftType()).isEqualTo(FieldType.TEXT);
+    }
+
+    @Test
+    void aComplexRelationShowsItsVocabulary_aSimpleOneDoesNot() {
+        ProjectTableFieldSettingsBean bean = beanWithUnits(mock(TableFieldConfigService.class), mock(FormLayoutService.class));
+        RelationFieldDrawerBean relation = mock(RelationFieldDrawerBean.class);
+        bean.setRelationDrawer(relation);
+        bean.openDrawerForCreate();
+        bean.setDraftTypeName("RELATION");
+
+        when(relation.isComplex()).thenReturn(true);
+        assertThat(bean.isDraftConfigurable()).isTrue();
+        when(relation.isComplex()).thenReturn(false);
+        assertThat(bean.isDraftConfigurable()).isFalse();
+        verify(relation).startCreation();
+    }
+
+    @Test
+    void aNewRelationFieldIsCreatedWithItsRelation() {
+        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
+        ProjectTableFieldSettingsBean bean = beanWithUnits(tableService, mock(FormLayoutService.class));
+        RelationFieldDrawerBean relation = mock(RelationFieldDrawerBean.class);
+        bean.setRelationDrawer(relation);
+        bean.openDrawerForCreate();
+        bean.setDraftTypeName("RELATION");
+        bean.setDraftName("Contient");
+
+        saveWithAFacesContext(bean);
+
+        verify(relation).createField(ConfigurableTable.UE, "Creusement", "Contient", "");
+        verify(tableService, never()).createField(org.mockito.ArgumentMatchers.anyLong(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void aRefusedRelationLeavesItsReasonInTheDrawer_andAnOpenRelationIsSavedAfterTheField() {
+        ProjectTableFieldSettingsBean bean = beanWithUnits(mock(TableFieldConfigService.class), mock(FormLayoutService.class));
+        RelationFieldDrawerBean relation = mock(RelationFieldDrawerBean.class);
+        bean.setRelationDrawer(relation);
+        bean.openDrawerForCreate();
+        bean.setDraftTypeName("RELATION");
+        bean.setDraftName("Contient");
+        doThrow(new fr.siamois.domain.services.relation.RelationLinkException(
+                fr.siamois.domain.services.relation.RelationLinkException.Reason.FORBIDDEN, "Modification non autorisée"))
+                .when(relation).createField(any(), any(), any(), any());
+
+        saveWithAFacesContext(bean);
+
+        assertThat(bean.getDrawerErrorMessage()).isEqualTo("Modification non autorisée");
+        verify(relation, never()).saveIfOpen();
+
+        bean.setDrawerErrorMessage(null);
+        bean.openDrawerForEdit(TypeFieldFormConfig.builder().name("Antérieur").type(FieldType.SELECT_MULTIPLE_STRATIGRAPHY)
+                .systemField(true).build());
+        when(relation.isOpen()).thenReturn(true);
+        when(relation.saveIfOpen()).thenReturn(true);
+        bean.saveDrawerIfEditable();
+        verify(relation).saveIfOpen();
+    }
+
+    @Test
+    void aRefusedRelationRuleKeepsTheFieldUnsaved() {
+        TableFieldConfigService tableService = mock(TableFieldConfigService.class);
+        ProjectTableFieldSettingsBean bean = beanWithUnits(tableService, mock(FormLayoutService.class));
+        RelationFieldDrawerBean relation = mock(RelationFieldDrawerBean.class);
+        bean.setRelationDrawer(relation);
+        bean.openDrawerForEdit(TypeFieldFormConfig.builder().name("Contient").type(FieldType.RELATION).build());
+        when(relation.isOpen()).thenReturn(true);
+        when(relation.saveIfOpen()).thenReturn(false);
+
+        bean.saveDrawerIfEditable();
+
+        verify(tableService, never()).updateField(any(), any(), any(), any(), any(FieldDefinition.class));
+    }
+
     private static void saveWithAFacesContext(ProjectTableFieldSettingsBean bean) {
         try (org.mockito.MockedStatic<fr.siamois.utils.MessageUtils> messages = org.mockito.Mockito.mockStatic(fr.siamois.utils.MessageUtils.class)) {
             bean.saveDrawerIfEditable();

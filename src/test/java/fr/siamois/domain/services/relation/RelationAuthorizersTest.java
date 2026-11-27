@@ -8,7 +8,9 @@ import fr.siamois.domain.models.relation.RelationEndKind;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.dto.entity.InstitutionDTO;
 import fr.siamois.dto.entity.PersonDTO;
+import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.institution.InstitutionRepository;
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.mapper.InstitutionMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ class RelationAuthorizersTest {
     @Mock private ProfilePermissionService permissions;
     @Mock private InstitutionMapper institutionMapper;
     @Mock private InstitutionRepository institutionRepository;
+    @Mock private ActionUnitRepository actionUnitRepository;
 
     private RelationWriteAuthorizer writeAuthorizer;
     private RelationConfigAuthorizer configAuthorizer;
@@ -49,7 +52,7 @@ class RelationAuthorizersTest {
     @BeforeEach
     void setUp() {
         writeAuthorizer = new RelationWriteAuthorizer(permissions, institutionMapper);
-        configAuthorizer = new RelationConfigAuthorizer(permissions, institutionRepository, institutionMapper);
+        configAuthorizer = new RelationConfigAuthorizer(permissions, institutionRepository, institutionMapper, actionUnitRepository);
         lenient().when(institutionMapper.convert(institution)).thenReturn(institutionDto);
     }
 
@@ -91,6 +94,33 @@ class RelationAuthorizersTest {
         assertThat(configAuthorizer.canEditDefinitions(person)).isTrue();
         assertThat(configAuthorizer.canEditRules(RelationScope.platform(), person)).isTrue();
         verifyNoInteractions(institutionRepository);
+    }
+
+    @Test
+    void whoeverConfiguresTheProjectEditsItsRelationsButNotTheSystemOnes() {
+        ActionUnit project = new ActionUnit();
+        project.setId(PROJECT);
+        project.setCreatedByInstitution(institution);
+        when(actionUnitRepository.findById(PROJECT)).thenReturn(Optional.of(project));
+        when(permissions.hasProjectSettingsPermission(any(UserInfo.class), eq(PROJECT))).thenReturn(true);
+
+        assertThat(configAuthorizer.canEditDefinition(false, PROJECT, person)).isTrue();
+        assertThat(configAuthorizer.canEditDefinition(true, PROJECT, person)).isFalse();
+        assertThat(configAuthorizer.canEditDefinition(false, null, person)).isFalse();
+    }
+
+    @Test
+    void thePlatformAdministratorEditsEveryRelation() {
+        when(permissions.hasInstancePermission(person, PermissionConstants.INSTANCE_MANAGE_SETTINGS)).thenReturn(true);
+
+        assertThat(configAuthorizer.canEditDefinition(true, null, person)).isTrue();
+    }
+
+    @Test
+    void anUnknownProjectGrantsNoRelation() {
+        when(actionUnitRepository.findById(PROJECT)).thenReturn(Optional.empty());
+
+        assertThat(configAuthorizer.canEditDefinition(false, PROJECT, person)).isFalse();
     }
 
     @Test

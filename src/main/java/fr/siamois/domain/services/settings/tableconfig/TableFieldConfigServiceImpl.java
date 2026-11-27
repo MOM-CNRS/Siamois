@@ -6,6 +6,7 @@ import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
 import fr.siamois.domain.models.form.config.*;
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.vocabulary.*;
@@ -34,6 +35,8 @@ import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAut
 import fr.siamois.ui.table.definitions.SystemFieldCatalog;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import jakarta.persistence.DiscriminatorValue;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -94,6 +97,7 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
     private final FormConfigGroupRepository formConfigGroupRepository;
     private final UnitDefinitionRepository unitDefinitionRepository;
     private final CustomFieldCandidateService customFieldCandidateService;
+    private final RelationDefinitionRepository relationDefinitionRepository;
 
     @Override
     public List<ConfigurableTable> listTables() {
@@ -500,6 +504,11 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             return toDto(new EffectiveField(current, effective.stored(), effective.requiredByForm()));
         }
 
+        // a relation field is a side of its definition, and its links point to the definition: it keeps its type
+        if (current instanceof CustomFieldRelation || newType == FieldType.RELATION) {
+            throw new IllegalArgumentException("Le type d'un champ relation ne change pas, ni un autre champ en relation : "
+                    + fieldName);
+        }
         SetupReplacementLabelResult result = configureReplacementLabel(projectId, table, typeName, newName, newType, description, options);
 
         boolean owned = ownedBy(effective, result.owner());
@@ -587,7 +596,27 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
                 byLabel.putIfAbsent(field.getLabel(), field);
             }
         }
+        addMirrorFields(byLabel);
         return List.copyOf(byLabel.values());
+    }
+
+    /**
+     * The other side of a relation whose field the institution uses: created with the relation but placed on no
+     * form, it is reused from the catalog to show the links from the other end.
+     */
+    private void addMirrorFields(Map<String, CustomField> byLabel) {
+        Set<Long> ids = byLabel.values().stream().map(CustomField::getId).collect(Collectors.toSet());
+        if (ids.isEmpty()) return;
+        for (RelationDefinition definition : relationDefinitionRepository.findAll()) {
+            CustomField source = definition.getSourceField();
+            CustomField target = definition.getTargetField();
+            CustomField mirror = null;
+            if (ids.contains(source.getId())) mirror = target;
+            else if (ids.contains(target.getId())) mirror = source;
+            if (mirror != null && mirror.getLabel() != null && !Boolean.TRUE.equals(mirror.getIsSystemField())) {
+                byLabel.putIfAbsent(mirror.getLabel(), mirror);
+            }
+        }
     }
 
     private CustomField newCustomFieldOfType(FieldType type) {
@@ -600,6 +629,8 @@ public class TableFieldConfigServiceImpl implements TableFieldConfigService {
             case MEASUREMENT -> CustomFieldMeasurement.builder().build();
             case SELECT_ONE -> new CustomFieldSelectOne();
             case SELECT_MULTIPLE -> new CustomFieldSelectMultiple();
+            // its definition is created next, by RelationFieldSettingsService
+            case RELATION -> new CustomFieldRelation();
             default -> throw new IllegalArgumentException("Un champ de type " + type + " ne se crée pas depuis cet écran");
         };
     }

@@ -2083,8 +2083,21 @@
           "Relations - Configuration"
         ],
         "summary": "Créer une relation depuis un champ",
-        "description": "Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau (le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la plateforme. Réservé à l'administrateur de la plateforme.",
+        "description": "Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau (le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la plateforme. Réservé à l'administrateur de la plateforme, ou à qui configure le projet donné.",
         "operationId": "create_2",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 7
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2127,7 +2140,7 @@
             }
           },
           "403": {
-            "description": "Réservé à l'administrateur de la plateforme",
+            "description": "Ni administrateur de la plateforme, ni droit de configurer le projet",
             "content": {
               "application/json": {
                 "schema": {
@@ -7197,6 +7210,17 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 7
           }
         ],
         "responses": {
@@ -7207,7 +7231,7 @@
             "description": "La relation a des liens"
           },
           "403": {
-            "description": "Réservé à l'administrateur de la plateforme"
+            "description": "Ni administrateur de la plateforme, ni droit de configurer le projet"
           },
           "404": {
             "description": "Relation inconnue"
@@ -7230,6 +7254,17 @@
               "type": "integer",
               "format": "int64"
             }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "description": "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "example": 7
           }
         ],
         "requestBody": {
@@ -7264,7 +7299,7 @@
             }
           },
           "403": {
-            "description": "Réservé à l'administrateur de la plateforme",
+            "description": "Ni administrateur de la plateforme, ni droit de configurer le projet",
             "content": {
               "application/json": {
                 "schema": {
@@ -17297,9 +17332,6 @@
             ],
             "default": "source"
           },
-          "record": {
-            "$ref": "#/components/schemas/RelationEndRequest"
-          },
           "other": {
             "$ref": "#/components/schemas/RelationEndRequest"
           },
@@ -17313,6 +17345,9 @@
             "type": "boolean",
             "description": "Lien incertain",
             "default": false
+          },
+          "record": {
+            "$ref": "#/components/schemas/RelationEndRequest"
           }
         },
         "description": "Un lien saisi depuis une fiche, par le champ d'un côté d'une relation"

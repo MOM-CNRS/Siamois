@@ -283,6 +283,24 @@ et la synchronie). Contrôle direct, par une requête sur la paire.
   liens qui en contiennent, déclarer une exclusion entre deux définitions qui relient déjà la même paire. Le refus
   liste les liens en cause. Élargir une option (ajouter un type, passer en choix multiple) est toujours possible.
 
+### 4.5 L'écran de configuration (tiroir de champ d'un projet)
+
+Livré le 27/11/2026, dans le tiroir de champ de « Tables & champs » d'un projet (`relationDrawerSections.xhtml`,
+`RelationFieldDrawerBean`, `RelationFieldSettingsService`) :
+
+- **Créer un champ « Relation »** : fiches reliées de l'autre côté, simple ou complexe, symétrique, hiérarchique, libellé
+  du champ miroir. Le champ, son miroir et la définition sont créés ensemble ; le miroir n'est placé sur aucune fiche,
+  on le place ensuite depuis « Réutiliser un champ ». Le type d'un champ relation ne change plus.
+- **Qualificatif** : une relation complexe est qualifiée par son propre champ (`CustomFieldRelation` est un champ de
+  vocabulaire) ; la section « Valeurs possibles » configure ses qualificatifs.
+- **Droits** : qui configure les champs du projet crée une relation et change son identité tant qu'elle n'a pas de lien ;
+  l'identité d'une relation entre champs système (la stratigraphie) reste à l'administrateur de la plateforme.
+- **Règles du projet** : boucles, choix unique de chaque côté, types acceptés, exclusions, paires miroir. Le tiroir d'un
+  projet modifie les règles de ce projet seulement : la première modification lui en donne une copie, « Revenir aux règles
+  héritées » la supprime. Enregistrer sans rien changer ne copie rien. Un refus affiche les liens en cause.
+- **Sur la fiche** (React) : un champ `RELATION` s'édite avec `RelationFieldEditor`, qui lit `GET /relation-fields/{id}`
+  (types acceptés, choix unique) et écrit par `/relation-links`, comme l'éditeur de stratigraphie qu'il généralise.
+
 ## 5. Comparer des champs différents
 
 Le modèle ne cherche pas à rendre comparables deux façons de saisir la même chose. Dans les vues en liste, le champ

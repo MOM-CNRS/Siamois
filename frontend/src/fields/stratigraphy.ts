@@ -16,3 +16,10 @@ const POSITION_BY_BINDING: Record<string, StratigraphyZone> = {
 export function stratigraphyPositionOf(field: FieldResource): StratigraphyZone | undefined {
   return field.answerType === STRATIGRAPHY_ANSWER_TYPE ? POSITION_BY_BINDING[field.valueBinding ?? ""] : undefined;
 }
+
+// A configurable relation field: its values are links, edited through /relation-links by the field.
+export const RELATION_ANSWER_TYPE = "RELATION";
+
+export function isRelationField(field: FieldResource): boolean {
+  return field.answerType === RELATION_ANSWER_TYPE;
+}

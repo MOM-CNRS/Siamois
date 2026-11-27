@@ -7,7 +7,7 @@ import {InlineBooleanCell} from "./InlineBooleanCell";
 import {useCanEdit} from "../panels/pane/writeMode";
 import {describeIncoherence} from "./incoherence";
 import {hasFieldRenderer} from "./registry";
-import {stratigraphyPositionOf} from "./stratigraphy";
+import {isRelationField, stratigraphyPositionOf} from "./stratigraphy";
 import type {AnswerInputBody, FieldResource} from "./types";
 import {t} from "../i18n";
 
@@ -58,7 +58,7 @@ export function FieldEditCell<TRow extends { id?: string | number }>({
   const [editTarget, setEditTarget] = useState<CellEditTarget<TRow> | null>(null);
   const canEditEntity = useCanEdit(row as { _permissions?: { canEdit?: boolean } });
   // The form lays stratigraphy out read-only (it isn't an answer to patch); writing it is the unit's own right.
-  const stratigraphic = stratigraphyPositionOf(field) != null && row.id != null;
+  const stratigraphic = (stratigraphyPositionOf(field) != null || isRelationField(field)) && row.id != null;
   // A field with no editor (action code, address) is shown, never offered for editing.
   // Nor is a read-only one (the entity's project, a generated identifier).
   const editable = stratigraphic ? canEditEntity : !readOnlyProp && field.readOnly !== true && hasFieldRenderer(field.answerType);

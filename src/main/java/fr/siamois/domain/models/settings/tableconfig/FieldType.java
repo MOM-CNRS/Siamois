@@ -44,8 +44,8 @@ public enum FieldType {
     SELECT_MULTIPLE_CONTAINER("Contenants", "bi bi-archive", false),
     SELECT_MULTIPLE_PHASE("Phases", "bi bi-layers", false),
     SELECT_MULTIPLE_STRATIGRAPHY("Relations stratigraphiques", "bi bi-diagram-2", false),
-    /** A side of a configurable relation; not creatable yet, the relation configuration screen is still to come. */
-    RELATION("Relation", "bi bi-diagram-2", false),
+    /** A side of a configurable relation, created with its definition (RelationFieldSettingsService). */
+    RELATION("Relation", "bi bi-diagram-2", true),
     GEOMETRY("Géométrie", "bi bi-bounding-box-circles", false);
 
     private final String label;

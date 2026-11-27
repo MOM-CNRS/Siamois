@@ -1,5 +1,6 @@
 package fr.siamois.domain.models.form.customfield;
 
+import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -13,6 +14,9 @@ import lombok.experimental.SuperBuilder;
  * {@link fr.siamois.domain.models.relation.RelationDefinition} seen from that side. Its values are the records at
  * the other end; they are never answers of the field but rows of {@code relation_link}. Single or multiple choice
  * is not a property of the field: it is a rule of the relation, per side and per scope.
+ * <p>
+ * A concept field, so that its vocabulary can be configured like any other: for a complex relation, the field is its
+ * own qualifier, as the stratigraphic fields are, and its vocabulary lists the qualifiers it offers.
  */
 @Getter
 @Setter
@@ -21,7 +25,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "custom_field")
 @SuperBuilder
 @NoArgsConstructor
-public class CustomFieldRelation extends CustomField {
+public class CustomFieldRelation extends CustomFieldConcept {
 
     @Override
     public String getIcon() {

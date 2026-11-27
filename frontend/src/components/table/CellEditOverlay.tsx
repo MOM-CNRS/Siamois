@@ -15,7 +15,8 @@ import {editContextOf} from "../../fields/editContext";
 import {isEmptyValue} from "../../fields/FieldLabel";
 import {getFieldRenderer} from "../../fields/registry";
 import {fetchAllValues} from "../../fields/multiValues";
-import {stratigraphyPositionOf} from "../../fields/stratigraphy";
+import {isRelationField, stratigraphyPositionOf} from "../../fields/stratigraphy";
+import {RelationFieldEditor} from "../relationLinks/RelationFieldEditor";
 import {
     type AnswerInputBody,
     type FieldResource,
@@ -288,7 +289,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   // with it the picker's first search) waits for it.
   useEffect(() => {
     // A stratigraphic field's search opens its list on focus: it is left to a click.
-    if (!target || loadingValues || stratigraphyPositionOf(target.field)) return;
+    if (!target || loadingValues || stratigraphyPositionOf(target.field) || isRelationField(target.field)) return;
     const focusControl = () => {
       const control = boxRef.current?.querySelector<HTMLElement>("input, textarea, select");
       if (!control) return;
@@ -362,6 +363,8 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   const Renderer = getFieldRenderer(field.answerType);
   // The relationships of a unit are not answers: their editor writes through the unit's own endpoints.
   const stratigraphyPosition = stratigraphyPositionOf(field);
+  // So are a configurable relation's links: its editor writes them through /relation-links.
+  const relationLinks = isRelationField(field);
   const context = editContextOf(target.row, entityType, organizationId);
 
   // fields/commit.ts owns both rules, shared with the Project fiche's own autosave: save on change
@@ -389,7 +392,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
   }
 
   const className = `cell-edit-overlay p-fluid${saving ? " cell-edit-overlay-saving" : ""}${mobile ? " cell-edit-overlay-sheet" : ""}`;
-  const width = `${Math.max(anchor.width, (stratigraphyPosition ? 22 : 12) * 16)}px`;
+  const width = `${Math.max(anchor.width, (stratigraphyPosition || relationLinks ? 22 : 12) * 16)}px`;
   const boxStyle = mobile
     ? undefined
     : {
@@ -441,6 +444,17 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
             <span className="cell-edit-overlay-empty">Aucune valeur</span>
           )}
         </div>
+      ) : relationLinks && target.row.id != null ? (
+        <RelationFieldEditor
+          fieldId={field.id}
+          entityType={entityType}
+          recordId={target.row.id}
+          projectId={context.projectId}
+          organizationId={organizationId}
+          typeConceptId={context.typeConceptId}
+          onChanged={onSaved}
+          onClose={onClose}
+        />
       ) : stratigraphyPosition && target.row.id != null ? (
         <StratigraphyEditor
           fieldId={field.id}
@@ -466,7 +480,7 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
           onChange={onValueChange}
         />
       )}
-      {mobile && !immediate && !target.readOnly && !stratigraphyPosition && (
+      {mobile && !immediate && !target.readOnly && !stratigraphyPosition && !relationLinks && (
         <div className="cell-edit-overlay-actions">
           <Button type="button" size="small" label={t("field.pickerDone")} disabled={saving} onClick={() => void saveAndClose(draft)} />
         </div>

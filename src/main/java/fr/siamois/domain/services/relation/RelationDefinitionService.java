@@ -23,7 +23,8 @@ import java.util.Objects;
  * relation field: the field becomes the source side, the other side is an existing relation field or a new one
  * (the same field for a symmetric relation), and the definition starts with its platform default rules, in one
  * transaction. A definition's identity no longer changes once it has links, and a definition with links cannot be
- * deleted. The platform administrator edits the definitions.
+ * deleted. Whoever configures a project's fields edits the definitions it configures; those of system fields belong
+ * to the platform administrator.
  */
 @Service
 @RequiredArgsConstructor
@@ -54,9 +55,9 @@ public class RelationDefinitionService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public RelationDefinition create(CreateRequest request, PersonDTO caller) {
-        requireCanEdit(caller);
+    public RelationDefinition create(CreateRequest request, @Nullable Long projectId, PersonDTO caller) {
         CustomFieldRelation source = freeRelationField(request.sourceFieldId());
+        requireCanEdit(Boolean.TRUE.equals(source.getIsSystemField()), projectId, caller);
         CustomFieldRelation target;
         if (request.symmetric()) {
             target = source;
@@ -84,9 +85,10 @@ public class RelationDefinitionService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public RelationDefinition updateIdentity(Long definitionId, IdentityUpdate update, PersonDTO caller) {
-        requireCanEdit(caller);
+    public RelationDefinition updateIdentity(Long definitionId, IdentityUpdate update, @Nullable Long projectId,
+                                             PersonDTO caller) {
         RelationDefinition definition = definition(definitionId);
+        requireCanEdit(isSystem(definition), projectId, caller);
         boolean changes = definition.getKind() != update.kind() || definition.isHierarchical() != update.hierarchical()
                 || !Objects.equals(idOf(definition.getQualifierField()), update.qualifierFieldId());
         if (changes && linkRepository.existsByDefinitionId(definitionId)) {
@@ -103,9 +105,9 @@ public class RelationDefinitionService {
 
     /** Refused while the definition has links: they must be deleted first, explicitly. Its fields stay. */
     @Transactional(rollbackFor = Exception.class)
-    public void delete(Long definitionId, PersonDTO caller) {
-        requireCanEdit(caller);
+    public void delete(Long definitionId, @Nullable Long projectId, PersonDTO caller) {
         RelationDefinition definition = definition(definitionId);
+        requireCanEdit(isSystem(definition), projectId, caller);
         if (linkRepository.existsByDefinitionId(definitionId)) {
             throw invalid("Cette relation a des liens : supprimez-les d'abord");
         }
@@ -127,7 +129,9 @@ public class RelationDefinitionService {
         }
         CustomField qualifier = fieldRepository.findById(qualifierFieldId)
                 .orElseThrow(() -> invalid("Champ inconnu : " + qualifierFieldId));
-        if (!(qualifier instanceof CustomFieldSelectOne) && !(qualifier instanceof CustomFieldSelectOneFromFieldCode)) {
+        // the relation's own source field qualifies its links when its vocabulary lists the qualifiers
+        boolean itself = definition.getSourceField() != null && qualifierFieldId.equals(definition.getSourceField().getId());
+        if (!itself && !(qualifier instanceof CustomFieldSelectOne) && !(qualifier instanceof CustomFieldSelectOneFromFieldCode)) {
             throw invalid("Le qualificatif doit être un champ de vocabulaire à choix unique");
         }
         definition.setQualifierField(qualifier);
@@ -156,8 +160,17 @@ public class RelationDefinitionService {
         return fieldRepository.save(field);
     }
 
-    private void requireCanEdit(PersonDTO caller) {
-        if (!configAuthorizer.canEditDefinitions(caller)) {
+    /** A relation between system fields, as the stratigraphy is: its identity is the platform administrator's. */
+    private static boolean isSystem(RelationDefinition definition) {
+        return isSystem(definition.getSourceField()) || isSystem(definition.getTargetField());
+    }
+
+    private static boolean isSystem(@Nullable CustomField field) {
+        return field != null && Boolean.TRUE.equals(field.getIsSystemField());
+    }
+
+    private void requireCanEdit(boolean system, @Nullable Long projectId, PersonDTO caller) {
+        if (!configAuthorizer.canEditDefinition(system, projectId, caller)) {
             throw new RelationLinkException(Reason.FORBIDDEN, "Modification non autorisée");
         }
     }

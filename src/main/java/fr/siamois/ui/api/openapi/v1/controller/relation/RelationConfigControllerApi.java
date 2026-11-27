@@ -10,6 +10,7 @@ import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RelationOpenApiService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -38,14 +39,17 @@ public class RelationConfigControllerApi {
     @Operation(summary = "Créer une relation depuis un champ",
             description = "Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau "
                     + "(le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la "
-                    + "plateforme. Réservé à l'administrateur de la plateforme.")
+                    + "plateforme. Réservé à l'administrateur de la plateforme, ou à qui configure le projet donné.")
     @ApiResponse(responseCode = "201", description = "Relation créée")
     @ApiResponse(responseCode = "400", description = "Champ invalide ou déjà côté d'une relation, qualificatif invalide")
     @ApiResponse(responseCode = "401", description = "Non authentifié")
-    @ApiResponse(responseCode = "403", description = "Réservé à l'administrateur de la plateforme")
-    public ResponseEntity<RelationDefinitionResponse> create(@RequestBody RelationDefinitionCreateRequest body) {
+    @ApiResponse(responseCode = "403", description = "Ni administrateur de la plateforme, ni droit de configurer le projet")
+    public ResponseEntity<RelationDefinitionResponse> create(@RequestBody RelationDefinitionCreateRequest body,
+            @Parameter(description = "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour "
+                    + "une relation entre champs système", example = "7")
+            @RequestParam(value = "projectId", required = false) Long projectId) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        return ResponseEntity.status(HttpStatus.CREATED).body(relationOpenApiService.createDefinition(body, caller));
+        return ResponseEntity.status(HttpStatus.CREATED).body(relationOpenApiService.createDefinition(body, projectId, caller));
     }
 
     @GetMapping("/{id}")
@@ -63,12 +67,15 @@ public class RelationConfigControllerApi {
             description = "Simple ou complexe, hiérarchique, champ qualificatif : refusé dès que la relation a des liens.")
     @ApiResponse(responseCode = "200", description = "Relation modifiée")
     @ApiResponse(responseCode = "400", description = "La relation a des liens, ou nature invalide")
-    @ApiResponse(responseCode = "403", description = "Réservé à l'administrateur de la plateforme")
+    @ApiResponse(responseCode = "403", description = "Ni administrateur de la plateforme, ni droit de configurer le projet")
     @ApiResponse(responseCode = "404", description = "Relation inconnue")
     public ResponseEntity<RelationDefinitionResponse> update(@PathVariable("id") Long id,
-                                                             @RequestBody RelationDefinitionUpdateRequest body) {
+                                                             @RequestBody RelationDefinitionUpdateRequest body,
+            @Parameter(description = "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour "
+                    + "une relation entre champs système", example = "7")
+            @RequestParam(value = "projectId", required = false) Long projectId) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        return ResponseEntity.ok(relationOpenApiService.updateDefinition(id, body, caller));
+        return ResponseEntity.ok(relationOpenApiService.updateDefinition(id, body, projectId, caller));
     }
 
     @DeleteMapping("/{id}")
@@ -76,11 +83,14 @@ public class RelationConfigControllerApi {
             description = "Refusé tant qu'elle a des liens. Ses règles partent avec elle ; ses deux champs restent.")
     @ApiResponse(responseCode = "204", description = "Relation supprimée")
     @ApiResponse(responseCode = "400", description = "La relation a des liens")
-    @ApiResponse(responseCode = "403", description = "Réservé à l'administrateur de la plateforme")
+    @ApiResponse(responseCode = "403", description = "Ni administrateur de la plateforme, ni droit de configurer le projet")
     @ApiResponse(responseCode = "404", description = "Relation inconnue")
-    public ResponseEntity<Void> delete(@PathVariable("id") Long id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") Long id,
+            @Parameter(description = "Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour "
+                    + "une relation entre champs système", example = "7")
+            @RequestParam(value = "projectId", required = false) Long projectId) {
         ProjectApiCaller caller = projectApiService.requireCaller();
-        relationOpenApiService.deleteDefinition(id, caller);
+        relationOpenApiService.deleteDefinition(id, projectId, caller);
         return ResponseEntity.noContent().build();
     }
 

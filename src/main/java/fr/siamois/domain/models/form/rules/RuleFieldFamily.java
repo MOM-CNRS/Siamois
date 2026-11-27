@@ -1,6 +1,7 @@
 package fr.siamois.domain.models.form.rules;
 
 import fr.siamois.domain.models.form.customfield.CustomField;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
 import fr.siamois.domain.models.form.customfield.basetypes.*;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.vocabulary.CustomFieldConcept;
@@ -14,6 +15,8 @@ public enum RuleFieldFamily {
     CONCEPT, NUMBER, DATE, TEXT, BOOLEAN, OTHER;
 
     public static RuleFieldFamily of(CustomField field) {
+        // a relation's values are links, not concepts: like a reference, it can only be tested for emptiness
+        if (field instanceof CustomFieldRelation) return OTHER;
         if (field instanceof CustomFieldConcept) return CONCEPT;
         if (field instanceof CustomFieldInteger || field instanceof CustomFieldDecimal
                 || field instanceof CustomFieldMeasurement) return NUMBER;

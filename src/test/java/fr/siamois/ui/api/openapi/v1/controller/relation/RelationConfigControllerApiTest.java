@@ -92,7 +92,7 @@ class RelationConfigControllerApiTest {
 
     @Test
     void createsADefinitionWithItsDefaultRules() throws Exception {
-        when(definitionService.create(any(), eq(person))).thenReturn(order);
+        when(definitionService.create(any(), any(), eq(person))).thenReturn(order);
 
         mockMvc.perform(post("/api/v1/relation-definitions").contentType(MediaType.APPLICATION_JSON).content("""
                         {"sourceField": -329, "targetFieldLabel": "Antérieur à", "kind": "complex",
@@ -105,7 +105,7 @@ class RelationConfigControllerApiTest {
 
         ArgumentCaptor<RelationDefinitionService.CreateRequest> request =
                 ArgumentCaptor.forClass(RelationDefinitionService.CreateRequest.class);
-        verify(definitionService).create(request.capture(), eq(person));
+        verify(definitionService).create(request.capture(), eq(null), eq(person));
         RelationRuleService.RuleSpec rules = request.getValue().defaultRules();
         assertThat(rules.noCycle()).isTrue();
         assertThat(rules.kinds()).containsExactly(
@@ -188,7 +188,7 @@ class RelationConfigControllerApiTest {
         RelationDefinitionResponse definition = new RelationDefinitionResponse(1L, -329L, -328L, "complex", false,
                 false, null, false);
         when(api.definition(1L)).thenReturn(definition);
-        when(api.updateDefinition(eq(1L), any(), any())).thenReturn(definition);
+        when(api.updateDefinition(eq(1L), any(), any(), any())).thenReturn(definition);
 
         mvc.perform(get("/api/v1/relation-definitions/1")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
@@ -198,7 +198,7 @@ class RelationConfigControllerApiTest {
         mvc.perform(delete("/api/v1/relation-definitions/1/rules").param("projectId", "7"))
                 .andExpect(status().isNoContent());
 
-        verify(api).deleteDefinition(eq(1L), any());
+        verify(api).deleteDefinition(eq(1L), eq(null), any());
         verify(api).deleteRules(eq(1L), eq(null), eq(7L), any());
     }
 }

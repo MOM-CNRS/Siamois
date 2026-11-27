@@ -38,6 +38,8 @@ export const queryKeys = {
 
   // The relations of a recording unit, grouped by graph zone.
   relationGraph: (id: string | number) => ["relation-graph", id] as const,
+  relationValues: (collection: string, id: string | number, fieldId: string) => ["relation-values", collection, id, fieldId] as const,
+  relationField: (fieldId: string, projectId: string | number) => ["relation-field", fieldId, projectId] as const,
   // Every stratigraphic relationship of a unit (a field's values endpoint), for the fiche's editor.
   stratigraphyValues: (id: string | number, fieldId?: string) => (fieldId === undefined ? ["stratigraphy-values", id] : ["stratigraphy-values", id, fieldId]) as readonly unknown[],
   // The relations of a recording unit as a paged list (one entry per set of list parameters).

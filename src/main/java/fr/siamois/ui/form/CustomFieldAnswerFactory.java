@@ -10,6 +10,7 @@ import fr.siamois.domain.models.form.customfield.phase.CustomFieldSelectMultiple
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldMeasurement;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectMultipleRecordingUnit;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldSelectOneRecordingUnit;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
 import fr.siamois.domain.models.form.customfield.recordingunit.CustomFieldStratigraphicRelationships;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnit;
 import fr.siamois.domain.models.form.customfield.spatialunit.CustomFieldSelectMultipleSpatialUnitTree;
@@ -80,6 +81,8 @@ public final class CustomFieldAnswerFactory {
                 // Only ever a placeholder: its values are read from the relation_link table
                 // (RelationFieldService), never bound on the unit — this keeps it in the form, empty.
                 Map.entry(CustomFieldStratigraphicRelationships.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
+                // Likewise for a configurable relation field: its links are read from relation_link (MultiValueAnswers).
+                Map.entry(CustomFieldRelation.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
                 Map.entry(CustomFieldSelectMultipleFromFieldCode.class, f -> new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel()),
                 // Additional ("Vocabulaire contrôlé") fields created from the project field settings:
                 // their vocabulary comes from the field's own branch/collection configuration instead of

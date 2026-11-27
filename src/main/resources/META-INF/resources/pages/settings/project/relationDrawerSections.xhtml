@@ -1,0 +1,180 @@
+<ui:fragment xmlns="http://www.w3.org/1999/xhtml"
+             xmlns:ui="http://java.sun.com/jsf/facelets"
+             xmlns:h="http://xmlns.jcp.org/jsf/html"
+             xmlns:p="http://primefaces.org/ui"
+             xmlns:f="http://java.sun.com/jsf/core">
+
+    <!--
+    The relation sections of the field drawer (RelationFieldDrawerBean): what a new relation field links, then, for a
+    field that is a side of a relation, its identity and the rules this project follows. Included inside fieldEditForm.
+    -->
+    <h:panelGroup id="relationBlock" layout="block">
+
+        <!-- A new relation field: what it links and how. -->
+        <h:panelGroup rendered="#{projectTableFieldSettingsBean.draftCreateMode and projectTableFieldSettingsBean.draftType eq 'RELATION'}"
+                      layout="block" styleClass="ptc-drawer-section">
+            <h3 class="ptc-drawer-section-title">#{langBean.msg('relation.section.title')}</h3>
+            <p class="ptc-drawer-section-hint">#{langBean.msg('relation.section.hint')}</p>
+
+            <div class="ptc-drawer-field">
+                <label class="ptc-drawer-label" for="fieldEditForm:relationOtherKinds">#{langBean.msg('relation.otherKinds')}</label>
+                <p:selectManyCheckbox id="relationOtherKinds" value="#{relationFieldDrawerBean.draftOtherKinds}" layout="responsive" columns="2">
+                    <f:selectItems value="#{relationFieldDrawerBean.kindOptions}" var="k" itemLabel="#{k.label}" itemValue="#{k.value}"/>
+                </p:selectManyCheckbox>
+                <div class="ptc-field-hint">#{langBean.msg('relation.otherKindsHint')}</div>
+            </div>
+
+            <div class="ptc-drawer-field">
+                <label class="ptc-drawer-label" for="fieldEditForm:relationKind">#{langBean.msg('relation.kind')}</label>
+                <p:selectOneRadio id="relationKind" value="#{relationFieldDrawerBean.draftKind}" layout="pageDirection">
+                    <f:selectItem itemValue="simple" itemLabel="#{langBean.msg('relation.kind.simple')}"/>
+                    <f:selectItem itemValue="complex" itemLabel="#{langBean.msg('relation.kind.complex')}"/>
+                    <p:ajax process="@this draftName draftDescription relationOtherKinds" update=":fieldEditForm:drawerContent"/>
+                </p:selectOneRadio>
+                <div class="ptc-field-hint">#{langBean.msg('relation.kindHint')}</div>
+            </div>
+
+            <div class="ptc-drawer-field">
+                <div class="ptc-checkbox-row">
+                    <p:selectBooleanCheckbox id="relationSymmetric" value="#{relationFieldDrawerBean.draftSymmetric}">
+                        <p:ajax process="@this draftName draftDescription relationOtherKinds" update=":fieldEditForm:relationBlock"/>
+                    </p:selectBooleanCheckbox>
+                    <p:outputLabel for="relationSymmetric" value="#{langBean.msg('relation.symmetric')}"/>
+                </div>
+                <div class="ptc-field-hint">#{langBean.msg('relation.symmetricHint')}</div>
+            </div>
+
+            <h:panelGroup rendered="#{not relationFieldDrawerBean.draftSymmetric}" layout="block">
+                <div class="ptc-drawer-field">
+                    <div class="ptc-checkbox-row">
+                        <p:selectBooleanCheckbox id="relationHierarchical" value="#{relationFieldDrawerBean.draftHierarchical}"/>
+                        <p:outputLabel for="relationHierarchical" value="#{langBean.msg('relation.hierarchical')}"/>
+                    </div>
+                    <div class="ptc-field-hint">#{langBean.msg('relation.hierarchicalHint')}</div>
+                </div>
+                <div class="ptc-drawer-field">
+                    <label class="ptc-drawer-label" for="fieldEditForm:relationMirrorLabel">#{langBean.msg('relation.mirrorLabel')}</label>
+                    <p:inputText id="relationMirrorLabel" value="#{relationFieldDrawerBean.draftMirrorLabel}" style="width:100%"
+                                 placeholder="#{langBean.msg('relation.mirrorLabelPlaceholder')}"/>
+                    <div class="ptc-field-hint">#{langBean.msg('relation.mirrorLabelHint')}</div>
+                </div>
+            </h:panelGroup>
+        </h:panelGroup>
+
+        <!-- A side of a relation: its identity, then this project's rules. -->
+        <h:panelGroup rendered="#{relationFieldDrawerBean.open}" layout="block">
+            <div class="ptc-drawer-section">
+                <h3 class="ptc-drawer-section-title">#{langBean.msg('relation.section.title')}</h3>
+
+                <div class="ptc-drawer-field">
+                    <label class="ptc-drawer-label">#{langBean.msg('relation.otherField')}</label>
+                    <div class="ptc-readonly-value">#{relationFieldDrawerBean.symmetric ? langBean.msg('relation.symmetricSelf') : relationFieldDrawerBean.otherFieldLabel}</div>
+                </div>
+
+                <h:panelGroup rendered="#{relationFieldDrawerBean.identityEditable}" layout="block">
+                    <div class="ptc-drawer-field">
+                        <label class="ptc-drawer-label" for="fieldEditForm:relationIdentityKind">#{langBean.msg('relation.kind')}</label>
+                        <p:selectOneRadio id="relationIdentityKind" value="#{relationFieldDrawerBean.identityKind}" layout="pageDirection">
+                            <f:selectItem itemValue="simple" itemLabel="#{langBean.msg('relation.kind.simple')}"/>
+                            <f:selectItem itemValue="complex" itemLabel="#{langBean.msg('relation.kind.complex')}"/>
+                            <p:ajax process="@this" update=":fieldEditForm:drawerContent"/>
+                        </p:selectOneRadio>
+                    </div>
+                    <h:panelGroup rendered="#{not relationFieldDrawerBean.symmetric}" layout="block" styleClass="ptc-drawer-field">
+                        <div class="ptc-checkbox-row">
+                            <p:selectBooleanCheckbox id="relationIdentityHierarchical" value="#{relationFieldDrawerBean.identityHierarchical}"/>
+                            <p:outputLabel for="relationIdentityHierarchical" value="#{langBean.msg('relation.hierarchical')}"/>
+                        </div>
+                    </h:panelGroup>
+                </h:panelGroup>
+                <h:panelGroup rendered="#{not relationFieldDrawerBean.identityEditable}" layout="block" styleClass="ptc-drawer-field">
+                    <label class="ptc-drawer-label">#{langBean.msg('relation.kind')}</label>
+                    <div class="ptc-readonly-value">#{relationFieldDrawerBean.identityLabel}</div>
+                    <div class="ptc-field-hint">#{relationFieldDrawerBean.identityHint}</div>
+                </h:panelGroup>
+            </div>
+
+            <div class="ptc-drawer-section">
+                <h3 class="ptc-drawer-section-title">#{langBean.msg('relation.rules.title')}</h3>
+                <p class="ptc-drawer-section-hint">#{relationFieldDrawerBean.rulesOriginLabel}</p>
+
+                <h:panelGroup layout="block" styleClass="ptc-drawer-messages" rendered="#{not empty relationFieldDrawerBean.errorMessage}">
+                    <div class="ptc-drawer-error">
+                        <i class="bi bi-exclamation-triangle-fill"/>
+                        <span>#{relationFieldDrawerBean.errorMessage}</span>
+                    </div>
+                    <ui:repeat value="#{relationFieldDrawerBean.violations}" var="v">
+                        <div class="ptc-field-hint ptc-field-warning">#{v}</div>
+                    </ui:repeat>
+                </h:panelGroup>
+
+                <div class="ptc-drawer-field">
+                    <div class="ptc-checkbox-row">
+                        <p:selectBooleanCheckbox id="relationNoCycle" value="#{relationFieldDrawerBean.noCycle}"
+                                                 disabled="#{relationFieldDrawerBean.identityHierarchical}"/>
+                        <p:outputLabel for="relationNoCycle" value="#{langBean.msg('relation.rules.noCycle')}"/>
+                    </div>
+                </div>
+                <div class="ptc-drawer-field">
+                    <div class="ptc-checkbox-row">
+                        <p:selectBooleanCheckbox id="relationOwnUnique" value="#{relationFieldDrawerBean.ownUnique}"/>
+                        <p:outputLabel for="relationOwnUnique" value="#{langBean.msg('relation.rules.ownUnique')}"/>
+                    </div>
+                </div>
+                <h:panelGroup rendered="#{not relationFieldDrawerBean.symmetric}" layout="block" styleClass="ptc-drawer-field">
+                    <div class="ptc-checkbox-row">
+                        <p:selectBooleanCheckbox id="relationOtherUnique" value="#{relationFieldDrawerBean.otherUnique}"/>
+                        <p:outputLabel for="relationOtherUnique" value="#{langBean.msg('relation.rules.otherUnique')}"/>
+                    </div>
+                </h:panelGroup>
+
+                <div class="ptc-drawer-field">
+                    <label class="ptc-drawer-label" for="fieldEditForm:relationRuleKinds">#{langBean.msg('relation.otherKinds')}</label>
+                    <p:selectManyCheckbox id="relationRuleKinds" value="#{relationFieldDrawerBean.otherKinds}" layout="responsive" columns="2">
+                        <f:selectItems value="#{relationFieldDrawerBean.kindOptions}" var="k" itemLabel="#{k.label}" itemValue="#{k.value}"/>
+                    </p:selectManyCheckbox>
+                    <div class="ptc-field-hint">#{langBean.msg('relation.otherKindsHint')}</div>
+                </div>
+
+                <h:panelGroup rendered="#{not empty relationFieldDrawerBean.exclusionOptions}" layout="block" styleClass="ptc-drawer-field">
+                    <label class="ptc-drawer-label" for="fieldEditForm:relationExclusions">#{langBean.msg('relation.rules.exclusions')}</label>
+                    <p:selectManyCheckbox id="relationExclusions" value="#{relationFieldDrawerBean.exclusions}" layout="pageDirection">
+                        <f:selectItems value="#{relationFieldDrawerBean.exclusionOptions}" var="d" itemLabel="#{d.label}" itemValue="#{d.value}"/>
+                    </p:selectManyCheckbox>
+                    <div class="ptc-field-hint">#{langBean.msg('relation.rules.exclusionsHint')}</div>
+                </h:panelGroup>
+
+                <h:panelGroup id="relationPairs" rendered="#{relationFieldDrawerBean.complex and not relationFieldDrawerBean.symmetric}" layout="block" styleClass="ptc-drawer-field">
+                    <label class="ptc-drawer-label">#{langBean.msg('relation.rules.pairs')}</label>
+                    <div class="ptc-field-hint">#{langBean.msg('relation.rules.pairsHint')}</div>
+                    <ui:repeat value="#{relationFieldDrawerBean.pairs}" var="pair">
+                        <div class="ptc-checkbox-row">
+                            <h:selectOneMenu value="#{pair.concept}" styleClass="ptc-native-select">
+                                <f:selectItem itemValue="" itemLabel="—"/>
+                                <f:selectItems value="#{relationFieldDrawerBean.ownQualifiers}" var="c" itemLabel="#{c.label}" itemValue="#{c.value}"/>
+                            </h:selectOneMenu>
+                            <i class="bi bi-arrow-left-right"/>
+                            <h:selectOneMenu value="#{pair.mirror}" styleClass="ptc-native-select">
+                                <f:selectItem itemValue="" itemLabel="—"/>
+                                <f:selectItems value="#{relationFieldDrawerBean.mirrorQualifiers}" var="c" itemLabel="#{c.label}" itemValue="#{c.value}"/>
+                            </h:selectOneMenu>
+                            <p:commandButton icon="bi bi-x-lg" styleClass="ui-button-flat" process="@form"
+                                             actionListener="#{relationFieldDrawerBean.removePair(pair)}"
+                                             update=":fieldEditForm:relationPairs"/>
+                        </div>
+                    </ui:repeat>
+                    <p:commandButton value="#{langBean.msg('relation.rules.addPair')}" icon="bi bi-plus" styleClass="ui-button-flat"
+                                     process="@form" actionListener="#{relationFieldDrawerBean.addPair()}"
+                                     update=":fieldEditForm:relationPairs"/>
+                </h:panelGroup>
+
+                <h:panelGroup rendered="#{relationFieldDrawerBean.ownRules}" layout="block" styleClass="ptc-drawer-field">
+                    <p:commandButton value="#{langBean.msg('relation.rules.reset')}" icon="bi bi-arrow-counterclockwise"
+                                     styleClass="ui-button-secondary" process="@this"
+                                     actionListener="#{relationFieldDrawerBean.resetRules()}"
+                                     update=":fieldEditForm:relationBlock"/>
+                </h:panelGroup>
+            </div>
+        </h:panelGroup>
+    </h:panelGroup>
+</ui:fragment>

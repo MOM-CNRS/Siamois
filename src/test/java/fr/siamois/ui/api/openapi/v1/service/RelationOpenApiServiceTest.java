@@ -199,25 +199,25 @@ class RelationOpenApiServiceTest {
     @Test
     void definitionsAreReadCreatedUpdatedAndDeleted() {
         when(definitionRepository.findById(10L)).thenReturn(Optional.of(order));
-        when(definitionService.create(any(), any())).thenReturn(order);
-        when(definitionService.updateIdentity(eq(10L), any(), any())).thenReturn(order);
+        when(definitionService.create(any(), any(), any())).thenReturn(order);
+        when(definitionService.updateIdentity(eq(10L), any(), any(), any())).thenReturn(order);
 
         assertThat(service.definition(10L).id()).isEqualTo(10L);
         service.createDefinition(new RelationDefinitionCreateRequest(SOURCE_FIELD, null, "Antérieur à", "complex",
                 null, null, null, new RelationRulesRequest(true, null, null,
                 List.of(new RelationRulesRequest.AcceptedKind("source", "recording-units", null)),
-                List.of(new RelationRulesRequest.MirrorPair(201L, 301L)), List.of(11L))), caller);
-        service.updateDefinition(10L, new RelationDefinitionUpdateRequest("simple", true, null), caller);
-        service.deleteDefinition(10L, caller);
+                List.of(new RelationRulesRequest.MirrorPair(201L, 301L)), List.of(11L))), PROJECT, caller);
+        service.updateDefinition(10L, new RelationDefinitionUpdateRequest("simple", true, null), null, caller);
+        service.deleteDefinition(10L, null, caller);
 
         ArgumentCaptor<RelationDefinitionService.CreateRequest> created = ArgumentCaptor.forClass(RelationDefinitionService.CreateRequest.class);
-        verify(definitionService).create(created.capture(), any());
+        verify(definitionService).create(created.capture(), eq(PROJECT), any());
         assertThat(created.getValue().kind()).isEqualTo(RelationKind.COMPLEX);
         assertThat(created.getValue().defaultRules().noCycle()).isTrue();
         assertThat(created.getValue().defaultRules().mirrorByConcept()).containsEntry(201L, 301L);
         verify(definitionService).updateIdentity(eq(10L), eq(new RelationDefinitionService.IdentityUpdate(
-                RelationKind.SIMPLE, true, null)), any());
-        verify(definitionService).delete(eq(10L), any());
+                RelationKind.SIMPLE, true, null)), eq(null), any());
+        verify(definitionService).delete(eq(10L), eq(null), any());
     }
 
     @Test
@@ -228,9 +228,9 @@ class RelationOpenApiServiceTest {
         when(definitionRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.definition(99L)).isInstanceOf(RelationLinkException.class);
-        assertThatThrownBy(() -> service.createDefinition(null, caller)).isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(() -> service.createDefinition(noKind, caller)).isInstanceOf(ResponseStatusException.class);
-        assertThatThrownBy(() -> service.updateDefinition(10L, noKindUpdate, caller)).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.createDefinition(null, null, caller)).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.createDefinition(noKind, null, caller)).isInstanceOf(ResponseStatusException.class);
+        assertThatThrownBy(() -> service.updateDefinition(10L, noKindUpdate, null, caller)).isInstanceOf(ResponseStatusException.class);
     }
 
     // ---- rules ----

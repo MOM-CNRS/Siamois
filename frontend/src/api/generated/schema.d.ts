@@ -309,7 +309,7 @@ export interface paths {
         put?: never;
         /**
          * Créer une relation depuis un champ
-         * @description Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau (le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la plateforme. Réservé à l'administrateur de la plateforme.
+         * @description Le champ devient le côté source ; le côté cible est un champ relation existant ou un nouveau (le même pour une relation symétrique). La relation démarre avec ses règles par défaut de la plateforme. Réservé à l'administrateur de la plateforme, ou à qui configure le projet donné.
          */
         post: operations["create_2"];
         delete?: never;
@@ -3416,7 +3416,6 @@ export interface components {
              * @enum {string}
              */
             side: "source" | "target";
-            record?: components["schemas"]["RelationEndRequest"];
             other?: components["schemas"]["RelationEndRequest"];
             /**
              * Format: int64
@@ -3429,6 +3428,7 @@ export interface components {
              * @default false
              */
             uncertain: boolean;
+            record?: components["schemas"]["RelationEndRequest"];
         };
         /** @description Une fiche à une extrémité d'un lien */
         RelationEndResponse: {
@@ -7094,7 +7094,13 @@ export interface operations {
     };
     create_2: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système
+                 * @example 7
+                 */
+                projectId?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7132,7 +7138,7 @@ export interface operations {
                     "application/json": components["schemas"]["RelationDefinitionResponse"];
                 };
             };
-            /** @description Réservé à l'administrateur de la plateforme */
+            /** @description Ni administrateur de la plateforme, ni droit de configurer le projet */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10450,7 +10456,13 @@ export interface operations {
     };
     delete_3: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système
+                 * @example 7
+                 */
+                projectId?: number;
+            };
             header?: never;
             path: {
                 id: number;
@@ -10473,7 +10485,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Réservé à l'administrateur de la plateforme */
+            /** @description Ni administrateur de la plateforme, ni droit de configurer le projet */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -10491,7 +10503,13 @@ export interface operations {
     };
     update_2: {
         parameters: {
-            query?: never;
+            query?: {
+                /**
+                 * @description Projet d'où l'on configure : ses droits de configuration suffisent, sauf pour une relation entre champs système
+                 * @example 7
+                 */
+                projectId?: number;
+            };
             header?: never;
             path: {
                 id: number;
@@ -10522,7 +10540,7 @@ export interface operations {
                     "application/json": components["schemas"]["RelationDefinitionResponse"];
                 };
             };
-            /** @description Réservé à l'administrateur de la plateforme */
+            /** @description Ni administrateur de la plateforme, ni droit de configurer le projet */
             403: {
                 headers: {
                     [name: string]: unknown;

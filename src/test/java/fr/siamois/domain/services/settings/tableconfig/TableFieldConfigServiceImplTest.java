@@ -111,6 +111,9 @@ class TableFieldConfigServiceImplTest {
     @org.mockito.Spy
     private fr.siamois.domain.services.form.layout.FormLayoutSeeds formLayoutSeeds = fr.siamois.utils.TestForms.seeds();
 
+    @Mock
+    private fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository relationDefinitionRepository;
+
     @InjectMocks
     private TableFieldConfigServiceImpl service;
 
@@ -1494,6 +1497,48 @@ class TableFieldConfigServiceImplTest {
         assertThat(saved.getValue().getGroup().getLabel())
                 .isEqualTo(fr.siamois.domain.models.form.layout.FormLayout.ADDITIONAL_GROUP_LABEL);
         assertThat(saved.getValue().getPosition()).isEqualTo(1);
+    }
+
+    @Test
+    void searchFieldCatalog_shouldOfferTheUnplacedMirrorOfARelationTheInstitutionUses() {
+        CustomField contient = relationField(5L, "Contient");
+        CustomField mirror = relationField(6L, "Contenu dans");
+        CustomField unrelated = relationField(7L, "Autre");
+        fr.siamois.domain.models.relation.RelationDefinition used = definition(contient, mirror);
+        fr.siamois.domain.models.relation.RelationDefinition other = definition(unrelated, relationField(8L, "Autre miroir"));
+        when(customFieldRepository.findAllReusableByInstitution(1L)).thenReturn(List.of(contient));
+        when(relationDefinitionRepository.findAll()).thenReturn(List.of(used, other));
+
+        List<FieldCatalogEntry> results = service.searchFieldCatalog(PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "cont");
+
+        assertThat(results).extracting(FieldCatalogEntry::getName).containsExactlyInAnyOrder("Contient", "Contenu dans");
+    }
+
+    @Test
+    void updateField_shouldRefuseToChangeTheTypeOfARelationField() {
+        CustomField existing = relationField(1L, "Contient");
+        when(fieldFormConfigRepository.findAllByFormConfigId(11L))
+                .thenReturn(List.of(fieldConfig(ceramiqueConfig, existing, true, false)));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.updateField(
+                        PROJECT_ID, ConfigurableTable.MOBILIER, "Céramique", "Contient", "Contient", FieldType.TEXT, "Desc"))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(customFieldRepository, never()).delete(any());
+    }
+
+    private static CustomField relationField(long id, String label) {
+        fr.siamois.domain.models.form.customfield.CustomFieldRelation field = new fr.siamois.domain.models.form.customfield.CustomFieldRelation();
+        field.setId(id);
+        field.setLabel(label);
+        field.setIsSystemField(false);
+        return field;
+    }
+
+    private static fr.siamois.domain.models.relation.RelationDefinition definition(CustomField source, CustomField target) {
+        fr.siamois.domain.models.relation.RelationDefinition definition = new fr.siamois.domain.models.relation.RelationDefinition();
+        definition.setSourceField(source);
+        definition.setTargetField(target);
+        return definition;
     }
 
     // --- updateField ---
