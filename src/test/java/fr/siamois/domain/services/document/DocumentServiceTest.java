@@ -692,4 +692,66 @@ class DocumentServiceTest {
         assertNull(documentService.suggestIdentifier(dto));
         verifyNoInteractions(identifierGenerator);
     }
+
+    @Test
+    void suggestAttachmentBasedIdentifier_resumesAfterDbAndReservedMax() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        project.setName("Site");
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
+        ru.setFullIdentifier("UE-1");
+        SpecimenSummaryDTO find = new SpecimenSummaryDTO();
+        find.setFullIdentifier("MOB-2");
+
+        when(documentRepository.findMaxAttachmentCounter(7L, "Site_UE-1_MOB-2")).thenReturn(1);
+        when(documentRepository.existsByActionUnitIdAndIdentifier(7L, "Site_UE-1_MOB-2_000003")).thenReturn(false);
+
+        String suggested = documentService.suggestAttachmentBasedIdentifier(
+                project, List.of(ru), List.of(find), List.of("Site_UE-1_MOB-2_000002"));
+
+        assertEquals("Site_UE-1_MOB-2_000003", suggested);
+        verify(documentRepository).findMaxAttachmentCounter(7L, "Site_UE-1_MOB-2");
+        verify(documentRepository, never()).existsByActionUnitIdAndIdentifier(7L, "Site_UE-1_MOB-2_000001");
+        verify(documentRepository, never()).existsByActionUnitIdAndIdentifier(7L, "Site_UE-1_MOB-2_000002");
+        verifyNoInteractions(identifierGenerator);
+    }
+
+    @Test
+    void suggestAttachmentBasedIdentifier_resumesAfterHighestExistingWithoutFillingGaps() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        project.setName("Site");
+        when(documentRepository.findMaxAttachmentCounter(7L, "Site")).thenReturn(15);
+        when(documentRepository.existsByActionUnitIdAndIdentifier(7L, "Site_000016")).thenReturn(false);
+
+        assertEquals("Site_000016",
+                documentService.suggestAttachmentBasedIdentifier(project, null, null, null));
+        verify(documentRepository, never()).existsByActionUnitIdAndIdentifier(7L, "Site_000001");
+    }
+
+    @Test
+    void suggestAttachmentBasedIdentifier_requiresPersistedProjectWithLabel() {
+        assertNull(documentService.suggestAttachmentBasedIdentifier(null, null, null, null));
+
+        ActionUnitDTO withoutId = new ActionUnitDTO();
+        withoutId.setName("Site");
+        assertNull(documentService.suggestAttachmentBasedIdentifier(withoutId, null, null, null));
+
+        ActionUnitDTO withoutLabel = new ActionUnitDTO();
+        withoutLabel.setId(7L);
+        assertNull(documentService.suggestAttachmentBasedIdentifier(withoutLabel, List.of(), List.of(), null));
+        verifyNoInteractions(documentRepository);
+    }
+
+    @Test
+    void suggestAttachmentBasedIdentifier_firstFreeWhenNothingReserved() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(7L);
+        project.setName("Site");
+        when(documentRepository.findMaxAttachmentCounter(7L, "Site")).thenReturn(null);
+        when(documentRepository.existsByActionUnitIdAndIdentifier(7L, "Site_000001")).thenReturn(false);
+
+        assertEquals("Site_000001",
+                documentService.suggestAttachmentBasedIdentifier(project, null, null, null));
+    }
 }

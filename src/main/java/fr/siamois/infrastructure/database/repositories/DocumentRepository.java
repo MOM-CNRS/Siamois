@@ -188,6 +188,21 @@ public interface DocumentRepository extends CrudRepository<Document, Long>, Revi
 
     boolean existsByActionUnitIdAndIdentifier(Long actionUnitId, String identifier);
 
+    /**
+     * Highest trailing 6-digit counter among project documents whose identifier is exactly
+     * {@code prefix_######} (attachment-based naming). Returns {@code null} when none match.
+     */
+    @Query(
+            nativeQuery = true,
+            value = "SELECT MAX(CAST(SUBSTRING(d.identifier FROM LENGTH(CAST(:prefix AS TEXT)) + 2) AS INTEGER)) "
+                    + "FROM siamois_document d "
+                    + "WHERE d.fk_action_unit_id = :actionUnitId "
+                    + "AND d.identifier LIKE CONCAT(CAST(:prefix AS TEXT), '\\_%') ESCAPE '\\' "
+                    + "AND LENGTH(d.identifier) = LENGTH(CAST(:prefix AS TEXT)) + 7 "
+                    + "AND SUBSTRING(d.identifier FROM LENGTH(CAST(:prefix AS TEXT)) + 2) ~ '^[0-9]{6}$'"
+    )
+    Integer findMaxAttachmentCounter(@Param("actionUnitId") Long actionUnitId, @Param("prefix") String prefix);
+
     Optional<Document> findByIdentifierAndActionUnitId(String identifier, Long actionUnitId);
 
     int countByActionUnitId(Long actionUnitId);

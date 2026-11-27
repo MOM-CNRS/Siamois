@@ -126,7 +126,8 @@ class DocumentImportDraftServiceTest {
         assertThat(item.getId()).isEqualTo(55L);
         assertThat(item.getOriginalFileName()).isEqualTo("plan.pdf");
         assertThat(item.getStoredFileName()).isEqualTo("uuid.pdf");
-        assertThat(item.getTitle()).isEqualTo("plan");
+        assertThat(item.getTitle()).isNull();
+        assertThat(item.getIdentifier()).isNull();
         assertThat(item.getMd5Sum()).isNotBlank();
         assertThat(item.getStatus()).isEqualTo(DocumentImportItemStatus.DRAFT);
         verify(draftStorage).save(eq(10L), eq(3L), eq("plan.pdf"), any());
@@ -160,23 +161,46 @@ class DocumentImportDraftServiceTest {
         when(draftRepository.save(draft)).thenReturn(draft);
 
         DocumentImportDraftService.ItemMetadata meta = new DocumentImportDraftService.ItemMetadata(
-                "Titre", "Desc", null, null, null,
+                "DOC-1", null, null, null, null,
                 Set.of(), Set.of(), Set.of(), Set.of());
 
         DocumentImportItem updated = service.updateItemMetadata(7L, 10L, 55L, meta);
 
-        assertThat(updated.getTitle()).isEqualTo("Titre");
-        assertThat(updated.getDescription()).isEqualTo("Desc");
+        assertThat(updated.getIdentifier()).isEqualTo("DOC-1");
+        assertThat(updated.getType()).isNull();
         assertThat(updated.getStatus()).isEqualTo(DocumentImportItemStatus.DRAFT);
     }
 
     @Test
-    void removeItem_deletesFileAndRow() {
+    void removeItem_lastItem_purgesDraftTreeAndRow() {
         when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
         DocumentImportItem item = new DocumentImportItem();
         item.setId(55L);
         item.setDraft(draft);
         item.setStoredFileName("uuid.pdf");
+        draft.getItems().add(item);
+        when(itemRepository.findByIdAndDraftId(55L, 3L)).thenReturn(Optional.of(item));
+
+        service.removeItem(7L, 10L, 55L);
+
+        verify(draftStorage).deleteItem(10L, 3L, "uuid.pdf");
+        verify(itemRepository).delete(item);
+        verify(draftStorage).deleteDraftTree(10L, 3L);
+        verify(draftRepository).delete(draft);
+        verify(draftRepository, never()).save(draft);
+    }
+
+    @Test
+    void removeItem_keepsDraftWhenOtherItemsRemain() {
+        when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
+        DocumentImportItem keep = new DocumentImportItem();
+        keep.setId(54L);
+        DocumentImportItem item = new DocumentImportItem();
+        item.setId(55L);
+        item.setDraft(draft);
+        item.setStoredFileName("uuid.pdf");
+        draft.getItems().add(keep);
+        draft.getItems().add(item);
         when(itemRepository.findByIdAndDraftId(55L, 3L)).thenReturn(Optional.of(item));
         when(draftRepository.save(draft)).thenReturn(draft);
 
@@ -184,6 +208,10 @@ class DocumentImportDraftServiceTest {
 
         verify(draftStorage).deleteItem(10L, 3L, "uuid.pdf");
         verify(itemRepository).delete(item);
+        verify(draftStorage, never()).deleteDraftTree(anyLong(), anyLong());
+        verify(draftRepository).save(draft);
+        verify(draftRepository, never()).delete(draft);
+        assertThat(draft.getItems()).containsExactly(keep);
     }
 
     @Test
@@ -213,19 +241,21 @@ class DocumentImportDraftServiceTest {
     }
 
     @Test
-    void removeItemAfterSuccessfulSubmit_deletesItemAndFile() {
+    void removeItemAfterSuccessfulSubmit_lastItem_purgesDraftTree() {
         when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
         DocumentImportItem item = new DocumentImportItem();
         item.setId(55L);
         item.setDraft(draft);
         item.setStoredFileName("done.pdf");
+        draft.getItems().add(item);
         when(itemRepository.findByIdAndDraftId(55L, 3L)).thenReturn(Optional.of(item));
-        when(draftRepository.save(draft)).thenReturn(draft);
 
         service.removeItemAfterSuccessfulSubmit(7L, 10L, 55L);
 
         verify(draftStorage).deleteItem(10L, 3L, "done.pdf");
         verify(itemRepository).delete(item);
+        verify(draftStorage).deleteDraftTree(10L, 3L);
+        verify(draftRepository).delete(draft);
     }
 
     @Test
@@ -290,7 +320,7 @@ class DocumentImportDraftServiceTest {
     }
 
     @Test
-    void addFile_nullFileName_keepsNullTitle() throws Exception {
+    void addFile_nullFileName_keepsNullOriginalName() throws Exception {
         when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
         when(itemRepository.countByDraftId(3L)).thenReturn(0L);
         when(draftStorage.save(eq(10L), eq(3L), eq(null), any())).thenReturn("uuid.bin");
@@ -307,7 +337,7 @@ class DocumentImportDraftServiceTest {
     }
 
     @Test
-    void addFile_withoutExtension_keepsFullNameAsTitle() throws Exception {
+    void addFile_withoutExtension_doesNotDeriveTitle() throws Exception {
         when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
         when(itemRepository.countByDraftId(3L)).thenReturn(0L);
         when(draftStorage.save(eq(10L), eq(3L), eq("README"), any())).thenReturn("uuid.bin");
@@ -319,7 +349,8 @@ class DocumentImportDraftServiceTest {
                 new ByteArrayInputStream(new byte[]{1}),
                 null);
 
-        assertThat(item.getTitle()).isEqualTo("README");
+        assertThat(item.getTitle()).isNull();
+        assertThat(item.getOriginalFileName()).isEqualTo("README");
     }
 
     @Test
@@ -370,28 +401,36 @@ class DocumentImportDraftServiceTest {
     }
 
     @Test
-    void updateItemMetadata_resolvesConceptsAndNullConceptId() {
+    void updateItemMetadata_resolvesTypeNatureScaleAndDescription() {
         when(draftRepository.findByPersonIdAndInstitutionId(7L, 10L)).thenReturn(Optional.of(draft));
         DocumentImportItem item = blankItem(55L);
+        item.setTitle("old");
         when(itemRepository.findByIdAndDraftId(55L, 3L)).thenReturn(Optional.of(item));
         when(itemRepository.save(item)).thenReturn(item);
         when(draftRepository.save(draft)).thenReturn(draft);
+        Concept type = new Concept();
+        type.setId(10L);
         Concept nature = new Concept();
-        nature.setId(10L);
-        when(conceptRepository.findById(10L)).thenReturn(Optional.of(nature));
-        when(conceptRepository.findById(11L)).thenReturn(Optional.empty());
+        nature.setId(20L);
+        Concept scale = new Concept();
+        scale.setId(30L);
+        when(conceptRepository.findById(10L)).thenReturn(Optional.of(type));
+        when(conceptRepository.findById(20L)).thenReturn(Optional.of(nature));
+        when(conceptRepository.findById(30L)).thenReturn(Optional.of(scale));
 
         DocumentImportDraftService.ItemMetadata meta = new DocumentImportDraftService.ItemMetadata(
-                "  Titre  ", "  Desc  ", 10L, 11L, null,
+                "  DOC-9  ", 10L, 20L, 30L, "  Une description  ",
                 null, null, null, null);
 
         DocumentImportItem updated = service.updateItemMetadata(7L, 10L, 55L, meta);
 
-        assertThat(updated.getTitle()).isEqualTo("Titre");
-        assertThat(updated.getDescription()).isEqualTo("Desc");
+        assertThat(updated.getIdentifier()).isEqualTo("DOC-9");
+        assertThat(updated.getType()).isSameAs(type);
         assertThat(updated.getNature()).isSameAs(nature);
+        assertThat(updated.getScale()).isSameAs(scale);
+        assertThat(updated.getDescription()).isEqualTo("Une description");
+        assertThat(updated.getTitle()).isNull();
         assertThat(updated.getFormatConcept()).isNull();
-        assertThat(updated.getScale()).isNull();
         assertThat(updated.getErrorMessage()).isNull();
     }
 
@@ -494,11 +533,11 @@ class DocumentImportDraftServiceTest {
     }
 
     @Test
-    void itemMetadata_blankTitleKeptAsIs() {
+    void itemMetadata_blankIdentifierAndDescriptionBecomeNull() {
         DocumentImportDraftService.ItemMetadata blank =
-                new DocumentImportDraftService.ItemMetadata("   ", "  d  ", null, null, null, null, null, null, null);
-        assertThat(blank.title()).isEqualTo("   ");
-        assertThat(blank.description()).isEqualTo("d");
+                new DocumentImportDraftService.ItemMetadata("   ", null, null, null, "  ", null, null, null, null);
+        assertThat(blank.identifier()).isNull();
+        assertThat(blank.description()).isNull();
     }
 
     @Test

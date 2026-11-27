@@ -59,4 +59,14 @@ describe("projectEntityConfig detail tabs", () => {
   it("declares an overlay-hosted create form for the list toolbar's own Créer button", () => {
     expect(projectEntityConfig.list.createForm).toBeDefined();
   });
+
+  it("renders Import massif on the project's documents tab", () => {
+    const tab = projectEntityConfig.detail.tabs.find((t) => t.key === "documents")!;
+    const rendered = tab.render({ id: "9" } as ProjectDetail, {
+      organizationId: 1,
+      refetch: () => {},
+      onNavigate: () => {},
+    } as never) as { props?: { toolbarExtra?: unknown } };
+    expect(rendered.props?.toolbarExtra).toBeTruthy();
+  });
 });

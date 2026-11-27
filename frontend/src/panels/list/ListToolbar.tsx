@@ -105,7 +105,9 @@ export function ListToolbar({
             hideCreate();
             void queryClient.invalidateQueries({ queryKey: queryKeys.entityList(entityType) });
             // A linked create changes the parent's relation counts (its tab badges).
-            if (createPrefill) void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
+            if (createPrefill || scope) {
+              void queryClient.invalidateQueries({ queryKey: queryKeys.entityDetails() });
+            }
             onCreated(id);
           },
           onCancel: hideCreate,

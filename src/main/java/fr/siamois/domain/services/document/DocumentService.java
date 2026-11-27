@@ -29,6 +29,7 @@ import fr.siamois.mapper.InstitutionMapper;
 import fr.siamois.mapper.PersonMapper;
 import fr.siamois.ui.viewmodel.fieldanswer.CustomFieldAnswerViewModel;
 import fr.siamois.utils.CodeUtils;
+import fr.siamois.utils.DocumentAttachmentIdentifierNamer;
 import fr.siamois.utils.DocumentUtils;
 import fr.siamois.utils.context.ExecutionContextHolder;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing documents in the system.
@@ -331,6 +333,48 @@ public class DocumentService implements ArkEntityService {
             return null;
         }
         return identifierGenerator.suggestIdentifier(document, documentIdentifierSpec()).value();
+    }
+
+    /**
+     * Suggests an identifier from direct attachments (project / UE / mobilier), without consuming a
+     * counter: {@code <project>[_<UE…>][_<find…>]_<######>}. Resumes after the highest counter
+     * already used in the project or reserved by other draft rows (no gap filling).
+     */
+    @Transactional(readOnly = true)
+    public String suggestAttachmentBasedIdentifier(ActionUnitDTO project,
+                                                   List<RecordingUnitSummaryDTO> recordingUnits,
+                                                   List<SpecimenSummaryDTO> finds,
+                                                   Collection<String> reservedIdentifiers) {
+        if (project == null || project.getId() == null) {
+            return null;
+        }
+        String prefix = DocumentAttachmentIdentifierNamer.buildPrefix(project, recordingUnits, finds);
+        if (!org.springframework.util.StringUtils.hasText(prefix)) {
+            return null;
+        }
+        Set<String> reserved = reservedIdentifiers == null
+                ? Set.of()
+                : reservedIdentifiers.stream()
+                .filter(org.springframework.util.StringUtils::hasText)
+                .collect(Collectors.toSet());
+        int dbMax = Optional.ofNullable(
+                documentRepository.findMaxAttachmentCounter(project.getId(), prefix)).orElse(0);
+        int reservedMax = DocumentAttachmentIdentifierNamer.maxCounter(prefix, reserved);
+        int start = Math.max(dbMax, reservedMax) + 1;
+        int max = (int) Math.pow(10, DocumentAttachmentIdentifierNamer.COUNTER_WIDTH) - 1;
+        for (int number = start; number <= max; number++) {
+            String candidate = DocumentAttachmentIdentifierNamer.withCounter(prefix, number);
+            if (candidate == null) {
+                return null;
+            }
+            if (reserved.contains(candidate)) {
+                continue;
+            }
+            if (!documentRepository.existsByActionUnitIdAndIdentifier(project.getId(), candidate)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private IdentifierGenerationSpec<Document> documentIdentifierSpec() {

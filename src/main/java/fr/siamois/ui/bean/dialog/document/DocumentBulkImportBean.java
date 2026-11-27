@@ -7,7 +7,7 @@ import fr.siamois.domain.models.document.DocumentImportDraft;
 import fr.siamois.domain.models.document.DocumentImportItem;
 import fr.siamois.domain.models.exceptions.InvalidFileSizeException;
 import fr.siamois.domain.models.exceptions.InvalidFileTypeException;
-import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.vocabulary.Concept;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.ark.ArkService;
@@ -15,8 +15,11 @@ import fr.siamois.domain.services.document.DocumentImportDraftService;
 import fr.siamois.domain.services.document.DocumentService;
 import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.models.exceptions.vocabulary.NoConfigForFieldException;
+import fr.siamois.domain.services.vocabulary.ConceptDescriptionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
@@ -71,6 +74,8 @@ public class DocumentBulkImportBean implements Serializable {
     private final SessionSettingsBean sessionSettingsBean;
     private final transient DocumentService documentService;
     private final transient DocumentImportDraftService draftService;
+    private final transient TableFieldConfigService tableFieldConfigService;
+    private final transient ConceptDescriptionService conceptDescriptionService;
     private final transient FieldConfigurationService fieldConfigurationService;
     private final LangBean langBean;
     private final transient ServletContext servletContext;
@@ -181,6 +186,16 @@ public class DocumentBulkImportBean implements Serializable {
         DocumentImportDraft draft = draftService.loadDraftWithItems(personId, institutionId);
         draftUpdatedAt = draft.getUpdatedAt();
         rows = draft.getItems().stream().map(this::toRow).collect(Collectors.toCollection(ArrayList::new));
+        if (isProjectFieldLocked()) {
+            for (BulkDocumentRow row : rows) {
+                ensureLockedProject(row);
+            }
+        }
+        for (BulkDocumentRow row : rows) {
+            if (!StringUtils.hasText(row.getIdentifier()) && !row.isIdentifierEdited()) {
+                assignSuggestedIdentifierOnLoad(row);
+            }
+        }
         selectedRow = rows.isEmpty() ? null : rows.get(0);
         draftDirty = false;
     }
@@ -241,6 +256,22 @@ public class DocumentBulkImportBean implements Serializable {
     }
 
     /**
+     * When the dialog was opened from a project (or an entity that belongs to one), the project
+     * field is fixed to that context and must not be edited in the form.
+     */
+    public boolean isProjectFieldLocked() {
+        return defaultProject != null && defaultProject.getId() != null;
+    }
+
+    /** Forces {@link #defaultProject} onto the row when the project field is locked. */
+    void ensureLockedProject(BulkDocumentRow row) {
+        if (row == null || !isProjectFieldLocked()) {
+            return;
+        }
+        row.setProjects(new ArrayList<>(List.of(defaultProject)));
+    }
+
+    /**
      * Charge les listes de choix multi-sélection pour l'institution courante.
      */
     public void loadTargetOptions() {
@@ -275,7 +306,12 @@ public class DocumentBulkImportBean implements Serializable {
         }
     }
 
-    public void handleFileUpload(FileUploadEvent event) {
+    /**
+     * One request per file (PrimeFaces). Synchronized because the bean is session-scoped and
+     * multi-select / multi-drop used to fire parallel requests that raced on {@link #rows}.
+     * Prefer {@code sequential="true"} on the widget so uploads run one after another.
+     */
+    public synchronized void handleFileUpload(FileUploadEvent event) {
         UploadedFile file = event.getFile();
         if (file == null) {
             return;
@@ -300,8 +336,10 @@ public class DocumentBulkImportBean implements Serializable {
                     file.getInputStream(),
                     defaults);
             BulkDocumentRow row = toRow(item);
+            ensureLockedProject(row);
             rows.add(row);
             selectedRow = row;
+            assignSuggestedIdentifierOnLoad(row);
             draftUpdatedAt = OffsetDateTime.now();
         } catch (IllegalStateException e) {
             if ("MAX_ITEMS".equals(e.getMessage())) {
@@ -345,12 +383,102 @@ public class DocumentBulkImportBean implements Serializable {
         selectedRow = event.getObject();
     }
 
+    /** Number of rows checked for bulk apply (may include the focused row). */
+    public long getMarkedCount() {
+        return rows.stream().filter(BulkDocumentRow::isMarked).count();
+    }
+
+    /** Targets that will receive a copy from {@link #selectedRow} (excludes the source). */
+    public long getApplyTargetCount() {
+        if (selectedRow == null) {
+            return 0;
+        }
+        String sourceKey = selectedRow.getClientKey();
+        return rows.stream()
+                .filter(BulkDocumentRow::isMarked)
+                .filter(row -> sourceKey == null || !sourceKey.equals(row.getClientKey()))
+                .count();
+    }
+
+    public boolean isApplyEnabled() {
+        return selectedRow != null && getApplyTargetCount() > 0;
+    }
+
+    public boolean isAllMarked() {
+        return !rows.isEmpty() && rows.stream().allMatch(BulkDocumentRow::isMarked);
+    }
+
+    public void setAllMarked(boolean marked) {
+        for (BulkDocumentRow row : rows) {
+            row.setMarked(marked);
+        }
+    }
+
+    public void toggleMarkAll() {
+        setAllMarked(!isAllMarked());
+    }
+
+    /**
+     * Copies all editable fields from the focused row onto marked rows
+     * (type, nature, scale, description, projects, UE, finds, places).
+     * Identifiers are re-suggested per target when the user has not edited them.
+     */
+    public void applyConceptsToMarked() {
+        List<BulkDocumentRow> targets = resolveApplyTargets();
+        if (targets.isEmpty()) {
+            MessageUtils.displayErrorMessage(langBean, "documents.bulk.applyDisabled");
+            return;
+        }
+        syncSelectedRowIntoList();
+        BulkDocumentRow source = selectedRow;
+        sanitizeTargetLists(source);
+        for (BulkDocumentRow target : targets) {
+            target.setType(source.getType());
+            target.setNature(source.getNature());
+            target.setScale(source.getScale());
+            target.setDescription(source.getDescription());
+            if (isProjectFieldLocked()) {
+                ensureLockedProject(target);
+            } else {
+                target.setProjects(copyList(source.getProjects()));
+            }
+            target.setRecordingUnits(copyList(source.getRecordingUnits()));
+            target.setFinds(copyList(source.getFinds()));
+            target.setPlaces(copyList(source.getPlaces()));
+            sanitizeTargetLists(target);
+            if (!target.isIdentifierEdited()) {
+                refreshSuggestedIdentifier(target);
+            }
+        }
+        draftDirty = true;
+        MessageUtils.displayInfoMessage(langBean, "documents.bulk.conceptsApplied", targets.size());
+    }
+
+    private List<BulkDocumentRow> resolveApplyTargets() {
+        if (selectedRow == null) {
+            return List.of();
+        }
+        String sourceKey = selectedRow.getClientKey();
+        return rows.stream()
+                .filter(BulkDocumentRow::isMarked)
+                .filter(row -> sourceKey == null || !sourceKey.equals(row.getClientKey()))
+                .toList();
+    }
+
+    private static <T> List<T> copyList(List<T> source) {
+        if (source == null || source.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(source);
+    }
+
     /**
      * Marks the draft dirty when the selected row is edited (AJAX listeners).
      * Persistence happens on {@link #saveDraft()} or {@link #submit()}.
      */
     public void persistSelectedRow() {
         if (selectedRow != null) {
+            ensureLockedProject(selectedRow);
             sanitizeTargetLists(selectedRow);
         }
         draftDirty = true;
@@ -398,6 +526,7 @@ public class DocumentBulkImportBean implements Serializable {
             DocumentImportItem updated = draftService.updateItemMetadata(
                     personId, institutionId, row.getItemId(), toMetadata(row));
             BulkDocumentRow refreshed = toRow(updated);
+            refreshed.setIdentifierEdited(row.isIdentifierEdited() || refreshed.isIdentifierEdited());
             replaceRowInList(refreshed);
             if (selectedRow != null && Objects.equals(selectedRow.getItemId(), refreshed.getItemId())) {
                 selectedRow = refreshed;
@@ -441,11 +570,11 @@ public class DocumentBulkImportBean implements Serializable {
     private DocumentImportDraftService.ItemMetadata toMetadata(BulkDocumentRow row) {
         sanitizeTargetLists(row);
         return new DocumentImportDraftService.ItemMetadata(
-                row.getTitle(),
-                row.getDescription(),
-                conceptId(row.getNature()),
+                row.getIdentifier(),
                 conceptId(row.getType()),
+                conceptId(row.getNature()),
                 conceptId(row.getScale()),
+                row.getDescription(),
                 row.getProjects().stream().map(ActionUnitDTO::getId).filter(Objects::nonNull).collect(Collectors.toSet()),
                 row.getRecordingUnits().stream().map(RecordingUnitSummaryDTO::getId).filter(Objects::nonNull).collect(Collectors.toSet()),
                 row.getFinds().stream().map(SpecimenSummaryDTO::getId).filter(Objects::nonNull).collect(Collectors.toSet()),
@@ -709,9 +838,8 @@ public class DocumentBulkImportBean implements Serializable {
         if (row == null) {
             return false;
         }
-        return StringUtils.hasText(row.getTitle())
-                && row.getNature() != null
-                && row.getType() != null
+        return row.getType() != null
+                && StringUtils.hasText(row.getIdentifier())
                 && countTargets(row) > 0
                 && row.getItemId() != null
                 && StringUtils.hasText(row.getMd5Sum())
@@ -735,14 +863,11 @@ public class DocumentBulkImportBean implements Serializable {
         if (row == null) {
             return "";
         }
-        if (!StringUtils.hasText(row.getTitle())) {
-            return langBean.msg("documents.titleRequired");
-        }
-        if (row.getNature() == null) {
-            return langBean.msg("documents.natureRequired");
-        }
         if (row.getType() == null) {
             return langBean.msg("documents.typeRequired");
+        }
+        if (!StringUtils.hasText(row.getIdentifier())) {
+            return langBean.msg("documents.bulk.identifierRequired");
         }
         if (countTargets(row) == 0) {
             return langBean.msg("documents.bulk.targetRequired");
@@ -758,12 +883,75 @@ public class DocumentBulkImportBean implements Serializable {
     }
 
     public boolean isSubmitEnabled() {
-        return !rows.isEmpty() && rows.stream().allMatch(this::isRowReady);
+        return readyCount() > 0;
     }
 
     /** Save-as-draft is offered while at least one document is incomplete. */
     public boolean isSaveDraftEnabled() {
-        return !rows.isEmpty() && !isSubmitEnabled();
+        return !rows.isEmpty() && rows.stream().anyMatch(row -> !isRowReady(row));
+    }
+
+    public List<ConceptAutocompleteDTO> autocompleteType(String input) {
+        Long projectId = resolveTypeCatalogProjectId();
+        if (projectId == null) {
+            return List.of();
+        }
+        List<Concept> configured = tableFieldConfigService.listConfiguredTypeConcepts(
+                projectId, ConfigurableTable.DOCUMENT);
+        if (configured.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, ConceptAutocompleteDTO> described =
+                conceptDescriptionService.describeAll(configured, languageCode());
+        String needle = input == null ? "" : input.trim().toLowerCase(Locale.ROOT);
+        return configured.stream()
+                .map(concept -> {
+                    ConceptAutocompleteDTO rich = described.get(concept.getId());
+                    return rich != null ? rich : toAutocomplete(concept);
+                })
+                .filter(Objects::nonNull)
+                .filter(dto -> matchesTypeQuery(dto, needle))
+                .sorted(Comparator.comparing(this::typeLabel, String.CASE_INSENSITIVE_ORDER))
+                .limit(AUTOCOMPLETE_LIMIT)
+                .toList();
+    }
+
+    private Long resolveTypeCatalogProjectId() {
+        if (selectedRow != null && selectedRow.getProjects() != null) {
+            for (ActionUnitDTO project : selectedRow.getProjects()) {
+                if (project != null && project.getId() != null) {
+                    return project.getId();
+                }
+            }
+        }
+        return defaultProject != null ? defaultProject.getId() : null;
+    }
+
+    private static boolean matchesTypeQuery(ConceptAutocompleteDTO dto, String needle) {
+        if (needle.isEmpty()) {
+            return true;
+        }
+        String label = dto.getConceptLabelToDisplay() == null
+                ? null
+                : dto.getConceptLabelToDisplay().getLabel();
+        if (label != null && label.toLowerCase(Locale.ROOT).contains(needle)) {
+            return true;
+        }
+        if (dto.getOriginalPrefLabel() != null
+                && dto.getOriginalPrefLabel().toLowerCase(Locale.ROOT).contains(needle)) {
+            return true;
+        }
+        return dto.getAltLabels() != null
+                && dto.getAltLabels().stream()
+                .anyMatch(alt -> alt != null && alt.toLowerCase(Locale.ROOT).contains(needle));
+    }
+
+    private String typeLabel(ConceptAutocompleteDTO dto) {
+        if (dto.getConceptLabelToDisplay() != null
+                && StringUtils.hasText(dto.getConceptLabelToDisplay().getLabel())) {
+            return dto.getConceptLabelToDisplay().getLabel();
+        }
+        return dto.getOriginalPrefLabel() == null ? "" : dto.getOriginalPrefLabel();
     }
 
     public List<ConceptAutocompleteDTO> autocompleteNature(String input) throws NoConfigForFieldException {
@@ -776,9 +964,119 @@ public class DocumentBulkImportBean implements Serializable {
                 sessionSettingsBean.getUserInfo(), Document.SCALE_FIELD_CODE, input);
     }
 
-    public List<ConceptAutocompleteDTO> autocompleteType(String input) throws NoConfigForFieldException {
-        return fieldConfigurationService.fetchAutocomplete(
-                sessionSettingsBean.getUserInfo(), Document.FORMAT_FIELD_CODE, input);
+    public void onTypeChange() {
+        if (selectedRow == null) {
+            return;
+        }
+        if (!selectedRow.isIdentifierEdited()) {
+            refreshSuggestedIdentifier(selectedRow);
+        }
+        persistSelectedRow();
+    }
+
+    public void onIdentifierInput() {
+        if (selectedRow == null) {
+            return;
+        }
+        selectedRow.setIdentifierEdited(true);
+        persistSelectedRow();
+    }
+
+    public void onProjectsChange() {
+        if (selectedRow == null) {
+            return;
+        }
+        if (!selectedRow.isIdentifierEdited()) {
+            refreshSuggestedIdentifier(selectedRow);
+        }
+        persistSelectedRow();
+    }
+
+    /** UE / mobiliers changed: refresh the attachment-based identifier when not manually edited. */
+    public void onAttachmentTargetsChange() {
+        if (selectedRow == null) {
+            return;
+        }
+        if (!selectedRow.isIdentifierEdited()) {
+            refreshSuggestedIdentifier(selectedRow);
+        }
+        persistSelectedRow();
+    }
+
+    /**
+     * Fills the identifier as soon as a file is loaded (upload or draft resume), then persists it
+     * in the draft so the detail panel shows it immediately.
+     */
+    private void assignSuggestedIdentifierOnLoad(BulkDocumentRow row) {
+        if (row == null || row.isIdentifierEdited()) {
+            return;
+        }
+        refreshSuggestedIdentifier(row);
+        if (StringUtils.hasText(row.getIdentifier()) && row.getItemId() != null) {
+            persistRow(row);
+        }
+    }
+
+    private void refreshSuggestedIdentifier(BulkDocumentRow row) {
+        ensureLockedProject(row);
+        ActionUnitDTO project = resolveProjectForNaming(row);
+        if (project == null) {
+            return;
+        }
+        try {
+            String suggested = documentService.suggestAttachmentBasedIdentifier(
+                    project,
+                    row.getRecordingUnits(),
+                    row.getFinds(),
+                    reservedIdentifiersExcluding(row));
+            if (StringUtils.hasText(suggested)) {
+                row.setIdentifier(suggested);
+            }
+        } catch (Exception e) {
+            log.debug("Could not suggest document identifier for bulk row {}", row.getItemId(), e);
+        }
+    }
+
+    /**
+     * Project used for the attachment-based identifier: locked context project when present,
+     * otherwise the first project on the row. Reloads labels when the DTO only carries an id.
+     */
+    private ActionUnitDTO resolveProjectForNaming(BulkDocumentRow row) {
+        ActionUnitDTO project = null;
+        if (isProjectFieldLocked()) {
+            project = defaultProject;
+        } else if (row.getProjects() != null && !row.getProjects().isEmpty()) {
+            project = row.getProjects().get(0);
+        }
+        if (project == null || project.getId() == null) {
+            return null;
+        }
+        if (StringUtils.hasText(project.getName())
+                || StringUtils.hasText(project.getFullIdentifier())
+                || StringUtils.hasText(project.getIdentifier())) {
+            return project;
+        }
+        try {
+            ActionUnitDTO reloaded = actionUnitService.findById(project.getId());
+            return reloaded != null ? reloaded : project;
+        } catch (RuntimeException e) {
+            log.debug("Unable to reload project {} for identifier suggestion", project.getId(), e);
+            return project;
+        }
+    }
+
+    private List<String> reservedIdentifiersExcluding(BulkDocumentRow current) {
+        String currentKey = current == null ? null : current.getClientKey();
+        return rows.stream()
+                .filter(row -> currentKey == null || !currentKey.equals(row.getClientKey()))
+                .map(BulkDocumentRow::getIdentifier)
+                .filter(StringUtils::hasText)
+                .toList();
+    }
+
+    private String languageCode() {
+        UserInfo info = sessionSettingsBean.getUserInfo();
+        return info != null && StringUtils.hasText(info.getLang()) ? info.getLang() : "fr";
     }
 
     public List<ActionUnitDTO> completeProject(String query) {
@@ -819,6 +1117,7 @@ public class DocumentBulkImportBean implements Serializable {
             MessageUtils.displayErrorMessage(langBean, "documents.bulk.noFiles");
             return;
         }
+        syncSelectedRowIntoList();
         // Persist latest edits before sending.
         for (BulkDocumentRow row : rows) {
             persistRow(row);
@@ -834,10 +1133,17 @@ public class DocumentBulkImportBean implements Serializable {
         Long institutionId = currentInstitutionId();
         int created = 0;
         int failed = 0;
+        int keptIncomplete = 0;
         Set<String> linkedInBatch = new HashSet<>();
         List<BulkDocumentRow> remaining = new ArrayList<>();
 
         for (BulkDocumentRow row : rows) {
+            if (!isRowReady(row)) {
+                keptIncomplete++;
+                remaining.add(row);
+                reportLines.add(row.getFileName() + " — " + langBean.msg("documents.bulk.status.pending"));
+                continue;
+            }
             String outcome = processRow(userInfo, row, linkedInBatch);
             reportLines.add(row.getFileName() + " — " + outcome);
             if (outcome.startsWith("OK")) {
@@ -857,13 +1163,13 @@ public class DocumentBulkImportBean implements Serializable {
         rows = remaining;
         selectedRow = rows.isEmpty() ? null : rows.get(0);
         reportVisible = true;
-        MessageUtils.displayInfoMessage(langBean, "documents.bulk.done", created, failed);
+        displaySubmitSummary(created, failed, keptIncomplete);
 
         if (created > 0 && actionOnComplete != null) {
             actionOnComplete.apply();
         }
 
-        if (created > 0 && failed == 0) {
+        if (rows.isEmpty()) {
             PrimeFaces.current().executeScript(
                     "if (PF('buiBulkSubmit')) { PF('buiBulkSubmit').hide(); } PF('bulkDocumentImportDiag').hide()");
         } else {
@@ -871,13 +1177,19 @@ public class DocumentBulkImportBean implements Serializable {
         }
     }
 
+    private void displaySubmitSummary(int created, int failed, int pending) {
+        if (failed == 0 && pending == 0) {
+            MessageUtils.displayInfoMessage(langBean, "documents.bulk.doneOk", created);
+        } else if (failed == 0) {
+            MessageUtils.displayInfoMessage(langBean, "documents.bulk.doneWithPending", created, pending);
+        } else if (pending == 0) {
+            MessageUtils.displayInfoMessage(langBean, "documents.bulk.done", created, failed);
+        } else {
+            MessageUtils.displayInfoMessage(langBean, "documents.bulk.donePartial", created, failed, pending);
+        }
+    }
+
     private String processRow(UserInfo userInfo, BulkDocumentRow row, Set<String> linkedInBatch) {
-        if (!StringUtils.hasText(row.getTitle())) {
-            return langBean.msg("documents.titleRequired");
-        }
-        if (row.getNature() == null) {
-            return langBean.msg("documents.natureRequired");
-        }
         if (row.getType() == null) {
             return langBean.msg("documents.typeRequired");
         }
@@ -932,9 +1244,15 @@ public class DocumentBulkImportBean implements Serializable {
         int linked = 0;
         int skipped = 0;
         List<String> errors = new ArrayList<>();
+        Long owningProjectId = document.getActionUnit() != null ? document.getActionUnit().getId() : null;
 
         for (ActionUnitDTO project : row.getProjects()) {
-            String key = targetKey("projects", project.getId());
+            String key = targetKey(md5, "projects", project.getId());
+            if (owningProjectId != null && Objects.equals(owningProjectId, project.getId())) {
+                linked++;
+                linkedInBatch.add(key);
+                continue;
+            }
             if (linkedInBatch.contains(key) || documentService.existInActionUnitByHash(project, md5)) {
                 skipped++;
                 continue;
@@ -951,7 +1269,7 @@ public class DocumentBulkImportBean implements Serializable {
             }
         }
         for (RecordingUnitSummaryDTO summary : row.getRecordingUnits()) {
-            String key = targetKey("recording-units", summary.getId());
+            String key = targetKey(md5, "recording-units", summary.getId());
             RecordingUnitDTO ru = recordingUnitService.findById(summary.getId());
             if (linkedInBatch.contains(key) || documentService.existInRecordingUnitByHash(ru, md5)) {
                 skipped++;
@@ -969,7 +1287,7 @@ public class DocumentBulkImportBean implements Serializable {
             }
         }
         for (SpecimenSummaryDTO summary : row.getFinds()) {
-            String key = targetKey("finds", summary.getId());
+            String key = targetKey(md5, "finds", summary.getId());
             SpecimenDTO specimen = specimenService.findById(summary.getId());
             if (linkedInBatch.contains(key) || documentService.existInSpecimenByHash(specimen, md5)) {
                 skipped++;
@@ -987,7 +1305,7 @@ public class DocumentBulkImportBean implements Serializable {
             }
         }
         for (SpatialUnitDTO place : row.getPlaces()) {
-            String key = targetKey("places", place.getId());
+            String key = targetKey(md5, "places", place.getId());
             if (linkedInBatch.contains(key) || documentService.existInSpatialUnitByHash(place, md5)) {
                 skipped++;
                 continue;
@@ -1020,13 +1338,13 @@ public class DocumentBulkImportBean implements Serializable {
     private int countNewTargets(BulkDocumentRow row, String md5, Set<String> linkedInBatch) {
         int count = 0;
         for (ActionUnitDTO project : row.getProjects()) {
-            String key = targetKey("projects", project.getId());
+            String key = targetKey(md5, "projects", project.getId());
             if (!linkedInBatch.contains(key) && !documentService.existInActionUnitByHash(project, md5)) {
                 count++;
             }
         }
         for (RecordingUnitSummaryDTO summary : row.getRecordingUnits()) {
-            String key = targetKey("recording-units", summary.getId());
+            String key = targetKey(md5, "recording-units", summary.getId());
             if (linkedInBatch.contains(key)) {
                 continue;
             }
@@ -1036,7 +1354,7 @@ public class DocumentBulkImportBean implements Serializable {
             }
         }
         for (SpecimenSummaryDTO summary : row.getFinds()) {
-            String key = targetKey("finds", summary.getId());
+            String key = targetKey(md5, "finds", summary.getId());
             if (linkedInBatch.contains(key)) {
                 continue;
             }
@@ -1046,7 +1364,7 @@ public class DocumentBulkImportBean implements Serializable {
             }
         }
         for (SpatialUnitDTO place : row.getPlaces()) {
-            String key = targetKey("places", place.getId());
+            String key = targetKey(md5, "places", place.getId());
             if (!linkedInBatch.contains(key) && !documentService.existInSpatialUnitByHash(place, md5)) {
                 count++;
             }
@@ -1054,17 +1372,19 @@ public class DocumentBulkImportBean implements Serializable {
         return count;
     }
 
-    private static String targetKey(String type, Long id) {
-        return type + "/" + id;
+    private static String targetKey(String md5, String type, Long id) {
+        return md5 + "|" + type + "/" + id;
     }
 
     private Document buildDocument(BulkDocumentRow row) {
         Document document = new Document();
-        document.setTitle(row.getTitle().trim());
-        document.setDescription(row.getDescription() == null ? null : row.getDescription().trim());
+        document.setType(resolveConcept(row.getType()));
+        if (StringUtils.hasText(row.getIdentifier())) {
+            document.setIdentifier(row.getIdentifier().trim());
+        }
         document.replaceNatureBy(resolveConcept(row.getNature()));
         document.setScale(resolveConcept(row.getScale()));
-        document.setFormatConcept(resolveConcept(row.getType()));
+        document.setDescription(row.getDescription() == null ? null : row.getDescription().trim());
         document.setFileName(row.getFileName());
         document.setMimeType(row.getContentType());
         document.setSize(row.getFileSize());
@@ -1165,8 +1485,8 @@ public class DocumentBulkImportBean implements Serializable {
         return documentService.maxFileSize();
     }
 
-    public int maxTitleLength() {
-        return Document.MAX_TITLE_LENGTH;
+    public int maxIdentifierLength() {
+        return 255;
     }
 
     public int maxDescriptionSize() {
@@ -1186,15 +1506,18 @@ public class DocumentBulkImportBean implements Serializable {
         private long fileSize;
         /** Empreinte MD5 du contenu, calculée à l'upload pour détecter les doublons. */
         private String md5Sum;
-        private String title;
-        private String description;
+        private String identifier;
+        private boolean identifierEdited;
+        private ConceptAutocompleteDTO type;
         private ConceptAutocompleteDTO nature;
         private ConceptAutocompleteDTO scale;
-        private ConceptAutocompleteDTO type;
+        private String description;
         private List<ActionUnitDTO> projects = new ArrayList<>();
         private List<RecordingUnitSummaryDTO> recordingUnits = new ArrayList<>();
         private List<SpecimenSummaryDTO> finds = new ArrayList<>();
         private List<SpatialUnitDTO> places = new ArrayList<>();
+        /** Checked in the summary table for bulk apply from the focused row. */
+        private boolean marked;
 
         @Override
         public boolean equals(Object o) {
@@ -1221,11 +1544,12 @@ public class DocumentBulkImportBean implements Serializable {
         row.setContentType(item.getContentType());
         row.setFileSize(item.getFileSize() == null ? 0L : item.getFileSize());
         row.setMd5Sum(item.getMd5Sum());
-        row.setTitle(item.getTitle());
-        row.setDescription(item.getDescription());
+        row.setIdentifier(item.getIdentifier());
+        row.setIdentifierEdited(StringUtils.hasText(item.getIdentifier()));
+        row.setType(toAutocomplete(item.getType()));
         row.setNature(toAutocomplete(item.getNature()));
-        row.setType(toAutocomplete(item.getFormatConcept()));
         row.setScale(toAutocomplete(item.getScale()));
+        row.setDescription(item.getDescription());
         row.setProjects(item.getProjects().stream().map(actionUnitMapper::convert).collect(Collectors.toCollection(ArrayList::new)));
         row.setRecordingUnits(item.getRecordingUnits().stream().map(recordingUnitSummaryMapper::convert).collect(Collectors.toCollection(ArrayList::new)));
         row.setFinds(item.getFinds().stream().map(specimenSummaryMapper::convert).collect(Collectors.toCollection(ArrayList::new)));
@@ -1234,10 +1558,13 @@ public class DocumentBulkImportBean implements Serializable {
     }
 
     private ConceptAutocompleteDTO toAutocomplete(Concept concept) {
+        return toAutocomplete(concept, languageCode());
+    }
+
+    private ConceptAutocompleteDTO toAutocomplete(Concept concept, String lang) {
         if (concept == null) {
             return null;
         }
-        String lang = sessionSettingsBean.getUserInfo() != null ? sessionSettingsBean.getUserInfo().getLang() : "fr";
         String label = labelService.findLabelOf(concept, lang).getLabel();
         return new ConceptAutocompleteDTO(conceptMapper.convert(concept), label, lang);
     }

@@ -135,11 +135,6 @@ public class DocumentImportDraftService {
         item.setFileSize((long) bytes.length);
         item.setMd5Sum(md5);
         item.setStoredFileName(storedName);
-        String title = originalFileName;
-        if (title != null && title.contains(".")) {
-            title = title.substring(0, title.lastIndexOf('.'));
-        }
-        item.setTitle(title);
         item.setStatus(DocumentImportItemStatus.DRAFT);
 
         if (defaults != null) {
@@ -180,11 +175,13 @@ public class DocumentImportDraftService {
         DocumentImportItem item = itemRepository.findByIdAndDraftId(itemId, draft.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + itemId));
 
-        item.setTitle(metadata.title());
-        item.setDescription(metadata.description());
+        item.setIdentifier(metadata.identifier());
+        item.setType(resolveConcept(metadata.typeConceptId()));
         item.setNature(resolveConcept(metadata.natureConceptId()));
-        item.setFormatConcept(resolveConcept(metadata.formatConceptId()));
         item.setScale(resolveConcept(metadata.scaleConceptId()));
+        item.setDescription(metadata.description());
+        item.setTitle(null);
+        item.setFormatConcept(null);
         item.setStatus(DocumentImportItemStatus.DRAFT);
         item.setErrorMessage(null);
 
@@ -223,7 +220,12 @@ public class DocumentImportDraftService {
         draftStorage.deleteItem(institutionId, draft.getId(), item.getStoredFileName());
         itemRepository.delete(item);
         draft.getItems().removeIf(i -> itemId == Objects.requireNonNullElse(i.getId(), -1L));
-        draftRepository.save(draft);
+        if (draft.getItems().isEmpty()) {
+            draftStorage.deleteDraftTree(institutionId, draft.getId());
+            draftRepository.delete(draft);
+        } else {
+            draftRepository.save(draft);
+        }
     }
 
     @Transactional
@@ -291,11 +293,11 @@ public class DocumentImportDraftService {
 
     /** Full metadata snapshot for one item (replace semantics for targets). */
     public record ItemMetadata(
-            String title,
-            String description,
+            String identifier,
+            Long typeConceptId,
             Long natureConceptId,
-            Long formatConceptId,
             Long scaleConceptId,
+            String description,
             Set<Long> projectIds,
             Set<Long> recordingUnitIds,
             Set<Long> findIds,
@@ -306,8 +308,11 @@ public class DocumentImportDraftService {
             recordingUnitIds = recordingUnitIds == null ? Set.of() : Set.copyOf(recordingUnitIds);
             findIds = findIds == null ? Set.of() : Set.copyOf(findIds);
             placeIds = placeIds == null ? Set.of() : Set.copyOf(placeIds);
-            title = StringUtils.hasText(title) ? title.trim() : title;
+            identifier = StringUtils.hasText(identifier) ? identifier.trim() : null;
             description = description == null ? null : description.trim();
+            if (description != null && description.isEmpty()) {
+                description = null;
+            }
         }
     }
 }

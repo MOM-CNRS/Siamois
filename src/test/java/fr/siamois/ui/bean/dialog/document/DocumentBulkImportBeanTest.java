@@ -2,11 +2,15 @@ package fr.siamois.ui.bean.dialog.document;
 
 import fr.siamois.domain.models.UserInfo;
 import fr.siamois.domain.models.actionunit.ActionUnit;
+import fr.siamois.domain.models.document.Document;
 import fr.siamois.domain.models.document.DocumentImportDraft;
 import fr.siamois.domain.models.document.DocumentImportItem;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
+import fr.siamois.domain.models.settings.InstitutionSettings;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
+import fr.siamois.domain.models.vocabulary.Concept;
+import fr.siamois.domain.models.vocabulary.label.ConceptLabel;
 import fr.siamois.domain.services.actionunit.ActionUnitService;
 import fr.siamois.domain.services.ark.ArkService;
 import fr.siamois.domain.services.document.DocumentImportDraftService;
@@ -15,20 +19,27 @@ import fr.siamois.domain.services.permissions.ProfilePermissionService;
 import fr.siamois.domain.services.recordingunit.RecordingUnitService;
 import fr.siamois.domain.services.spatialunit.SpatialUnitService;
 import fr.siamois.domain.services.specimen.SpecimenService;
+import fr.siamois.domain.services.settings.tableconfig.TableFieldConfigService;
+import fr.siamois.domain.services.vocabulary.ConceptDescriptionService;
 import fr.siamois.domain.services.vocabulary.ConceptService;
 import fr.siamois.domain.services.vocabulary.FieldConfigurationService;
 import fr.siamois.domain.services.vocabulary.LabelService;
 import fr.siamois.dto.entity.*;
+import fr.siamois.dto.entity.vocabulary.ConceptDTO;
+import fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO;
 import fr.siamois.mapper.*;
 import fr.siamois.ui.bean.LangBean;
 import fr.siamois.ui.bean.SessionSettingsBean;
+import fr.siamois.utils.MessageUtils;
 import jakarta.servlet.ServletContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.primefaces.PrimeFaces;
 import org.primefaces.event.FileUploadEvent;
 import org.primefaces.model.file.UploadedFile;
 
@@ -37,9 +48,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -49,6 +63,8 @@ class DocumentBulkImportBeanTest {
     @Mock private SessionSettingsBean sessionSettingsBean;
     @Mock private DocumentService documentService;
     @Mock private DocumentImportDraftService draftService;
+    @Mock private TableFieldConfigService tableFieldConfigService;
+    @Mock private ConceptDescriptionService conceptDescriptionService;
     @Mock private FieldConfigurationService fieldConfigurationService;
     @Mock private LangBean langBean;
     @Mock private ServletContext servletContext;
@@ -76,6 +92,8 @@ class DocumentBulkImportBeanTest {
                 sessionSettingsBean,
                 documentService,
                 draftService,
+                tableFieldConfigService,
+                conceptDescriptionService,
                 fieldConfigurationService,
                 langBean,
                 servletContext,
@@ -128,7 +146,6 @@ class DocumentBulkImportBeanTest {
         item.setFileSize(4L);
         item.setMd5Sum("md5");
         item.setStoredFileName("stored.bin");
-        item.setTitle(fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName);
         item.setProjects(new HashSet<>());
         item.setRecordingUnits(new HashSet<>());
         item.setFinds(new HashSet<>());
@@ -156,7 +173,6 @@ class DocumentBulkImportBeanTest {
         assertThat(bean.getRows()).hasSize(1);
         DocumentBulkImportBean.BulkDocumentRow row = bean.getRows().get(0);
         assertThat(row.getItemId()).isEqualTo(101L);
-        assertThat(row.getTitle()).isEqualTo("photo-coupe");
         assertThat(row.getFileName()).isEqualTo("photo-coupe.jpg");
         assertThat(row.getMd5Sum()).isEqualTo("md5");
         assertThat(row.getProjects()).containsExactly(project);
@@ -267,14 +283,40 @@ class DocumentBulkImportBeanTest {
     }
 
     @Test
+    void autocompleteType_usesDocumentTypesCatalogLikeNouveauDocument() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.getProjects().add(project);
+        bean.setSelectedRow(row);
+
+        Concept typeA = new Concept();
+        typeA.setId(10L);
+        Concept typeB = new Concept();
+        typeB.setId(11L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.DOCUMENT))
+                .thenReturn(List.of(typeB, typeA));
+        ConceptAutocompleteDTO dtoA = new ConceptAutocompleteDTO(conceptDto(10L), "Photo", "fr");
+        ConceptAutocompleteDTO dtoB = new ConceptAutocompleteDTO(conceptDto(11L), "Plan", "fr");
+        when(conceptDescriptionService.describeAll(List.of(typeB, typeA), "fr"))
+                .thenReturn(Map.of(10L, dtoA, 11L, dtoB));
+
+        assertThat(bean.autocompleteType(""))
+                .extracting(d -> d.getConceptLabelToDisplay().getLabel())
+                .containsExactly("Photo", "Plan");
+        assertThat(bean.autocompleteType("pla"))
+                .extracting(d -> d.getConceptLabelToDisplay().getLabel())
+                .containsExactly("Plan");
+    }
+
+    @Test
     void isSubmitEnabled_requiresItemIdAndMetadata() {
         DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
         row.setClientKey("k1");
         row.setItemId(1L);
-        row.setTitle("Doc");
         row.setMd5Sum("abc");
-        row.setNature(mock(fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO.class));
-        row.setType(mock(fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO.class));
+        row.setType(mock(ConceptAutocompleteDTO.class));
+        row.setIdentifier("DOC-1");
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(1L);
         row.getProjects().add(project);
@@ -285,16 +327,64 @@ class DocumentBulkImportBeanTest {
     }
 
     @Test
+    void isRowReady_requiresIdentifier() {
+        when(langBean.msg("documents.bulk.identifierRequired")).thenReturn("documents.bulk.identifierRequired");
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setClientKey("k1");
+        row.setItemId(1L);
+        row.setMd5Sum("abc");
+        row.setType(mock(ConceptAutocompleteDTO.class));
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(1L);
+        row.getProjects().add(project);
+
+        assertThat(bean.isRowReady(row)).isFalse();
+        assertThat(bean.rowReadinessLabel(row)).isEqualTo("documents.bulk.identifierRequired");
+
+        row.setIdentifier("  ");
+        assertThat(bean.isRowReady(row)).isFalse();
+
+        row.setIdentifier("DOC-1");
+        assertThat(bean.isRowReady(row)).isTrue();
+    }
+
+    @Test
+    void isSubmitEnabled_whenAtLeastOneRowReady_evenIfOthersIncomplete() {
+        DocumentBulkImportBean.BulkDocumentRow ready = new DocumentBulkImportBean.BulkDocumentRow();
+        ready.setClientKey("ready");
+        ready.setItemId(1L);
+        ready.setMd5Sum("abc");
+        ready.setType(mock(ConceptAutocompleteDTO.class));
+        ready.setIdentifier("DOC-READY");
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(1L);
+        ready.getProjects().add(project);
+
+        DocumentBulkImportBean.BulkDocumentRow incomplete = new DocumentBulkImportBean.BulkDocumentRow();
+        incomplete.setClientKey("todo");
+        incomplete.setItemId(2L);
+        incomplete.setMd5Sum("def");
+        incomplete.setType(mock(ConceptAutocompleteDTO.class));
+
+        bean.getRows().add(ready);
+        bean.getRows().add(incomplete);
+
+        assertThat(bean.isRowReady(ready)).isTrue();
+        assertThat(bean.isRowReady(incomplete)).isFalse();
+        assertThat(bean.isSubmitEnabled()).isTrue();
+        assertThat(bean.isSaveDraftEnabled()).isTrue();
+    }
+
+    @Test
     void isFullDuplicate_whenAlreadyLinkedToAllTargets() {
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(1L);
         DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
         row.setItemId(9L);
         row.setClientKey("dup");
-        row.setTitle("Doc");
         row.setMd5Sum("abc123");
-        row.setNature(mock(fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO.class));
-        row.setType(mock(fr.siamois.infrastructure.database.repositories.vocabulary.dto.ConceptAutocompleteDTO.class));
+        row.setType(mock(ConceptAutocompleteDTO.class));
         row.getProjects().add(project);
         when(documentService.existInActionUnitByHash(project, "abc123")).thenReturn(true);
 
@@ -354,6 +444,82 @@ class DocumentBulkImportBeanTest {
     }
 
     @Test
+    void submit_countsOwningProjectAsLinked_evenWhenHashAlreadyExistsAfterSave() throws Exception {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site A");
+
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(147L), "Type", "fr");
+        Concept typeConcept = new Concept();
+        typeConcept.setId(147L);
+        when(conceptService.findById(147L)).thenReturn(Optional.of(typeConcept));
+
+        DocumentImportItem item = stubItem(101L, "photo.png");
+        item.setMd5Sum("abc123");
+        item.setType(typeConcept);
+        item.setIdentifier("DOC-0001");
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        item.getProjects().add(au);
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(item);
+        when(actionUnitMapper.convert(au)).thenReturn(project);
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenReturn(item);
+        when(draftService.readFileBytes(7L, 10L, 101L)).thenReturn(new byte[]{1, 2, 3, 4});
+
+        ConceptLabel conceptLabel = mock(ConceptLabel.class);
+        when(conceptLabel.getLabel()).thenReturn("label");
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(conceptLabel);
+        when(conceptMapper.convert(any(Concept.class))).thenAnswer(inv -> {
+            Concept c = inv.getArgument(0);
+            return conceptDto(c.getId());
+        });
+
+        ActionUnit owning = new ActionUnit();
+        owning.setId(5L);
+        Document saved = new Document();
+        saved.setId(900L);
+        saved.setMd5Sum("abc123");
+        saved.setActionUnit(owning);
+        when(actionUnitMapper.invertConvert(project)).thenReturn(owning);
+        when(documentService.saveFile(any(), any(), any(), any())).thenReturn(saved);
+        when(documentService.existInActionUnitByHash(project, "abc123")).thenReturn(false);
+
+        InstitutionSettings settings = mock(InstitutionSettings.class);
+        when(settings.getArkIsEnabled()).thenReturn(false);
+        when(sessionSettingsBean.getInstitutionSettings()).thenReturn(settings);
+        when(servletContext.getContextPath()).thenReturn("/siamois");
+        lenient().when(langBean.msg(anyString())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(langBean.msg(anyString(), any())).thenAnswer(inv -> inv.getArgument(0));
+
+        bean.handleFileUpload(fileUploadEvent("photo.png"));
+        DocumentBulkImportBean.BulkDocumentRow row = bean.getRows().get(0);
+        row.setType(type);
+        row.setIdentifier("DOC-0001");
+        row.setMd5Sum("abc123");
+        row.getProjects().clear();
+        row.getProjects().add(project);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class);
+             MockedStatic<PrimeFaces> faces = mockStatic(PrimeFaces.class)) {
+            PrimeFaces pf = mock(PrimeFaces.class, RETURNS_DEEP_STUBS);
+            faces.when(PrimeFaces::current).thenReturn(pf);
+            bean.submit();
+        }
+
+        // Owning project from buildDocument/saveFile counts as linked — no second attach needed.
+        verify(documentService, never()).addToActionUnit(any(), any());
+        verify(draftService).removeItemAfterSuccessfulSubmit(7L, 10L, 101L);
+        assertThat(bean.getRows()).isEmpty();
+        assertThat(bean.getReportLines()).anyMatch(line -> line.contains("OK"));
+    }
+
+    private static ConceptDTO conceptDto(long id) {
+        ConceptDTO dto = new ConceptDTO();
+        dto.setId(id);
+        return dto;
+    }
+
+    @Test
     void handleFileUpload_passesDefaultTargetsToService() throws Exception {
         bean.setDefaultRecordingUnit(new RecordingUnitSummaryDTO(11L));
         SpecimenSummaryDTO find = new SpecimenSummaryDTO();
@@ -393,5 +559,694 @@ class DocumentBulkImportBeanTest {
         assertThat(bean.getRows().get(0).getRecordingUnits()).hasSize(1);
         assertThat(bean.getRows().get(0).getFinds()).hasSize(1);
         assertThat(bean.getRows().get(0).getPlaces()).hasSize(1);
+    }
+
+    @Test
+    void onTypeChange_suggestsIdentifierWhenNotEdited() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(147L), "Photo", "fr");
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setItemId(1L);
+        row.setType(type);
+        row.getProjects().add(project);
+        bean.setSelectedRow(row);
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Fouille_000001");
+
+        bean.onTypeChange();
+
+        assertThat(row.getIdentifier()).isEqualTo("Fouille_000001");
+        assertThat(bean.isDraftDirty()).isTrue();
+        verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void onIdentifierInput_marksEditedAndPersists() {
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setIdentifier("manual");
+        bean.setSelectedRow(row);
+
+        bean.onIdentifierInput();
+
+        assertThat(row.isIdentifierEdited()).isTrue();
+        assertThat(bean.isDraftDirty()).isTrue();
+    }
+
+    @Test
+    void onProjectsChange_refreshesSuggestionUnlessEdited() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(147L), "Photo", "fr");
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setType(type);
+        row.getProjects().add(project);
+        bean.setSelectedRow(row);
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Fouille_000099");
+
+        bean.onProjectsChange();
+        assertThat(row.getIdentifier()).isEqualTo("Fouille_000099");
+
+        row.setIdentifierEdited(true);
+        row.setIdentifier("kept");
+        bean.onProjectsChange();
+        assertThat(row.getIdentifier()).isEqualTo("kept");
+    }
+
+    @Test
+    void autocompleteType_withoutProject_returnsEmpty() {
+        bean.setSelectedRow(new DocumentBulkImportBean.BulkDocumentRow());
+        assertThat(bean.autocompleteType("x")).isEmpty();
+    }
+
+    @Test
+    void autocompleteType_matchesAltLabelAndPrefLabel() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.getProjects().add(project);
+        bean.setSelectedRow(row);
+
+        Concept type = new Concept();
+        type.setId(10L);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.DOCUMENT))
+                .thenReturn(List.of(type));
+        ConceptAutocompleteDTO dto = new ConceptAutocompleteDTO(
+                new ConceptAutocompleteDTO(conceptDto(10L), "Photo", "fr").getConceptLabelToDisplay(),
+                "Photograph",
+                List.of("cliché"),
+                null,
+                null);
+        when(conceptDescriptionService.describeAll(List.of(type), "fr")).thenReturn(Map.of(10L, dto));
+
+        assertThat(bean.autocompleteType("CLICH")).containsExactly(dto);
+        assertThat(bean.autocompleteType("photograph")).containsExactly(dto);
+    }
+
+    @Test
+    void autocompleteNatureAndScale_delegateToFieldConfiguration() throws Exception {
+        ConceptAutocompleteDTO nature = new ConceptAutocompleteDTO(conceptDto(1L), "Nature", "fr");
+        ConceptAutocompleteDTO scale = new ConceptAutocompleteDTO(conceptDto(2L), "Scale", "fr");
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq(Document.NATURE_FIELD_CODE), eq("n")))
+                .thenReturn(List.of(nature));
+        when(fieldConfigurationService.fetchAutocomplete(any(), eq(Document.SCALE_FIELD_CODE), eq("s")))
+                .thenReturn(List.of(scale));
+
+        assertThat(bean.autocompleteNature("n")).containsExactly(nature);
+        assertThat(bean.autocompleteScale("s")).containsExactly(scale);
+    }
+
+    @Test
+    void rowReadinessLabel_reportsMissingTypeIdentifierAndTargets() {
+        when(langBean.msg(anyString())).thenAnswer(inv -> inv.getArgument(0));
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setItemId(1L);
+        row.setMd5Sum("abc");
+        assertThat(bean.rowReadinessLabel(row)).isEqualTo("documents.typeRequired");
+
+        row.setType(mock(ConceptAutocompleteDTO.class));
+        assertThat(bean.rowReadinessLabel(row)).isEqualTo("documents.bulk.identifierRequired");
+
+        row.setIdentifier("DOC-1");
+        assertThat(bean.rowReadinessLabel(row)).isEqualTo("documents.bulk.targetRequired");
+    }
+
+    @Test
+    void completeHelpers_returnEmptyWithoutInstitution() {
+        when(sessionSettingsBean.getSelectedInstitution()).thenReturn(null);
+        assertThat(bean.completeProject("a")).isEmpty();
+        assertThat(bean.completeRecordingUnit("a")).isEmpty();
+        assertThat(bean.completeFind("a")).isEmpty();
+        assertThat(bean.completePlace("a")).isEmpty();
+    }
+
+    @Test
+    void submit_linksRecordingUnitFindAndPlaceTargets() throws Exception {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        RecordingUnitSummaryDTO ruSummary = new RecordingUnitSummaryDTO(11L);
+        SpecimenSummaryDTO findSummary = new SpecimenSummaryDTO();
+        findSummary.setId(22L);
+        SpatialUnitDTO place = new SpatialUnitDTO();
+        place.setId(33L);
+
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(147L), "Type", "fr");
+        Concept typeConcept = new Concept();
+        typeConcept.setId(147L);
+        when(conceptService.findById(147L)).thenReturn(Optional.of(typeConcept));
+
+        DocumentImportItem item = stubItem(101L, "photo.png");
+        item.setMd5Sum("hash1");
+        item.setType(typeConcept);
+        item.setIdentifier("DOC-1");
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        item.getProjects().add(au);
+        RecordingUnit ruEntity = new RecordingUnit();
+        ruEntity.setId(11L);
+        Specimen spEntity = new Specimen();
+        spEntity.setId(22L);
+        SpatialUnit placeEntity = new SpatialUnit();
+        placeEntity.setId(33L);
+        item.getRecordingUnits().add(ruEntity);
+        item.getFinds().add(spEntity);
+        item.getPlaces().add(placeEntity);
+
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(item);
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenReturn(item);
+        when(draftService.readFileBytes(7L, 10L, 101L)).thenReturn(new byte[]{1, 2, 3});
+        when(actionUnitMapper.convert(au)).thenReturn(project);
+        when(recordingUnitSummaryMapper.convert(ruEntity)).thenReturn(ruSummary);
+        when(specimenSummaryMapper.convert(spEntity)).thenReturn(findSummary);
+        when(spatialUnitMapper.convert(placeEntity)).thenReturn(place);
+
+        ConceptLabel conceptLabel = mock(ConceptLabel.class);
+        when(conceptLabel.getLabel()).thenReturn("label");
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(conceptLabel);
+        when(conceptMapper.convert(any(Concept.class))).thenAnswer(inv -> conceptDto(((Concept) inv.getArgument(0)).getId()));
+
+        ActionUnit owning = new ActionUnit();
+        owning.setId(5L);
+        Document saved = new Document();
+        saved.setId(900L);
+        saved.setMd5Sum("hash1");
+        saved.setActionUnit(owning);
+        when(actionUnitMapper.invertConvert(project)).thenReturn(owning);
+        when(documentService.saveFile(any(), any(), any(), any())).thenReturn(saved);
+        when(documentService.existInActionUnitByHash(project, "hash1")).thenReturn(false);
+
+        RecordingUnitDTO ru = new RecordingUnitDTO();
+        ru.setId(11L);
+        SpecimenDTO specimen = new SpecimenDTO();
+        specimen.setId(22L);
+        when(recordingUnitService.findById(11L)).thenReturn(ru);
+        when(specimenService.findById(22L)).thenReturn(specimen);
+        when(documentService.existInRecordingUnitByHash(ru, "hash1")).thenReturn(false);
+        when(documentService.existInSpecimenByHash(specimen, "hash1")).thenReturn(false);
+        when(documentService.existInSpatialUnitByHash(place, "hash1")).thenReturn(false);
+        when(profilePermissionService.hasRecordingUnitWritePermission(any(), eq(ru))).thenReturn(true);
+        when(profilePermissionService.hasSpecimenWritePermission(any(), eq(specimen))).thenReturn(true);
+
+        InstitutionSettings settings = mock(InstitutionSettings.class);
+        when(settings.getArkIsEnabled()).thenReturn(false);
+        when(sessionSettingsBean.getInstitutionSettings()).thenReturn(settings);
+        when(servletContext.getContextPath()).thenReturn("/siamois");
+        lenient().when(langBean.msg(anyString())).thenAnswer(inv -> inv.getArgument(0));
+
+        bean.handleFileUpload(fileUploadEvent("photo.png"));
+        DocumentBulkImportBean.BulkDocumentRow row = bean.getRows().get(0);
+        row.setType(type);
+        row.setIdentifier("DOC-1");
+        row.setMd5Sum("hash1");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class);
+             MockedStatic<PrimeFaces> faces = mockStatic(PrimeFaces.class)) {
+            PrimeFaces pf = mock(PrimeFaces.class, RETURNS_DEEP_STUBS);
+            faces.when(PrimeFaces::current).thenReturn(pf);
+            bean.submit();
+        }
+
+        verify(documentService).addToRecordingUnit(saved, ru);
+        verify(documentService).addToSpecimen(saved, specimen);
+        verify(documentService).addToSpatialUnit(saved, place);
+        assertThat(bean.getReportLines()).anyMatch(line -> line.contains("OK"));
+    }
+
+    @Test
+    void autocompleteType_usesDefaultProjectAndHandlesEmptyCatalog() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        bean.setDefaultProject(project);
+        bean.setSelectedRow(null);
+        when(tableFieldConfigService.listConfiguredTypeConcepts(5L, fr.siamois.domain.models.settings.tableconfig.ConfigurableTable.DOCUMENT))
+                .thenReturn(List.of());
+
+        assertThat(bean.autocompleteType("x")).isEmpty();
+    }
+
+    @Test
+    void typeAndIdentifierHandlers_ignoreNullSelection() {
+        bean.setSelectedRow(null);
+
+        assertThatCode(() -> {
+            bean.onTypeChange();
+            bean.onIdentifierInput();
+            bean.onProjectsChange();
+            bean.onAttachmentTargetsChange();
+        }).doesNotThrowAnyException();
+
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+        verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
+        verifyNoInteractions(actionUnitService, recordingUnitService, specimenService);
+    }
+
+    @Test
+    void refreshSuggestedIdentifier_skipsIncompleteRowsAndSuggestionErrors() {
+        DocumentBulkImportBean.BulkDocumentRow incomplete = new DocumentBulkImportBean.BulkDocumentRow();
+        incomplete.setType(new ConceptAutocompleteDTO(conceptDto(1L), "T", "fr"));
+        bean.setSelectedRow(incomplete);
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+
+        ActionUnitDTO projectWithoutId = new ActionUnitDTO();
+        projectWithoutId.setName("Site");
+        incomplete.getProjects().add(projectWithoutId);
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+
+        incomplete.getProjects().clear();
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        incomplete.getProjects().add(project);
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any())).thenReturn("  ");
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("boom"));
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+    }
+
+    @Test
+    void submit_keepsIncompleteRowsAndReportsPending() throws Exception {
+        DocumentImportItem incompleteItem = stubItem(101L, "todo.png");
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(incompleteItem);
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenReturn(incompleteItem);
+        lenient().when(langBean.msg(anyString())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(langBean.msg(anyString(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+
+        bean.handleFileUpload(fileUploadEvent("todo.png"));
+
+        Concept typeConcept = new Concept();
+        typeConcept.setId(1L);
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        DocumentImportItem readyItem = stubItem(202L, "ready.png");
+        readyItem.setMd5Sum("abc");
+        readyItem.setType(typeConcept);
+        readyItem.setIdentifier("DOC-1");
+        readyItem.getProjects().add(au);
+
+        DocumentBulkImportBean.BulkDocumentRow ready = new DocumentBulkImportBean.BulkDocumentRow();
+        ready.setClientKey("ready");
+        ready.setItemId(202L);
+        ready.setFileName("ready.png");
+        ready.setMd5Sum("abc");
+        ready.setType(new ConceptAutocompleteDTO(conceptDto(1L), "T", "fr"));
+        ready.setIdentifier("DOC-1");
+        ready.getProjects().add(project);
+        bean.getRows().add(ready);
+
+        when(conceptService.findById(1L)).thenReturn(Optional.of(typeConcept));
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(202L), any())).thenReturn(readyItem);
+        when(draftService.readFileBytes(7L, 10L, 202L)).thenReturn(new byte[]{1});
+        when(actionUnitMapper.convert(au)).thenReturn(project);
+        ConceptLabel conceptLabel = mock(ConceptLabel.class);
+        when(conceptLabel.getLabel()).thenReturn("label");
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(conceptLabel);
+        when(conceptMapper.convert(any(Concept.class))).thenAnswer(inv -> conceptDto(((Concept) inv.getArgument(0)).getId()));
+        ActionUnit owning = new ActionUnit();
+        owning.setId(5L);
+        Document saved = new Document();
+        saved.setId(1L);
+        saved.setMd5Sum("abc");
+        saved.setActionUnit(owning);
+        when(actionUnitMapper.invertConvert(project)).thenReturn(owning);
+        when(documentService.saveFile(any(), any(), any(), any())).thenReturn(saved);
+        when(documentService.existInActionUnitByHash(project, "abc")).thenReturn(false);
+        InstitutionSettings settings = mock(InstitutionSettings.class);
+        when(settings.getArkIsEnabled()).thenReturn(false);
+        when(sessionSettingsBean.getInstitutionSettings()).thenReturn(settings);
+        when(servletContext.getContextPath()).thenReturn("/siamois");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class);
+             MockedStatic<PrimeFaces> faces = mockStatic(PrimeFaces.class)) {
+            PrimeFaces pf = mock(PrimeFaces.class, RETURNS_DEEP_STUBS);
+            faces.when(PrimeFaces::current).thenReturn(pf);
+            bean.submit();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.doneWithPending"), eq(1), eq(1)));
+        }
+
+        assertThat(bean.getRows()).extracting(DocumentBulkImportBean.BulkDocumentRow::getFileName)
+                .containsExactly("todo.png");
+        assertThat(bean.getReportLines()).anyMatch(line -> line.contains("documents.bulk.status.pending"));
+    }
+
+    @Test
+    void maxIdentifierLength_is255() {
+        assertThat(bean.maxIdentifierLength()).isEqualTo(255);
+    }
+
+    @Test
+    void submit_reportsFailuresWithoutPending() throws Exception {
+        Concept typeConcept = new Concept();
+        typeConcept.setId(1L);
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        DocumentImportItem item = stubItem(101L, "bad.png");
+        item.setMd5Sum("abc");
+        item.setType(typeConcept);
+        item.setIdentifier("DOC-1");
+        item.getProjects().add(au);
+
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(item);
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenReturn(item);
+        when(draftService.readFileBytes(7L, 10L, 101L)).thenThrow(new IOException("boom"));
+        when(actionUnitMapper.convert(au)).thenReturn(project);
+        ConceptLabel conceptLabel = mock(ConceptLabel.class);
+        when(conceptLabel.getLabel()).thenReturn("label");
+        when(labelService.findLabelOf(any(Concept.class), anyString())).thenReturn(conceptLabel);
+        when(conceptMapper.convert(any(Concept.class))).thenAnswer(inv -> conceptDto(((Concept) inv.getArgument(0)).getId()));
+        lenient().when(langBean.msg(anyString())).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(langBean.msg(anyString(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+
+        bean.handleFileUpload(fileUploadEvent("bad.png"));
+        bean.getRows().get(0).setType(new ConceptAutocompleteDTO(conceptDto(1L), "T", "fr"));
+        bean.getRows().get(0).setIdentifier("DOC-1");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class);
+             MockedStatic<PrimeFaces> faces = mockStatic(PrimeFaces.class)) {
+            PrimeFaces pf = mock(PrimeFaces.class, RETURNS_DEEP_STUBS);
+            faces.when(PrimeFaces::current).thenReturn(pf);
+            bean.submit();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.done"), eq(0), eq(1)));
+        }
+    }
+
+    @Test
+    void applyConceptsToMarked_copiesAllFieldsAndMarksDirty() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("P");
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
+        ru.setId(8L);
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(10L), "Photo", "fr");
+        ConceptAutocompleteDTO nature = new ConceptAutocompleteDTO(conceptDto(11L), "Nature", "fr");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.setType(type);
+        source.setNature(nature);
+        source.setDescription("desc");
+        source.setProjects(new ArrayList<>(List.of(project)));
+        source.setRecordingUnits(new ArrayList<>(List.of(ru)));
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+
+        assertThat(target.getType()).isEqualTo(type);
+        assertThat(target.getNature()).isEqualTo(nature);
+        assertThat(target.getDescription()).isEqualTo("desc");
+        assertThat(target.getProjects()).containsExactly(project);
+        assertThat(target.getRecordingUnits()).containsExactly(ru);
+        assertThat(target.getProjects()).isNotSameAs(source.getProjects());
+        assertThat(bean.isDraftDirty()).isTrue();
+        verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void applyConceptsToMarked_requiresOtherMarkedRows() {
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayErrorMessage(eq(langBean), eq("documents.bulk.applyDisabled")));
+        }
+        assertThat(bean.isApplyEnabled()).isFalse();
+
+        bean.setSelectedRow(null);
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayErrorMessage(eq(langBean), eq("documents.bulk.applyDisabled")));
+        }
+    }
+
+    @Test
+    void applyConceptsToMarked_includesMarkedRowsWhenSourceHasNoClientKey() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setItemId(1L);
+        source.getProjects().add(project);
+        source.setIdentifierEdited(true);
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+        assertThat(target.getProjects()).containsExactly(project);
+    }
+
+    @Test
+    void toggleMarkAll_marksAndClearsAllRows() {
+        DocumentBulkImportBean.BulkDocumentRow a = new DocumentBulkImportBean.BulkDocumentRow();
+        a.setClientKey("a");
+        DocumentBulkImportBean.BulkDocumentRow b = new DocumentBulkImportBean.BulkDocumentRow();
+        b.setClientKey("b");
+        bean.setRows(new ArrayList<>(List.of(a, b)));
+
+        assertThat(bean.isAllMarked()).isFalse();
+        bean.toggleMarkAll();
+        assertThat(bean.isAllMarked()).isTrue();
+        assertThat(bean.getMarkedCount()).isEqualTo(2);
+        bean.toggleMarkAll();
+        assertThat(bean.isAllMarked()).isFalse();
+    }
+
+    @Test
+    void applyTargetCount_excludesFocusedRowEvenWhenMarked() {
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setMarked(true);
+        DocumentBulkImportBean.BulkDocumentRow other = new DocumentBulkImportBean.BulkDocumentRow();
+        other.setClientKey("b");
+        other.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source, other)));
+        bean.setSelectedRow(source);
+
+        assertThat(bean.getMarkedCount()).isEqualTo(2);
+        assertThat(bean.getApplyTargetCount()).isEqualTo(1);
+        assertThat(bean.isApplyEnabled()).isTrue();
+
+        bean.setSelectedRow(null);
+        assertThat(bean.getApplyTargetCount()).isZero();
+        assertThat(bean.isApplyEnabled()).isFalse();
+    }
+
+    @Test
+    void onAttachmentTargetsChange_refreshesIdentifierUnlessEdited() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setClientKey("a");
+        row.getProjects().add(project);
+        bean.setRows(new ArrayList<>(List.of(row)));
+        bean.setSelectedRow(row);
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        bean.onAttachmentTargetsChange();
+        assertThat(row.getIdentifier()).isEqualTo("Site_000001");
+        assertThat(bean.isDraftDirty()).isTrue();
+
+        row.setIdentifierEdited(true);
+        row.setIdentifier("manual");
+        bean.onAttachmentTargetsChange();
+        assertThat(row.getIdentifier()).isEqualTo("manual");
+        verify(documentService, times(1)).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+    }
+
+    @Test
+    void onAttachmentTargetsChange_ignoresNullSelection() {
+        bean.setSelectedRow(null);
+        bean.onAttachmentTargetsChange();
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+    }
+
+    @Test
+    void applyConceptsToMarked_refreshesIdentifierAndPassesReservedOnes() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.getProjects().add(project);
+        source.setIdentifier("Site_000001");
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        when(documentService.suggestAttachmentBasedIdentifier(eq(project), any(), any(), any()))
+                .thenReturn("Site_000002");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+
+        assertThat(target.getProjects()).containsExactly(project);
+        assertThat(target.getIdentifier()).isEqualTo("Site_000002");
+        ArgumentCaptor<java.util.Collection> reserved = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(documentService).suggestAttachmentBasedIdentifier(eq(project), any(), any(), reserved.capture());
+        assertThat(reserved.getValue()).contains("Site_000001");
+    }
+
+    @Test
+    void bulkDocumentRow_equalsUsesClientKeyAndSupportsMarkedFlag() {
+        DocumentBulkImportBean.BulkDocumentRow a = new DocumentBulkImportBean.BulkDocumentRow();
+        a.setClientKey("k");
+        a.setMarked(true);
+        DocumentBulkImportBean.BulkDocumentRow b = new DocumentBulkImportBean.BulkDocumentRow();
+        b.setClientKey("k");
+        DocumentBulkImportBean.BulkDocumentRow c = new DocumentBulkImportBean.BulkDocumentRow();
+        c.setClientKey("other");
+
+        assertThat(a).isEqualTo(b).isNotEqualTo(c).isNotEqualTo(null);
+        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a.isMarked()).isTrue();
+        assertThat(b.isMarked()).isFalse();
+    }
+
+    @Test
+    void projectFieldLocked_whenDefaultProjectPresent() {
+        assertThat(bean.isProjectFieldLocked()).isFalse();
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        bean.setDefaultProject(project);
+        assertThat(bean.isProjectFieldLocked()).isTrue();
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.getProjects().add(new ActionUnitDTO());
+        bean.ensureLockedProject(row);
+        assertThat(row.getProjects()).containsExactly(project);
+    }
+
+    @Test
+    void applyConceptsToMarked_keepsLockedDefaultProject() {
+        ActionUnitDTO contextProject = new ActionUnitDTO();
+        contextProject.setId(5L);
+        contextProject.setName("Context");
+        bean.setDefaultProject(contextProject);
+
+        ActionUnitDTO other = new ActionUnitDTO();
+        other.setId(9L);
+        other.setName("Other");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.setProjects(new ArrayList<>(List.of(other)));
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+        }
+
+        assertThat(target.getProjects()).containsExactly(contextProject);
+    }
+
+    @Test
+    void handleFileUpload_suggestsIdentifierWhenProjectDefaultsPresent() throws Exception {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        bean.setDefaultProject(project);
+
+        DocumentImportItem item = stubItem(101L, "photo.jpg");
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        item.getProjects().add(au);
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(item);
+        lenient().when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(project);
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenAnswer(inv -> {
+            item.setIdentifier("Site_000001");
+            return item;
+        });
+
+        bean.handleFileUpload(fileUploadEvent("photo.jpg"));
+
+        assertThat(bean.getRows()).hasSize(1);
+        assertThat(bean.getRows().get(0).getIdentifier()).isEqualTo("Site_000001");
+        verify(documentService).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+        verify(draftService).updateItemMetadata(eq(7L), eq(10L), eq(101L), any());
+    }
+
+    @Test
+    void refreshSuggestedIdentifier_reloadsProjectWhenLabelsMissing() {
+        ActionUnitDTO thin = new ActionUnitDTO();
+        thin.setId(5L);
+        ActionUnitDTO rich = new ActionUnitDTO();
+        rich.setId(5L);
+        rich.setName("Site");
+        when(actionUnitService.findById(5L)).thenReturn(rich);
+        when(documentService.suggestAttachmentBasedIdentifier(eq(rich), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setClientKey("a");
+        row.getProjects().add(thin);
+        bean.setSelectedRow(row);
+
+        bean.onProjectsChange();
+
+        assertThat(row.getIdentifier()).isEqualTo("Site_000001");
+        verify(actionUnitService).findById(5L);
+        verify(documentService).suggestAttachmentBasedIdentifier(eq(rich), any(), any(), any());
     }
 }
