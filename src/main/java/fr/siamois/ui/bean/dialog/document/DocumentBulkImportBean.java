@@ -186,6 +186,16 @@ public class DocumentBulkImportBean implements Serializable {
         DocumentImportDraft draft = draftService.loadDraftWithItems(personId, institutionId);
         draftUpdatedAt = draft.getUpdatedAt();
         rows = draft.getItems().stream().map(this::toRow).collect(Collectors.toCollection(ArrayList::new));
+        if (isProjectFieldLocked()) {
+            for (BulkDocumentRow row : rows) {
+                ensureLockedProject(row);
+            }
+        }
+        for (BulkDocumentRow row : rows) {
+            if (!StringUtils.hasText(row.getIdentifier()) && !row.isIdentifierEdited()) {
+                assignSuggestedIdentifierOnLoad(row);
+            }
+        }
         selectedRow = rows.isEmpty() ? null : rows.get(0);
         draftDirty = false;
     }
@@ -243,6 +253,22 @@ public class DocumentBulkImportBean implements Serializable {
             return;
         }
         setDefaultProject(actionUnitService.findById(summary.getId()));
+    }
+
+    /**
+     * When the dialog was opened from a project (or an entity that belongs to one), the project
+     * field is fixed to that context and must not be edited in the form.
+     */
+    public boolean isProjectFieldLocked() {
+        return defaultProject != null && defaultProject.getId() != null;
+    }
+
+    /** Forces {@link #defaultProject} onto the row when the project field is locked. */
+    void ensureLockedProject(BulkDocumentRow row) {
+        if (row == null || !isProjectFieldLocked()) {
+            return;
+        }
+        row.setProjects(new ArrayList<>(List.of(defaultProject)));
     }
 
     /**
@@ -310,8 +336,10 @@ public class DocumentBulkImportBean implements Serializable {
                     file.getInputStream(),
                     defaults);
             BulkDocumentRow row = toRow(item);
+            ensureLockedProject(row);
             rows.add(row);
             selectedRow = row;
+            assignSuggestedIdentifierOnLoad(row);
             draftUpdatedAt = OffsetDateTime.now();
         } catch (IllegalStateException e) {
             if ("MAX_ITEMS".equals(e.getMessage())) {
@@ -355,12 +383,102 @@ public class DocumentBulkImportBean implements Serializable {
         selectedRow = event.getObject();
     }
 
+    /** Number of rows checked for bulk apply (may include the focused row). */
+    public long getMarkedCount() {
+        return rows.stream().filter(BulkDocumentRow::isMarked).count();
+    }
+
+    /** Targets that will receive a copy from {@link #selectedRow} (excludes the source). */
+    public long getApplyTargetCount() {
+        if (selectedRow == null) {
+            return 0;
+        }
+        String sourceKey = selectedRow.getClientKey();
+        return rows.stream()
+                .filter(BulkDocumentRow::isMarked)
+                .filter(row -> sourceKey == null || !sourceKey.equals(row.getClientKey()))
+                .count();
+    }
+
+    public boolean isApplyEnabled() {
+        return selectedRow != null && getApplyTargetCount() > 0;
+    }
+
+    public boolean isAllMarked() {
+        return !rows.isEmpty() && rows.stream().allMatch(BulkDocumentRow::isMarked);
+    }
+
+    public void setAllMarked(boolean marked) {
+        for (BulkDocumentRow row : rows) {
+            row.setMarked(marked);
+        }
+    }
+
+    public void toggleMarkAll() {
+        setAllMarked(!isAllMarked());
+    }
+
+    /**
+     * Copies all editable fields from the focused row onto marked rows
+     * (type, nature, scale, description, projects, UE, finds, places).
+     * Identifiers are re-suggested per target when the user has not edited them.
+     */
+    public void applyConceptsToMarked() {
+        List<BulkDocumentRow> targets = resolveApplyTargets();
+        if (targets.isEmpty()) {
+            MessageUtils.displayErrorMessage(langBean, "documents.bulk.applyDisabled");
+            return;
+        }
+        syncSelectedRowIntoList();
+        BulkDocumentRow source = selectedRow;
+        sanitizeTargetLists(source);
+        for (BulkDocumentRow target : targets) {
+            target.setType(source.getType());
+            target.setNature(source.getNature());
+            target.setScale(source.getScale());
+            target.setDescription(source.getDescription());
+            if (isProjectFieldLocked()) {
+                ensureLockedProject(target);
+            } else {
+                target.setProjects(copyList(source.getProjects()));
+            }
+            target.setRecordingUnits(copyList(source.getRecordingUnits()));
+            target.setFinds(copyList(source.getFinds()));
+            target.setPlaces(copyList(source.getPlaces()));
+            sanitizeTargetLists(target);
+            if (!target.isIdentifierEdited()) {
+                refreshSuggestedIdentifier(target);
+            }
+        }
+        draftDirty = true;
+        MessageUtils.displayInfoMessage(langBean, "documents.bulk.conceptsApplied", targets.size());
+    }
+
+    private List<BulkDocumentRow> resolveApplyTargets() {
+        if (selectedRow == null) {
+            return List.of();
+        }
+        String sourceKey = selectedRow.getClientKey();
+        return rows.stream()
+                .filter(BulkDocumentRow::isMarked)
+                .filter(row -> sourceKey == null || !sourceKey.equals(row.getClientKey()))
+                .toList();
+    }
+
+    private static <T> List<T> copyList(List<T> source) {
+        if (source == null || source.isEmpty()) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(source);
+    }
+
     /**
      * Marks the draft dirty when the selected row is edited (AJAX listeners).
      * Persistence happens on {@link #saveDraft()} or {@link #submit()}.
      */
     public void persistSelectedRow() {
         if (selectedRow != null) {
+            ensureLockedProject(selectedRow);
             sanitizeTargetLists(selectedRow);
         }
         draftDirty = true;
@@ -874,26 +992,86 @@ public class DocumentBulkImportBean implements Serializable {
         persistSelectedRow();
     }
 
+    /** UE / mobiliers changed: refresh the attachment-based identifier when not manually edited. */
+    public void onAttachmentTargetsChange() {
+        if (selectedRow == null) {
+            return;
+        }
+        if (!selectedRow.isIdentifierEdited()) {
+            refreshSuggestedIdentifier(selectedRow);
+        }
+        persistSelectedRow();
+    }
+
+    /**
+     * Fills the identifier as soon as a file is loaded (upload or draft resume), then persists it
+     * in the draft so the detail panel shows it immediately.
+     */
+    private void assignSuggestedIdentifierOnLoad(BulkDocumentRow row) {
+        if (row == null || row.isIdentifierEdited()) {
+            return;
+        }
+        refreshSuggestedIdentifier(row);
+        if (StringUtils.hasText(row.getIdentifier()) && row.getItemId() != null) {
+            persistRow(row);
+        }
+    }
+
     private void refreshSuggestedIdentifier(BulkDocumentRow row) {
-        if (row.getType() == null || row.getType().concept() == null
-                || row.getProjects() == null || row.getProjects().isEmpty()) {
+        ensureLockedProject(row);
+        ActionUnitDTO project = resolveProjectForNaming(row);
+        if (project == null) {
             return;
         }
-        ActionUnitDTO project = row.getProjects().get(0);
-        if (project == null || project.getId() == null) {
-            return;
-        }
-        DocumentDTO dto = new DocumentDTO();
-        dto.setActionUnit(new ActionUnitSummaryDTO(project));
-        dto.setType(row.getType().concept());
         try {
-            String suggested = documentService.suggestIdentifier(dto);
+            String suggested = documentService.suggestAttachmentBasedIdentifier(
+                    project,
+                    row.getRecordingUnits(),
+                    row.getFinds(),
+                    reservedIdentifiersExcluding(row));
             if (StringUtils.hasText(suggested)) {
                 row.setIdentifier(suggested);
             }
         } catch (Exception e) {
             log.debug("Could not suggest document identifier for bulk row {}", row.getItemId(), e);
         }
+    }
+
+    /**
+     * Project used for the attachment-based identifier: locked context project when present,
+     * otherwise the first project on the row. Reloads labels when the DTO only carries an id.
+     */
+    private ActionUnitDTO resolveProjectForNaming(BulkDocumentRow row) {
+        ActionUnitDTO project = null;
+        if (isProjectFieldLocked()) {
+            project = defaultProject;
+        } else if (row.getProjects() != null && !row.getProjects().isEmpty()) {
+            project = row.getProjects().get(0);
+        }
+        if (project == null || project.getId() == null) {
+            return null;
+        }
+        if (StringUtils.hasText(project.getName())
+                || StringUtils.hasText(project.getFullIdentifier())
+                || StringUtils.hasText(project.getIdentifier())) {
+            return project;
+        }
+        try {
+            ActionUnitDTO reloaded = actionUnitService.findById(project.getId());
+            return reloaded != null ? reloaded : project;
+        } catch (RuntimeException e) {
+            log.debug("Unable to reload project {} for identifier suggestion", project.getId(), e);
+            return project;
+        }
+    }
+
+    private List<String> reservedIdentifiersExcluding(BulkDocumentRow current) {
+        String currentKey = current == null ? null : current.getClientKey();
+        return rows.stream()
+                .filter(row -> currentKey == null || !currentKey.equals(row.getClientKey()))
+                .map(BulkDocumentRow::getIdentifier)
+                .filter(StringUtils::hasText)
+                .toList();
     }
 
     private String languageCode() {
@@ -1338,6 +1516,8 @@ public class DocumentBulkImportBean implements Serializable {
         private List<RecordingUnitSummaryDTO> recordingUnits = new ArrayList<>();
         private List<SpecimenSummaryDTO> finds = new ArrayList<>();
         private List<SpatialUnitDTO> places = new ArrayList<>();
+        /** Checked in the summary table for bulk apply from the focused row. */
+        private boolean marked;
 
         @Override
         public boolean equals(Object o) {

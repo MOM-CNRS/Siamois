@@ -571,11 +571,12 @@ class DocumentBulkImportBeanTest {
         row.getProjects().add(project);
         bean.setSelectedRow(row);
 
-        when(documentService.suggestIdentifier(any())).thenReturn("DOC-42");
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Fouille_000001");
 
         bean.onTypeChange();
 
-        assertThat(row.getIdentifier()).isEqualTo("DOC-42");
+        assertThat(row.getIdentifier()).isEqualTo("Fouille_000001");
         assertThat(bean.isDraftDirty()).isTrue();
         verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
     }
@@ -601,10 +602,11 @@ class DocumentBulkImportBeanTest {
         row.setType(type);
         row.getProjects().add(project);
         bean.setSelectedRow(row);
-        when(documentService.suggestIdentifier(any())).thenReturn("DOC-99");
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Fouille_000099");
 
         bean.onProjectsChange();
-        assertThat(row.getIdentifier()).isEqualTo("DOC-99");
+        assertThat(row.getIdentifier()).isEqualTo("Fouille_000099");
 
         row.setIdentifierEdited(true);
         row.setIdentifier("kept");
@@ -800,10 +802,24 @@ class DocumentBulkImportBeanTest {
         bean.onTypeChange();
         assertThat(incomplete.getIdentifier()).isNull();
 
+        ActionUnitDTO projectWithoutId = new ActionUnitDTO();
+        projectWithoutId.setName("Site");
+        incomplete.getProjects().add(projectWithoutId);
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+
+        incomplete.getProjects().clear();
         ActionUnitDTO project = new ActionUnitDTO();
         project.setId(5L);
+        project.setName("Site");
         incomplete.getProjects().add(project);
-        when(documentService.suggestIdentifier(any())).thenThrow(new RuntimeException("boom"));
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any())).thenReturn("  ");
+        bean.onTypeChange();
+        assertThat(incomplete.getIdentifier()).isNull();
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("boom"));
         bean.onTypeChange();
         assertThat(incomplete.getIdentifier()).isNull();
     }
@@ -916,5 +932,312 @@ class DocumentBulkImportBeanTest {
             bean.submit();
             messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.done"), eq(0), eq(1)));
         }
+    }
+
+    @Test
+    void applyConceptsToMarked_copiesAllFieldsAndMarksDirty() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("P");
+        RecordingUnitSummaryDTO ru = new RecordingUnitSummaryDTO();
+        ru.setId(8L);
+        ConceptAutocompleteDTO type = new ConceptAutocompleteDTO(conceptDto(10L), "Photo", "fr");
+        ConceptAutocompleteDTO nature = new ConceptAutocompleteDTO(conceptDto(11L), "Nature", "fr");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.setType(type);
+        source.setNature(nature);
+        source.setDescription("desc");
+        source.setProjects(new ArrayList<>(List.of(project)));
+        source.setRecordingUnits(new ArrayList<>(List.of(ru)));
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+
+        assertThat(target.getType()).isEqualTo(type);
+        assertThat(target.getNature()).isEqualTo(nature);
+        assertThat(target.getDescription()).isEqualTo("desc");
+        assertThat(target.getProjects()).containsExactly(project);
+        assertThat(target.getRecordingUnits()).containsExactly(ru);
+        assertThat(target.getProjects()).isNotSameAs(source.getProjects());
+        assertThat(bean.isDraftDirty()).isTrue();
+        verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void applyConceptsToMarked_requiresOtherMarkedRows() {
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayErrorMessage(eq(langBean), eq("documents.bulk.applyDisabled")));
+        }
+        assertThat(bean.isApplyEnabled()).isFalse();
+
+        bean.setSelectedRow(null);
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayErrorMessage(eq(langBean), eq("documents.bulk.applyDisabled")));
+        }
+    }
+
+    @Test
+    void applyConceptsToMarked_includesMarkedRowsWhenSourceHasNoClientKey() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setItemId(1L);
+        source.getProjects().add(project);
+        source.setIdentifierEdited(true);
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+        assertThat(target.getProjects()).containsExactly(project);
+    }
+
+    @Test
+    void toggleMarkAll_marksAndClearsAllRows() {
+        DocumentBulkImportBean.BulkDocumentRow a = new DocumentBulkImportBean.BulkDocumentRow();
+        a.setClientKey("a");
+        DocumentBulkImportBean.BulkDocumentRow b = new DocumentBulkImportBean.BulkDocumentRow();
+        b.setClientKey("b");
+        bean.setRows(new ArrayList<>(List.of(a, b)));
+
+        assertThat(bean.isAllMarked()).isFalse();
+        bean.toggleMarkAll();
+        assertThat(bean.isAllMarked()).isTrue();
+        assertThat(bean.getMarkedCount()).isEqualTo(2);
+        bean.toggleMarkAll();
+        assertThat(bean.isAllMarked()).isFalse();
+    }
+
+    @Test
+    void applyTargetCount_excludesFocusedRowEvenWhenMarked() {
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setMarked(true);
+        DocumentBulkImportBean.BulkDocumentRow other = new DocumentBulkImportBean.BulkDocumentRow();
+        other.setClientKey("b");
+        other.setMarked(true);
+        bean.setRows(new ArrayList<>(List.of(source, other)));
+        bean.setSelectedRow(source);
+
+        assertThat(bean.getMarkedCount()).isEqualTo(2);
+        assertThat(bean.getApplyTargetCount()).isEqualTo(1);
+        assertThat(bean.isApplyEnabled()).isTrue();
+
+        bean.setSelectedRow(null);
+        assertThat(bean.getApplyTargetCount()).isZero();
+        assertThat(bean.isApplyEnabled()).isFalse();
+    }
+
+    @Test
+    void onAttachmentTargetsChange_refreshesIdentifierUnlessEdited() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setClientKey("a");
+        row.getProjects().add(project);
+        bean.setRows(new ArrayList<>(List.of(row)));
+        bean.setSelectedRow(row);
+
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        bean.onAttachmentTargetsChange();
+        assertThat(row.getIdentifier()).isEqualTo("Site_000001");
+        assertThat(bean.isDraftDirty()).isTrue();
+
+        row.setIdentifierEdited(true);
+        row.setIdentifier("manual");
+        bean.onAttachmentTargetsChange();
+        assertThat(row.getIdentifier()).isEqualTo("manual");
+        verify(documentService, times(1)).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+    }
+
+    @Test
+    void onAttachmentTargetsChange_ignoresNullSelection() {
+        bean.setSelectedRow(null);
+        bean.onAttachmentTargetsChange();
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+    }
+
+    @Test
+    void applyConceptsToMarked_refreshesIdentifierAndPassesReservedOnes() {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.getProjects().add(project);
+        source.setIdentifier("Site_000001");
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        when(documentService.suggestAttachmentBasedIdentifier(eq(project), any(), any(), any()))
+                .thenReturn("Site_000002");
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+            messages.verify(() -> MessageUtils.displayInfoMessage(eq(langBean), eq("documents.bulk.conceptsApplied"), eq(1)));
+        }
+
+        assertThat(target.getProjects()).containsExactly(project);
+        assertThat(target.getIdentifier()).isEqualTo("Site_000002");
+        ArgumentCaptor<java.util.Collection> reserved = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(documentService).suggestAttachmentBasedIdentifier(eq(project), any(), any(), reserved.capture());
+        assertThat(reserved.getValue()).contains("Site_000001");
+    }
+
+    @Test
+    void bulkDocumentRow_equalsUsesClientKeyAndSupportsMarkedFlag() {
+        DocumentBulkImportBean.BulkDocumentRow a = new DocumentBulkImportBean.BulkDocumentRow();
+        a.setClientKey("k");
+        a.setMarked(true);
+        DocumentBulkImportBean.BulkDocumentRow b = new DocumentBulkImportBean.BulkDocumentRow();
+        b.setClientKey("k");
+        DocumentBulkImportBean.BulkDocumentRow c = new DocumentBulkImportBean.BulkDocumentRow();
+        c.setClientKey("other");
+
+        assertThat(a).isEqualTo(b).isNotEqualTo(c).isNotEqualTo(null);
+        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a.isMarked()).isTrue();
+        assertThat(b.isMarked()).isFalse();
+    }
+
+    @Test
+    void projectFieldLocked_whenDefaultProjectPresent() {
+        assertThat(bean.isProjectFieldLocked()).isFalse();
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        bean.setDefaultProject(project);
+        assertThat(bean.isProjectFieldLocked()).isTrue();
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.getProjects().add(new ActionUnitDTO());
+        bean.ensureLockedProject(row);
+        assertThat(row.getProjects()).containsExactly(project);
+    }
+
+    @Test
+    void applyConceptsToMarked_keepsLockedDefaultProject() {
+        ActionUnitDTO contextProject = new ActionUnitDTO();
+        contextProject.setId(5L);
+        contextProject.setName("Context");
+        bean.setDefaultProject(contextProject);
+
+        ActionUnitDTO other = new ActionUnitDTO();
+        other.setId(9L);
+        other.setName("Other");
+
+        DocumentBulkImportBean.BulkDocumentRow source = new DocumentBulkImportBean.BulkDocumentRow();
+        source.setClientKey("a");
+        source.setItemId(1L);
+        source.setProjects(new ArrayList<>(List.of(other)));
+        source.setIdentifierEdited(true);
+
+        DocumentBulkImportBean.BulkDocumentRow target = new DocumentBulkImportBean.BulkDocumentRow();
+        target.setClientKey("b");
+        target.setItemId(2L);
+        target.setMarked(true);
+
+        bean.setRows(new ArrayList<>(List.of(source, target)));
+        bean.setSelectedRow(source);
+
+        try (MockedStatic<MessageUtils> messages = mockStatic(MessageUtils.class)) {
+            bean.applyConceptsToMarked();
+        }
+
+        assertThat(target.getProjects()).containsExactly(contextProject);
+    }
+
+    @Test
+    void handleFileUpload_suggestsIdentifierWhenProjectDefaultsPresent() throws Exception {
+        ActionUnitDTO project = new ActionUnitDTO();
+        project.setId(5L);
+        project.setName("Site");
+        bean.setDefaultProject(project);
+
+        DocumentImportItem item = stubItem(101L, "photo.jpg");
+        ActionUnit au = new ActionUnit();
+        au.setId(5L);
+        item.getProjects().add(au);
+        when(draftService.addFile(anyLong(), anyLong(), anyString(), anyString(), any(), any())).thenReturn(item);
+        lenient().when(actionUnitMapper.convert(any(ActionUnit.class))).thenReturn(project);
+        when(documentService.suggestAttachmentBasedIdentifier(any(), any(), any(), any()))
+                .thenReturn("Site_000001");
+        when(draftService.updateItemMetadata(eq(7L), eq(10L), eq(101L), any())).thenAnswer(inv -> {
+            item.setIdentifier("Site_000001");
+            return item;
+        });
+
+        bean.handleFileUpload(fileUploadEvent("photo.jpg"));
+
+        assertThat(bean.getRows()).hasSize(1);
+        assertThat(bean.getRows().get(0).getIdentifier()).isEqualTo("Site_000001");
+        verify(documentService).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+        verify(draftService).updateItemMetadata(eq(7L), eq(10L), eq(101L), any());
+    }
+
+    @Test
+    void refreshSuggestedIdentifier_reloadsProjectWhenLabelsMissing() {
+        ActionUnitDTO thin = new ActionUnitDTO();
+        thin.setId(5L);
+        ActionUnitDTO rich = new ActionUnitDTO();
+        rich.setId(5L);
+        rich.setName("Site");
+        when(actionUnitService.findById(5L)).thenReturn(rich);
+        when(documentService.suggestAttachmentBasedIdentifier(eq(rich), any(), any(), any()))
+                .thenReturn("Site_000001");
+
+        DocumentBulkImportBean.BulkDocumentRow row = new DocumentBulkImportBean.BulkDocumentRow();
+        row.setClientKey("a");
+        row.getProjects().add(thin);
+        bean.setSelectedRow(row);
+
+        bean.onProjectsChange();
+
+        assertThat(row.getIdentifier()).isEqualTo("Site_000001");
+        verify(actionUnitService).findById(5L);
+        verify(documentService).suggestAttachmentBasedIdentifier(eq(rich), any(), any(), any());
     }
 }

@@ -419,6 +419,107 @@
                     border-bottom: 1px solid #e0ebe4;
                     flex: 0 0 auto;
                 }
+                .sia-bulk-panel-list-actions {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.45rem;
+                    flex: 0 0 auto;
+                }
+                .sia-bulk-mark-all.ui-button {
+                    font-size: 0.72rem !important;
+                    padding: 0.2rem 0.55rem !important;
+                }
+                .sia-bulk-apply-bar {
+                    display: flex;
+                    align-items: stretch;
+                    gap: 0.75rem;
+                    margin: 0 0 0.95rem;
+                    padding: 0.7rem 0.8rem;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #f7faf8 0%, #eef5f0 100%);
+                    border: 1px solid #d7e5db;
+                    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+                }
+                .sia-bulk-apply-bar-icon {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 2.15rem;
+                    height: 2.15rem;
+                    margin-top: 0.05rem;
+                    border-radius: 0.55rem;
+                    background: #fff;
+                    border: 1px solid #d5e4da;
+                    color: var(--main-color, #2d6a4f);
+                    flex: 0 0 auto;
+                }
+                .sia-bulk-apply-bar-icon .pi {
+                    font-size: 0.95rem;
+                }
+                .sia-bulk-apply-bar-body {
+                    display: flex;
+                    flex: 1 1 auto;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 0.65rem 0.85rem;
+                    min-width: 0;
+                }
+                .sia-bulk-apply-bar-copy {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 0.18rem;
+                    min-width: 0;
+                    flex: 1 1 12rem;
+                }
+                .sia-bulk-apply-bar-title-row {
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: 0.4rem;
+                }
+                .sia-bulk-apply-bar-title {
+                    margin: 0;
+                    font-size: 0.84rem;
+                    font-weight: 700;
+                    color: #243028;
+                    line-height: 1.25;
+                }
+                .sia-bulk-apply-bar-count {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 0.08rem 0.45rem;
+                    border-radius: 999px;
+                    background: #fff;
+                    border: 1px solid #d7e4db;
+                    color: var(--main-color, #2d6a4f);
+                    font-size: 0.68rem;
+                    font-weight: 700;
+                    white-space: nowrap;
+                }
+                .sia-bulk-apply-bar-hint {
+                    margin: 0;
+                    font-size: 0.74rem;
+                    font-weight: 500;
+                    color: #66706a;
+                    line-height: 1.4;
+                }
+                .sia-bulk-apply-bar-actions {
+                    display: inline-flex;
+                    align-items: center;
+                    flex: 0 0 auto;
+                }
+                .sia-bulk-apply-bar-actions .ui-button {
+                    font-size: 0.8rem !important;
+                    font-weight: 650 !important;
+                    white-space: nowrap;
+                }
+                .sia-bulk-mark-cell {
+                    text-align: center;
+                }
+                .sia-bulk-mark-cell .ui-chkbox {
+                    margin: 0;
+                }
                 .sia-bulk-panel-list-heading {
                     display: flex;
                     align-items: center;
@@ -701,6 +802,17 @@
                     color: #3f4a44;
                     margin: 0 0 0.28rem;
                 }
+                .sia-bulk-field-hint {
+                    margin: 0.35rem 0 0;
+                    font-size: 0.72rem;
+                    font-weight: 500;
+                    color: #7a847e;
+                    line-height: 1.35;
+                }
+                .sia-bulk-field .ui-autocomplete.ui-state-disabled,
+                .sia-bulk-field .ui-state-disabled.ui-autocomplete {
+                    opacity: 0.85;
+                }
                 .sia-bulk-detail-empty {
                     display: flex;
                     flex-direction: column;
@@ -936,10 +1048,21 @@
                                         <p class="sia-bulk-panel-list-hint">#{langBean.msg('documents.bulk.summaryHint')}</p>
                                     </div>
                                 </div>
-                                <h:panelGroup rendered="#{not empty documentBulkImportBean.rows}"
-                                              styleClass="sia-bulk-panel-list-count">
-                                    #{documentBulkImportBean.rows.size()}
-                                </h:panelGroup>
+                                <div class="sia-bulk-panel-list-actions">
+                                    <h:panelGroup rendered="#{not empty documentBulkImportBean.rows}"
+                                                  styleClass="sia-bulk-panel-list-count">
+                                        #{documentBulkImportBean.rows.size()}
+                                    </h:panelGroup>
+                                    <p:commandButton value="#{documentBulkImportBean.allMarked
+                                                         ? langBean.msg('documents.bulk.markNone')
+                                                         : langBean.msg('documents.bulk.markAll')}"
+                                                     action="#{documentBulkImportBean.toggleMarkAll}"
+                                                     process="@this"
+                                                     update="bulkDocumentImport:rowsTable bulkDocumentImport:detailPanel"
+                                                     styleClass="ui-button-flat ui-button-sm sia-bulk-mark-all"
+                                                     rendered="#{not empty documentBulkImportBean.rows}"
+                                                     disabled="#{documentBulkImportBean.rows.size() lt 2}"/>
+                                </div>
                             </div>
                             <p:dataTable id="rowsTable"
                                          widgetVar="bulkDocRowsTable"
@@ -960,6 +1083,18 @@
                                         global="false"
                                         onstart="PF('buiBulkDetail').show()"
                                         oncomplete="PF('buiBulkDetail').hide()"/>
+
+                                <p:column style="width:2.4rem;" styleClass="sia-bulk-mark-cell"
+                                          exportable="false">
+                                    <p:selectBooleanCheckbox value="#{row.marked}"
+                                                             itemLabel=""
+                                                             onclick="event.stopPropagation();">
+                                        <p:ajax event="change"
+                                                update="bulkDocumentImport:detailPanel"
+                                                process="@this"
+                                                global="false"/>
+                                    </p:selectBooleanCheckbox>
+                                </p:column>
 
                                 <p:column headerText="#" style="width:2.75rem; text-align:center;">
                                     <span class="sia-bulk-index">#{idx + 1}</span>
@@ -1083,6 +1218,41 @@
                                         </div>
                                     </div>
 
+                                    <h:panelGroup rendered="#{documentBulkImportBean.rows.size() gt 1}"
+                                                  layout="block" styleClass="sia-bulk-apply-bar">
+                                        <span class="sia-bulk-apply-bar-icon" aria-hidden="true">
+                                            <i class="pi pi-clone"/>
+                                        </span>
+                                        <div class="sia-bulk-apply-bar-body">
+                                            <div class="sia-bulk-apply-bar-copy">
+                                                <div class="sia-bulk-apply-bar-title-row">
+                                                    <p class="sia-bulk-apply-bar-title">
+                                                        #{langBean.msg('documents.bulk.applyBarTitle')}
+                                                    </p>
+                                                    <h:panelGroup rendered="#{documentBulkImportBean.applyTargetCount gt 0}"
+                                                                  styleClass="sia-bulk-apply-bar-count">
+                                                        #{langBean.msg('documents.bulk.applyBarCount', documentBulkImportBean.applyTargetCount)}
+                                                    </h:panelGroup>
+                                                </div>
+                                                <p class="sia-bulk-apply-bar-hint">
+                                                    #{langBean.msg('documents.bulk.applyBarHint')}
+                                                </p>
+                                            </div>
+                                            <div class="sia-bulk-apply-bar-actions">
+                                                <p:commandButton value="#{langBean.msg('documents.bulk.applyConcepts')}"
+                                                                 action="#{documentBulkImportBean.applyConceptsToMarked}"
+                                                                 icon="pi pi-copy"
+                                                                 process="@this"
+                                                                 update="bulkDocumentImport:rowsTable bulkDocumentImport:detailPanel bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
+                                                                 styleClass="ui-button-sm"
+                                                                 disabled="#{not documentBulkImportBean.applyEnabled}"
+                                                                 title="#{documentBulkImportBean.applyEnabled
+                                                                     ? langBean.msg('documents.bulk.applyBarHint')
+                                                                     : langBean.msg('documents.bulk.applyDisabled')}"/>
+                                            </div>
+                                        </div>
+                                    </h:panelGroup>
+
                                     <div class="sia-bulk-section">
                                         <h4 class="sia-bulk-section-title">#{langBean.msg('documents.bulk.section.required')}</h4>
                                         <div class="sia-bulk-field">
@@ -1098,6 +1268,10 @@
                                                             forceSelection="true"
                                                             dropdown="true"
                                                             scrollHeight="240"
+                                                            disabled="#{documentBulkImportBean.projectFieldLocked}"
+                                                            title="#{documentBulkImportBean.projectFieldLocked
+                                                                ? langBean.msg('documents.bulk.projectsLocked')
+                                                                : ''}"
                                                             panelStyleClass="sia-autocomplete-panel">
                                                 <p:ajax event="itemSelect"
                                                         listener="#{documentBulkImportBean.onProjectsChange}"
@@ -1108,6 +1282,11 @@
                                                         update="bulkDocumentImport:detailPanel bulkDocumentImport:rowsTable bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
                                                         process="@this" global="false"/>
                                             </p:autoComplete>
+                                            <h:panelGroup rendered="#{documentBulkImportBean.projectFieldLocked}"
+                                                          layout="block"
+                                                          styleClass="sia-bulk-field-hint">
+                                                #{langBean.msg('documents.bulk.projectsLocked')}
+                                            </h:panelGroup>
                                         </div>
                                         <div class="sia-bulk-field">
                                             <p:outputLabel for="rowType:conceptAutocomplete" value="#{langBean.msg('documents.bulk.type')} *" styleClass="sia-bulk-field-label"/>
@@ -1122,7 +1301,7 @@
                                                     ajaxProcessTargets="@this"/>
                                         </div>
                                         <div class="sia-bulk-field">
-                                            <p:outputLabel for="bulkIdentifier" value="#{langBean.msg('documents.bulk.identifier')} *" styleClass="sia-bulk-field-label"/>
+                                            <p:outputLabel for="bulkIdentifier" value="#{langBean.msg('documents.bulk.identifier')}" styleClass="sia-bulk-field-label"/>
                                             <p:inputText id="bulkIdentifier"
                                                          value="#{documentBulkImportBean.selectedRow.identifier}"
                                                          required="true"
@@ -1202,8 +1381,8 @@
                                                                itemValue="#{ru}"
                                                                itemLabel="#{ru.fullIdentifier}"/>
                                                 <p:ajax event="change"
-                                                        listener="#{documentBulkImportBean.persistSelectedRow}"
-                                                        update="bulkDocumentImport:rowsTable bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
+                                                        listener="#{documentBulkImportBean.onAttachmentTargetsChange}"
+                                                        update="bulkDocumentImport:detailPanel bulkDocumentImport:rowsTable bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
                                                         process="@this" global="false"/>
                                             </p:selectCheckboxMenu>
                                         </div>
@@ -1226,8 +1405,8 @@
                                                                itemValue="#{find}"
                                                                itemLabel="#{find.fullIdentifier}"/>
                                                 <p:ajax event="change"
-                                                        listener="#{documentBulkImportBean.persistSelectedRow}"
-                                                        update="bulkDocumentImport:rowsTable bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
+                                                        listener="#{documentBulkImportBean.onAttachmentTargetsChange}"
+                                                        update="bulkDocumentImport:detailPanel bulkDocumentImport:rowsTable bulkDocumentImport:bulkReadyCount bulkDocumentImport:bulkFooterActions"
                                                         process="@this" global="false"/>
                                             </p:selectCheckboxMenu>
                                         </div>
