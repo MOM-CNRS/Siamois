@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -161,12 +162,19 @@ class DocumentImportDraftStorageTest {
 
     @Test
     void deleteDraftTree_fileDeleteFailure_continues() throws Exception {
-        storage.save(10L, 3L, "a.pdf", new ByteArrayInputStream(new byte[]{1}));
+        String stored = storage.save(10L, 3L, "a.pdf", new ByteArrayInputStream(new byte[]{1}));
+        Path path = storage.draftDir(10L, 3L).resolve(stored);
+        Path dir = storage.draftDir(10L, 3L);
+
+        assertThat(Files.isRegularFile(path)).isTrue();
 
         try (MockedStatic<Files> files = mockStatic(Files.class, CALLS_REAL_METHODS)) {
             files.when(() -> Files.deleteIfExists(any(Path.class))).thenThrow(new IOException("busy"));
-            storage.deleteDraftTree(10L, 3L);
+            assertThatCode(() -> storage.deleteDraftTree(10L, 3L)).doesNotThrowAnyException();
         }
+
+        assertThat(Files.isRegularFile(path)).isTrue();
+        assertThat(Files.isDirectory(dir)).isTrue();
     }
 
     @Test

@@ -53,6 +53,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -789,9 +790,17 @@ class DocumentBulkImportBeanTest {
     @Test
     void typeAndIdentifierHandlers_ignoreNullSelection() {
         bean.setSelectedRow(null);
-        bean.onTypeChange();
-        bean.onIdentifierInput();
-        bean.onProjectsChange();
+
+        assertThatCode(() -> {
+            bean.onTypeChange();
+            bean.onIdentifierInput();
+            bean.onProjectsChange();
+            bean.onAttachmentTargetsChange();
+        }).doesNotThrowAnyException();
+
+        verify(documentService, never()).suggestAttachmentBasedIdentifier(any(), any(), any(), any());
+        verify(draftService, never()).updateItemMetadata(anyLong(), anyLong(), anyLong(), any());
+        verifyNoInteractions(actionUnitService, recordingUnitService, specimenService);
     }
 
     @Test
