@@ -564,7 +564,7 @@ public abstract class RecordingUnitForm {
             .concept(FINDS_CONCEPT)
             .build();
 
-    // Not JPA properties: a unit's relationships are stored once, in stratigraphic_relationship, and
+    // Not JPA properties: a unit's relationships are stored once, in relation_link (the order and synchrony definitions), and
     // read from there as three fields, one per side (RelationField.RECORDING_UNIT_*_RELATIONSHIPS).
     // Each has the vocabulary of its own relationship types, named by its field code.
     @Transient

@@ -106,8 +106,8 @@ GROUP BY 1, 2, 3, 4, 5 ORDER BY 6 DESC;
    quel que soit `concept_direction`. Celui-ci ne sert plus qu'au rapport : un lien dont le sens de lecture contredit
    les colonnes y est listé, et l'ordre des colonnes fait foi.
 4. **« regroupe », « englobe » et leurs inverses relèvent de la hiérarchie** : leurs liens **ne sont pas repris**
-   aujourd'hui. Ils restent dans l'ancienne table, gardée en lecture seule ; leur reprise (vers une hiérarchie) devra
-   précéder la suppression de cette table.
+   aujourd'hui. Aucune base connue ne les utilise : l'ancienne table est supprimée par le changelog 2026-11-27-1,
+   avec son historique, sans les reprendre (décidé le 27/11/2026).
 5. **Les paires miroir sont trouvées par le sens des libellés**, et non par `external_id` : la même table de paires
    s'applique à chaque vocabulaire (thésaurus SIAMOIS ou propre à une institution), au sein d'un même vocabulaire et
    d'un même groupe de branches (antérieure ↔ postérieure, ou ancienne liste ↔ elle-même). Un concept sans paire est

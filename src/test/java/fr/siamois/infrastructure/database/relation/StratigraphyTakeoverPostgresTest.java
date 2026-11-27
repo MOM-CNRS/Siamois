@@ -63,7 +63,9 @@ class StratigraphyTakeoverPostgresTest {
     @Test
     void everyOldRelationshipButTheHierarchyOnesIsTakenOver() throws SQLException {
         assertThat(count("SELECT count(*) FROM relation_link")).isEqualTo(8);
-        assertThat(count("SELECT count(*) FROM stratigraphic_relationship")).isEqualTo(9);
+        // 2026-11-27-1 then drops the old table and its history
+        assertThat(count("SELECT count(*) FROM pg_tables WHERE tablename IN "
+                + "('stratigraphic_relationship', 'stratigraphic_relationship_aud')")).isZero();
     }
 
     @Test

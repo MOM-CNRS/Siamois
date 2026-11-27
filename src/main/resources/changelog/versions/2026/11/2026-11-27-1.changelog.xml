@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.0.xsd">
+
+    <!--
+    Drops the old stratigraphy table and its history. Since 2026-11-26-2 every stratigraphic link lives in
+    relation_link and no code reads or writes stratigraphic_relationship any more. The links it did not take over
+    ("regroupe", "englobe" and their inverses, docs/reprise-stratigraphie.md §6) are used by no known database, and
+    their history is not kept: SIAMOIS is not in production yet (decided on 2026-11-27).
+    -->
+
+    <changeSet id="2026-11-27-1-stratigraphic-relationship-aud-drop" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DROP TABLE IF EXISTS public.stratigraphic_relationship_aud;
+        ]]></sql>
+    </changeSet>
+
+    <changeSet id="2026-11-27-1-stratigraphic-relationship-drop" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DROP TABLE IF EXISTS public.stratigraphic_relationship;
+        ]]></sql>
+    </changeSet>
+
+    <!-- The old table's trigger function, left behind on databases migrated before 2026-11-26-2 dropped it. -->
+    <changeSet id="2026-11-27-1-order-strat-relationship-function-drop" author="Gregory Bliault">
+        <sql splitStatements="false"><![CDATA[
+            DROP FUNCTION IF EXISTS public.order_strat_relationship();
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

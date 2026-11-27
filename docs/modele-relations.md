@@ -333,10 +333,10 @@ La reprise :
    englobe / est englobée par, regroupe / est regroupée dans) ; ses termes sans inverse gardent le même concept.
 5. Un **rapport de migration** liste les concepts utilisés sans correspondance connue (repris tels quels) et les termes
    qui ressemblent à de la hiérarchie (regroupe, englobe).
-6. **L'ancienne table est gardée, en lecture seule, jusqu'à la livraison suivante** : plus aucun code n'y écrit, le
-   trigger `order_strat_relationship` et `StratiTriggerInitializer` sont retirés, et l'on peut comparer anciens et
-   nouveaux liens, ou revenir en arrière. Elle n'est supprimée que par un changelog ultérieur, une fois la reprise
-   validée. **`stratigraphic_relationship_aud` est gardée** dans tous les cas.
+6. **L'ancienne table est supprimée, avec son historique** (changelog 2026-11-27-1, décidé le 27/11/2026) : plus
+   aucun code ne la lit ni n'y écrit, le trigger `order_strat_relationship` et `StratiTriggerInitializer` sont retirés.
+   SIAMOIS n'étant pas en production, l'historique de `stratigraphic_relationship_aud` n'est pas repris. Les liens
+   non repris (« regroupe », « englobe ») ne sont utilisés par aucune base connue.
 7. Comptages avant et après : lignes de l'ancienne table = liens ordre + synchronie ; liens incertains ; liens par
    qualificatif.
 
@@ -401,10 +401,10 @@ Les tables ci-dessous **restent en place**, avec leur fonctionnement actuel. Si 
 
 ## 8. Conséquences pour l'audit (Envers)
 
-- `relation_link` est audité : la stratigraphie garde un historique après la bascule. L'historique **antérieur** reste
-  dans `stratigraphic_relationship_aud`, conservée pour pouvoir le reprendre plus tard.
+- `relation_link` est audité : la stratigraphie a un historique à partir de la bascule. L'historique **antérieur**
+  (`stratigraphic_relationship_aud`) est abandonné : SIAMOIS n'est pas en production.
 - **Les liens supprimés avec leur fiche ne sont pas audités.** Le trigger de suppression agit en SQL, hors d'Envers ;
-  c'est déjà le cas aujourd'hui, puisque `ProjectDeletionService` supprime `stratigraphic_relationship` en SQL natif.
+  c'était déjà le cas de l'ancienne table, que `ProjectDeletionService` vidait en SQL natif.
   Seuls les liens supprimés par l'utilisateur, à travers le service, laissent une révision. C'est un choix assumé.
 - Les tables métier ne changent pas : aucune conséquence sur leur historique.
 - Le qualificatif est une colonne du lien : il est historisé avec lui. Les autres attributs d'un lien complexe
