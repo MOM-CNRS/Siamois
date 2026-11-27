@@ -43,7 +43,6 @@ public class ProjectDeletionService {
     private static final String DOC = "SELECT document_id FROM siamois_document WHERE fk_action_unit_id = :pid";
 
     private static final String T_RU_HIERARCHY = "recording_unit_hierarchy";
-    private static final String T_STRATI = "stratigraphic_relationship";
     private static final String T_SP_HIERARCHY = "specimen_hierarchy";
     private static final String C_PARENT = "fk_parent_id";
     private static final String C_CHILD = "fk_child_id";
@@ -66,8 +65,6 @@ public class ProjectDeletionService {
     private static final List<Cross> CROSS_LINKS = List.of(
             new Cross("la hiérarchie des unités d'enregistrement", T_RU_HIERARCHY,
                     C_PARENT, RU, C_CHILD, RU),
-            new Cross("des relations stratigraphiques", T_STRATI,
-                    "fk_recording_unit_1_id", RU, "fk_recording_unit_2_id", RU),
             new Cross("la hiérarchie des mobiliers", T_SP_HIERARCHY, C_PARENT, SP, C_CHILD, SP),
             new Cross("la hiérarchie des contenants", "container", "container_id", CO, C_PARENT, CO),
             new Cross("des phases", "recording_unit_phase", C_RU, RU, C_PHASE, PH),
@@ -100,8 +97,6 @@ public class ProjectDeletionService {
     private static final List<LinkDeletion> LINK_DELETIONS = List.of(
             new LinkDeletion(T_RU_HIERARCHY, C_PARENT, RU),
             new LinkDeletion(T_RU_HIERARCHY, C_CHILD, RU),
-            new LinkDeletion(T_STRATI, "fk_recording_unit_1_id", RU),
-            new LinkDeletion(T_STRATI, "fk_recording_unit_2_id", RU),
             new LinkDeletion("recording_unit_contributors", C_RU, RU),
             new LinkDeletion("recording_unit_phase", C_RU, RU),
             new LinkDeletion("recording_unit_document", C_RU, RU),

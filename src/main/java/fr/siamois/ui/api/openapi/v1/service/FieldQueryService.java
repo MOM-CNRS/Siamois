@@ -18,7 +18,11 @@ import fr.siamois.domain.models.form.rules.FieldRules;
 import fr.siamois.domain.models.form.rules.FieldRulesJson;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationEndKind;
+import fr.siamois.domain.models.relation.RelationLink;
+import fr.siamois.infrastructure.database.repositories.relation.DefinitionRelation;
 import fr.siamois.domain.models.settings.tableconfig.ConfigurableTable;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
@@ -91,7 +95,6 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class FieldQueryService {
 
-    private static final String IS_ASYNCHRONOUS = "isAsynchronous";
 
 
     /** The {@link fr.siamois.domain.models.form.config.FormConfigAnswer} property naming each owner. */
@@ -153,6 +156,11 @@ public class FieldQueryService {
     private final CustomFieldRepository customFieldRepository;
     private final EntityManager entityManager;
 
+    /** The attribute of a configurable relation field's target: not a property, the links of its definition. */
+    private static final String RELATION_LINK = "relationLink";
+    private static final String SOURCE_ID = "sourceId";
+    private static final String TARGET_ID = "targetId";
+
     private enum Kind {
         TEXT("contains", FilterOperator.CONTAINS, Match.EQUAL, Match.CONTAINS, Match.STARTS_WITH, Match.ENDS_WITH),
         NUMBER("range", FilterOperator.BETWEEN, Match.RANGE),
@@ -207,13 +215,23 @@ public class FieldQueryService {
     private record Target(boolean system, String attribute, Kind kind, Class<?> valueType,
                           @Nullable Class<? extends CustomFieldAnswer> answerClass,
                           boolean concept, @Nullable String labelAttribute, boolean idFilterable,
-                          @Nullable String nested) {
+                          @Nullable String nested, @Nullable LinkSide links) {
 
         Target(boolean system, String attribute, Kind kind, Class<?> valueType,
                @Nullable Class<? extends CustomFieldAnswer> answerClass,
                boolean concept, @Nullable String labelAttribute, boolean idFilterable) {
-            this(system, attribute, kind, valueType, answerClass, concept, labelAttribute, idFilterable, null);
+            this(system, attribute, kind, valueType, answerClass, concept, labelAttribute, idFilterable, null, null);
         }
+
+        Target(boolean system, String attribute, Kind kind, Class<?> valueType,
+               @Nullable Class<? extends CustomFieldAnswer> answerClass,
+               boolean concept, @Nullable String labelAttribute, boolean idFilterable, @Nullable String nested) {
+            this(system, attribute, kind, valueType, answerClass, concept, labelAttribute, idFilterable, nested, null);
+        }
+    }
+
+    /** A configurable relation field's side: its definition, and which end of a link the owner stands on. */
+    private record LinkSide(long definitionId, boolean symmetric, boolean ownerIsSource) {
     }
 
     // ========== Catalog ==========
@@ -270,6 +288,8 @@ public class FieldQueryService {
      */
     static boolean isReadOnly(Class<?> entityType, CustomField field) {
         if (field == null || field.getId() == null) return false;
+        // A configurable relation is written through /relation-links, never through the owner's answers.
+        if (Hibernate.unproxy(field) instanceof CustomFieldRelation) return true;
         ConfigurableTable table = TABLES.get(entityType);
         if (table != null) {
             return SystemFieldCatalog.specOf(table, field.getId()).map(SystemFieldSpec::readOnly).orElse(false);
@@ -404,10 +424,24 @@ public class FieldQueryService {
     @Nullable
     private Target resolveAdditional(Class<?> entityType, CustomField field) {
         if (!ANSWER_OWNERS.containsKey(entityType)) return null;
+        if (Hibernate.unproxy(field) instanceof CustomFieldRelation) return relationTarget(field);
         Function<Void, ? extends CustomFieldAnswer> creator =
                 CustomFieldAnswerFactory.ANSWER_ENTITY_CREATORS.get(Hibernate.getClass(field));
         if (creator == null) return null;
-        Class<? extends CustomFieldAnswer> answerClass = creator.apply(null).getClass();
+        return answerTarget(field, creator.apply(null).getClass());
+    }
+
+    /** The links of a relation field's definition, from its side: filtered and sorted like a collection of references. */
+    @Nullable
+    private Target relationTarget(CustomField field) {
+        LinkSide side = linkSideOf(field.getId());
+        return side == null ? null
+                : new Target(false, RELATION_LINK, Kind.REFERENCES, Object.class, null, false, null, true, null, side);
+    }
+
+    /** An additional field stored as answers of {@code answerClass}. */
+    @Nullable
+    private Target answerTarget(CustomField field, Class<? extends CustomFieldAnswer> answerClass) {
         boolean single = FieldAnswerWireService.answerTypeOf(field).startsWith("SELECT_ONE");
         Kind refKind = single ? Kind.REFERENCE : Kind.REFERENCES;
 
@@ -508,25 +542,60 @@ public class FieldQueryService {
     }
 
     /**
-     * The stratigraphic relationships of {@code unit} whose other unit stands at {@code position}
-     * relative to it, and, when {@code otherIds} is given, is one of those. A relationship whose order
-     * is unknown (null asynchronous) counts as asynchronous, as everywhere else.
+     * The links of the stratigraphy (docs/reprise-stratigraphie.md) where {@code unit}'s other unit stands at
+     * {@code position}, and, when {@code otherIds} is given, is one of those: the order goes from the posterior unit
+     * to the anterior one, the synchrony either way.
      */
-    private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<StratigraphicRelationship> rel,
+    private static Predicate stratigraphicPredicate(CriteriaBuilder cb, Root<RelationLink> link,
                                                     Path<?> unit, String position, @Nullable List<Long> otherIds) {
-        Predicate asynchronous = cb.or(cb.isNull(rel.get(IS_ASYNCHRONOUS)), cb.isTrue(rel.get(IS_ASYNCHRONOUS)));
-        Predicate unit1IsOwner = cb.and(cb.equal(rel.get("unit1"), unit), otherIs(rel, "unit2", otherIds));
-        Predicate unit2IsOwner = cb.and(cb.equal(rel.get("unit2"), unit), otherIs(rel, "unit1", otherIds));
+        Path<Object> sourceField = link.get("definition").get("sourceField").get("id");
+        Predicate units = cb.and(cb.equal(link.get("sourceKind"), RelationEndKind.RECORDING_UNIT),
+                cb.equal(link.get("targetKind"), RelationEndKind.RECORDING_UNIT));
+        Predicate ownerIsSource = cb.and(cb.equal(link.get(SOURCE_ID), unit.get("id")), otherIs(cb, link, TARGET_ID, otherIds));
+        Predicate ownerIsTarget = cb.and(cb.equal(link.get(TARGET_ID), unit.get("id")), otherIs(cb, link, SOURCE_ID, otherIds));
+        Predicate order = cb.equal(sourceField, RelationField.Stratigraphy.ORDER_SOURCE_FIELD);
         return switch (position) {
-            // The owner is the older, first, unit: the other one is posterior to it.
-            case "posterior" -> cb.and(asynchronous, unit1IsOwner);
-            case "anterior" -> cb.and(asynchronous, unit2IsOwner);
-            default -> cb.and(cb.isFalse(rel.get(IS_ASYNCHRONOUS)), cb.or(unit1IsOwner, unit2IsOwner));
+            // The other unit is posterior to the owner: the owner is the order's target.
+            case "posterior" -> cb.and(units, order, ownerIsTarget);
+            case "anterior" -> cb.and(units, order, ownerIsSource);
+            default -> cb.and(units, cb.equal(sourceField, RelationField.Stratigraphy.SYNCHRONY_FIELD),
+                    cb.or(ownerIsSource, ownerIsTarget));
         };
     }
 
-    private static Predicate otherIs(Root<StratigraphicRelationship> rel, String otherUnit, @Nullable List<Long> otherIds) {
-        return otherIds == null ? rel.get(otherUnit).isNotNull() : rel.get(otherUnit).get("id").in(otherIds);
+    /** The side of a configurable relation a field is, or null for a relation field no definition uses yet. */
+    @Nullable
+    private LinkSide linkSideOf(long fieldId) {
+        return entityManager.createQuery(
+                        "select d from RelationDefinition d where d.sourceField.id = :field or d.targetField.id = :field",
+                        RelationDefinition.class)
+                .setParameter("field", fieldId)
+                .getResultStream().findFirst()
+                .map(d -> new LinkSide(d.getId(), d.isSymmetric(), d.getSourceField().getId().equals(fieldId)))
+                .orElse(null);
+    }
+
+    /**
+     * The links of a configurable relation from {@code owner}'s side (either side for a symmetric relation), and,
+     * when {@code otherIds} is given, to one of those.
+     */
+    private static Predicate relationLinkPredicate(CriteriaBuilder cb, Root<RelationLink> link, Root<?> owner,
+                                                   LinkSide side, @Nullable List<Long> otherIds) {
+        RelationEndKind ownerKind = DefinitionRelation.kindOfOwner(owner.getJavaType());
+        Predicate ofDefinition = cb.equal(link.get("definition").get("id"), side.definitionId());
+        Predicate fromSource = cb.and(cb.equal(link.get("sourceKind"), ownerKind),
+                cb.equal(link.get(SOURCE_ID), owner.get("id")),
+                otherIds == null ? cb.conjunction() : link.get(TARGET_ID).in(otherIds));
+        Predicate fromTarget = cb.and(cb.equal(link.get("targetKind"), ownerKind),
+                cb.equal(link.get(TARGET_ID), owner.get("id")),
+                otherIds == null ? cb.conjunction() : link.get(SOURCE_ID).in(otherIds));
+        if (side.symmetric()) return cb.and(ofDefinition, cb.or(fromSource, fromTarget));
+        return cb.and(ofDefinition, side.ownerIsSource() ? fromSource : fromTarget);
+    }
+
+    private static Predicate otherIs(CriteriaBuilder cb, Root<RelationLink> link, String otherEnd,
+                                     @Nullable List<Long> otherIds) {
+        return otherIds == null ? cb.conjunction() : link.get(otherEnd).in(otherIds);
     }
 
     // ========== Filter ==========
@@ -600,11 +669,19 @@ public class FieldQueryService {
     /** The rows whose {@code target} column matches {@code parsed}, before any negation. */
     private static Predicate matching(Target target, long fieldId, Filter parsed, Root<?> root,
                                       CriteriaQuery<?> query, CriteriaBuilder cb) {
+        if (!target.system && RELATION_LINK.equals(target.attribute)) {
+            // Linked to at least one of them (to any record at all, for "not empty") by the field's relation.
+            Subquery<Integer> linked = query.subquery(Integer.class);
+            Root<RelationLink> link = linked.from(RelationLink.class);
+            List<Long> otherIds = parsed.match() == Match.PRESENT ? null : parsed.ids();
+            linked.select(cb.literal(1)).where(relationLinkPredicate(cb, link, root, target.links(), otherIds));
+            return cb.exists(linked);
+        }
         String position = stratigraphicPosition(root.getJavaType(), target.attribute);
         if (position != null) {
             // Related to at least one of them (to any unit at all, for "not empty"), at that position.
             Subquery<Integer> related = query.subquery(Integer.class);
-            Root<StratigraphicRelationship> rel = related.from(StratigraphicRelationship.class);
+            Root<RelationLink> rel = related.from(RelationLink.class);
             List<Long> otherIds = parsed.match() == Match.PRESENT ? null : parsed.ids();
             related.select(cb.literal(1)).where(stratigraphicPredicate(cb, rel, root, position, otherIds));
             return cb.exists(related);
@@ -699,10 +776,17 @@ public class FieldQueryService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Expression<?> sortKey(Target target, long fieldId, Root<?> root, CriteriaQuery<?> query,
                                   CriteriaBuilder cb, String lang) {
+        if (!target.system && RELATION_LINK.equals(target.attribute)) {
+            // By how many records the field links to, as a stratigraphic side is.
+            Subquery<Long> count = query.subquery(Long.class);
+            Root<RelationLink> link = count.from(RelationLink.class);
+            count.select(cb.count(link)).where(relationLinkPredicate(cb, link, root, target.links(), null));
+            return count;
+        }
         String position = stratigraphicPosition(root.getJavaType(), target.attribute);
         if (position != null) {
             Subquery<Long> count = query.subquery(Long.class);
-            Root<StratigraphicRelationship> rel = count.from(StratigraphicRelationship.class);
+            Root<RelationLink> rel = count.from(RelationLink.class);
             count.select(cb.count(rel)).where(stratigraphicPredicate(cb, rel, root, position, null));
             return count;
         }

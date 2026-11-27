@@ -4,7 +4,9 @@ import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.exporttemplate.ExportSubject;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.vocabulary.Concept;
@@ -15,7 +17,7 @@ import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,7 @@ class ExportSourceReaderTest {
     @Mock private DocumentRepository documentRepository;
     @Mock private ContainerRepository containerRepository;
     @Mock private StudyRepository studyRepository;
-    @Mock private StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    @Mock private RelationLinkRepository relationLinkRepository;
 
     private ExportSourceReader reader;
     private ActionUnit project;
@@ -50,7 +52,7 @@ class ExportSourceReaderTest {
     @BeforeEach
     void setUp() {
         reader = new ExportSourceReader(actionUnitRepository, recordingUnitRepository, specimenRepository,
-                phaseRepository, documentRepository, containerRepository, studyRepository, stratigraphicRelationshipRepository);
+                phaseRepository, documentRepository, containerRepository, studyRepository, relationLinkRepository);
         project = new ActionUnit();
         project.setId(PROJECT_ID);
     }
@@ -229,13 +231,19 @@ class ExportSourceReaderTest {
         RecordingUnit u1 = unit(1L, null);
         RecordingUnit u2 = unit(2L, null);
         Concept relation = concept("th", "sur");
-        StratigraphicRelationship rel = new StratigraphicRelationship();
-        rel.setUnit1(u1);
-        rel.setUnit2(u2);
-        rel.setConcept(relation);
-        rel.setUncertain(true);
+        // The order goes from the posterior unit (2) to the anterior one (1).
+        CustomFieldRelation orderSource = new CustomFieldRelation();
+        orderSource.setId(-328L);
+        RelationDefinition order = new RelationDefinition();
+        order.setSourceField(orderSource);
+        RelationLink link = new RelationLink();
+        link.setDefinition(order);
+        link.setSourceId(2L);
+        link.setTargetId(1L);
+        link.setQualifier(relation);
+        link.setUncertain(true);
         when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of(u1, u2));
-        when(stratigraphicRelationshipRepository.findAllByUnit1IdIn(List.of(1L, 2L))).thenReturn(List.of(rel));
+        when(relationLinkRepository.findStratigraphicFromSources(any())).thenReturn(List.of(link));
 
         List<ExportRow> rows = reader.read(new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP"), PROJECT_ID);
 
@@ -243,7 +251,7 @@ class ExportSourceReaderTest {
             assertThat(r.ends().get("unit1").entity()).isSameAs(u1);
             assertThat(r.ends().get("unit2").entity()).isSameAs(u2);
             assertThat(r.values()).containsEntry("relationType", relation).containsEntry("uncertain", true)
-                    .doesNotContainKey("asynchronous");
+                    .containsEntry("asynchronous", true);
         });
     }
 
@@ -252,6 +260,6 @@ class ExportSourceReaderTest {
         when(recordingUnitRepository.findAllByActionUnitId(PROJECT_ID)).thenReturn(List.of());
 
         assertThat(reader.read(new TechnicalSource("STRATIGRAPHIC_RELATIONSHIP"), PROJECT_ID)).isEmpty();
-        verify(stratigraphicRelationshipRepository, never()).findAllByUnit1IdIn(anyCollection());
+        verify(relationLinkRepository, never()).findStratigraphicFromSources(anyCollection());
     }
 }

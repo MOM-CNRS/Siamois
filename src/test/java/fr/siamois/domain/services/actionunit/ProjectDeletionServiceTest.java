@@ -79,7 +79,6 @@ class ProjectDeletionServiceTest {
         List<String> links = service.crossProjectLinks(1L);
 
         assertTrue(links.contains("la hiérarchie des unités d'enregistrement"));
-        assertTrue(links.contains("des relations stratigraphiques"));
         assertTrue(links.contains("des mobiliers rattachés à un autre projet"));
         assertTrue(links.contains("des mouvements de mobiliers"));
         assertTrue(links.contains("des groupes de mobiliers"));

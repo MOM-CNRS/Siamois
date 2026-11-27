@@ -72,6 +72,6 @@ public class ProjectListProjectionService {
         Map<Long, String> labels = conceptLabelBatchResolver.resolveLabels(concepts, lang);
 
         return new ProjectListProjection(labels, multiValueAnswers.shape(ActionUnit.class,
-                projectAnswersProjector.project(dtos, fieldIds, labels), fieldIds, valuesLimit, lang));
+                projectAnswersProjector.project(dtos, fieldIds, labels), MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 }

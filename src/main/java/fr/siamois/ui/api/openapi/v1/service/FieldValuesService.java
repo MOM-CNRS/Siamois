@@ -11,7 +11,7 @@ import fr.siamois.domain.services.specimen.SpecimenService;
 import fr.siamois.dto.api.AccessibleProjectForApi;
 import fr.siamois.dto.entity.*;
 import fr.siamois.infrastructure.database.repositories.form.CustomFieldRepository;
-import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationSource;
 import fr.siamois.ui.api.openapi.v1.request.list.ValuesLimit;
 import fr.siamois.ui.api.openapi.v1.resource.form.MultiValue;
 import fr.siamois.ui.api.openapi.v1.resource.form.ResourceRef;
@@ -55,6 +55,7 @@ public class FieldValuesService {
     private final ContainerListProjectionService containerListProjectionService;
     private final ProjectListProjectionService projectListProjectionService;
     private final CustomFieldRepository customFieldRepository;
+    private final RelationSourceResolver relationSourceResolver;
 
     /** The owners an answer's values can be read from, by the API collection they are served under. */
     private static final Map<String, Class<?>> OWNER_TYPES = Map.of(
@@ -75,7 +76,7 @@ public class FieldValuesService {
         Owner owner = requireOwner(caller, ownerType, ownerKey, lang);
 
         requireMultiValued(ownerType, fieldId);
-        Optional<RelationField> relation = MultiValueAnswers.relationFieldOf(ownerType, fieldId);
+        Optional<RelationSource> relation = relationSourceResolver.of(ownerType, fieldId);
         if (relation.isPresent()) {
             return relationFieldService.page(relation.get(), owner.id(), offset, limit, search, ascending, lang);
         }
@@ -87,7 +88,8 @@ public class FieldValuesService {
         CustomField field = MultiValueAnswers.systemFieldOf(ownerType, fieldId)
                 .or(() -> parseFieldId(fieldId).flatMap(customFieldRepository::findById))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Champ inconnu : " + fieldId));
-        if (!FieldAnswerWireService.answerTypeOf(field).startsWith("SELECT_MULTIPLE")) {
+        String answerType = FieldAnswerWireService.answerTypeOf(field);
+        if (!answerType.startsWith("SELECT_MULTIPLE") && !"RELATION".equals(answerType)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ce champ n'est pas multivalué : " + fieldId);
         }
     }

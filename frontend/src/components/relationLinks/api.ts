@@ -20,25 +20,43 @@ export function removeHierarchyLink(id: string | number, zone: HierarchyZone, re
   return apiFetch<void>(`/api/v1/recording-units/${id}/${zone}/${relatedId}`, { method: "DELETE" });
 }
 
-// POST /recording-units/{id}/stratigraphic-relationships — `position` is where the other unit stands
-// relative to this one.
-export function addStratigraphyLink(id: string | number, position: StratigraphyZone, relatedId: string | number, body: StratigraphyBody): Promise<void> {
-  return apiFetch<void>(`/api/v1/recording-units/${id}/stratigraphic-relationships`, {
+// The stratigraphy is a pair of configurable relations (order, synchrony): a link is written through
+// /relation-links, by the field it is entered from (-328 the anterior units, -329 the posterior ones,
+// -330 the synchronous ones), which tells the relation and the side. The type is the one this unit
+// reads; the server stores the posterior unit's reading.
+
+// POST /relation-links — links `unitId` to `relatedId` through `fieldId`.
+export function addStratigraphyLink(fieldId: string | number, unitId: string | number, relatedId: string | number, body: StratigraphyBody): Promise<void> {
+  return apiFetch<void>("/api/v1/relation-links", {
     method: "POST",
-    body: { relatedRecordingUnitId: Number(relatedId), position, typeConceptId: body.typeConceptId ?? null, uncertain: !!body.uncertain },
+    body: {
+      field: Number(fieldId),
+      record: { resourceType: "recording-units", resourceId: Number(unitId) },
+      other: { resourceType: "recording-units", resourceId: Number(relatedId) },
+      qualifier: body.typeConceptId ?? null,
+      uncertain: !!body.uncertain,
+    },
   });
 }
 
-// PUT …/stratigraphic-relationships/{relatedId} — replaces the type and the uncertainty.
-export function updateStratigraphyLink(id: string | number, relatedId: string | number, body: StratigraphyBody): Promise<void> {
-  return apiFetch<void>(`/api/v1/recording-units/${id}/stratigraphic-relationships/${relatedId}`, {
-    method: "PUT",
-    body: { typeConceptId: body.typeConceptId ?? null, uncertain: !!body.uncertain },
+// PATCH /relation-links/{linkId} — replaces the type and the uncertainty.
+export function updateStratigraphyLink(fieldId: string | number, linkId: string | number, body: StratigraphyBody): Promise<void> {
+  return apiFetch<void>(`/api/v1/relation-links/${linkId}`, {
+    method: "PATCH",
+    body: { field: Number(fieldId), qualifier: body.typeConceptId ?? null, uncertain: !!body.uncertain },
   });
 }
 
-export function removeStratigraphyLink(id: string | number, relatedId: string | number): Promise<void> {
-  return apiFetch<void>(`/api/v1/recording-units/${id}/stratigraphic-relationships/${relatedId}`, { method: "DELETE" });
+// DELETE /relation-links/{linkId}?field= — the link, seen from both units.
+export function removeStratigraphyLink(fieldId: string | number, linkId: string | number): Promise<void> {
+  return apiFetch<void>(`/api/v1/relation-links/${linkId}?field=${encodeURIComponent(String(fieldId))}`, { method: "DELETE" });
+}
+
+// The link a stratigraphic value stands for: what update and remove act on.
+export function linkIdOf(ref: { qualifier?: { linkId?: number | string | null } | null }): string {
+  const linkId = ref.qualifier?.linkId;
+  if (linkId == null) throw new Error("Ce lien n'a pas d'identifiant : rechargez la fiche");
+  return String(linkId);
 }
 
 export interface UnitOption {

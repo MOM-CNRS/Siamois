@@ -33,7 +33,7 @@ class RelationFieldRepositoryTest {
     }
 
     private static Object[] row(long owner, long target, String label, Long total) {
-        return new Object[]{owner, target, label, "unit1", 5L, "ext", true, false, null, total};
+        return new Object[]{owner, target, label, "unit1", 5L, "ext", true, false, null, null, total};
     }
 
     @Test
@@ -60,7 +60,7 @@ class RelationFieldRepositoryTest {
     @Test
     void previews_limitZeroOnlyCounts() {
         when(query.getResultList()).thenReturn(Collections.singletonList(
-                new Object[]{1L, 10L, "A", null, null, null, null, null, null, 4L}));
+                new Object[]{1L, 10L, "A", null, null, null, null, null, null, null, 4L}));
 
         Map<Long, RelationFieldRepository.Preview> out = repository.previews(RelationField.RECORDING_UNIT_FINDS, List.of(1L), 0);
 
@@ -78,7 +78,7 @@ class RelationFieldRepositoryTest {
 
     @Test
     void page_bindsTheSearchAndTheWindow() {
-        when(query.getResultList()).thenReturn(Collections.singletonList(new Object[]{1L, 10L, "A", null, null, null, null, null, null}));
+        when(query.getResultList()).thenReturn(Collections.singletonList(new Object[]{1L, 10L, "A", null, null, null, null, null, null, null}));
 
         List<RelationFieldRepository.Row> rows =
                 repository.page(RelationField.PHASE_RECORDING_UNITS, 1L, 20, 10, "  Mur ", false);
@@ -107,8 +107,8 @@ class RelationFieldRepositoryTest {
     @Test
     void pageAcross_readsTheRelationsSideBySide_eachValueSayingWhichOneItIsFrom() {
         when(query.getResultList()).thenReturn(List.of(
-                new Object[]{"parents", 0, 1L, 10L, "A", null, null, null, null, null, null},
-                new Object[]{"anterior", 2, 1L, 11L, "B", "unit2", 5L, "ext", true, false, true}));
+                new Object[]{"parents", 0, 1L, 10L, "A", null, null, null, null, null, null, null},
+                new Object[]{"anterior", 2, 1L, 11L, "B", "unit2", 5L, "ext", true, false, true, 900L}));
         Map<String, RelationField> kinds = new java.util.LinkedHashMap<>();
         kinds.put("parents", RelationField.RECORDING_UNIT_PARENTS);
         kinds.put("anterior", RelationField.RECORDING_UNIT_ANTERIOR);

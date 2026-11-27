@@ -59,7 +59,7 @@ public class DocumentListProjectionService {
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(DocumentDTO::getId).filter(java.util.Objects::nonNull).toList();
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(documentAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.DOCUMENT, rowIds, fieldsParam, fieldIds, lang);
-        return new DocumentListProjection(labels, multiValueAnswers.shape(Document.class, answers, fieldIds, valuesLimit, lang));
+        return new DocumentListProjection(labels, multiValueAnswers.shape(Document.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 
     /**

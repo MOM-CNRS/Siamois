@@ -77,7 +77,7 @@ public final class CustomFieldAnswerFactory {
                 Map.entry(CustomFieldSelectOneRecordingUnit.class, f -> new CustomFieldAnswerSelectOneRecordingUnitViewModel()),
                 Map.entry(CustomFieldSelectMultipleSpecimen.class, f -> new CustomFieldAnswerSelectMultipleSpecimenViewModel()),
                 Map.entry(CustomFieldSelectMultiplePhase.class, f -> new CustomFieldAnswerSelectMultiplePhaseViewModel()),
-                // Only ever a placeholder: its values are read from the stratigraphic_relationship table
+                // Only ever a placeholder: its values are read from the relation_link table
                 // (RelationFieldService), never bound on the unit — this keeps it in the form, empty.
                 Map.entry(CustomFieldStratigraphicRelationships.class, f -> new CustomFieldAnswerSelectMultipleRecordingUnitViewModel()),
                 Map.entry(CustomFieldSelectMultipleFromFieldCode.class, f -> new CustomFieldAnswerSelectMultipleFromFieldCodeViewModel()),

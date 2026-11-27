@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import fr.siamois.domain.services.relation.RelationRuleService;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -41,9 +43,11 @@ class ProjectCopyTemplateApplierTest {
     private final DocumentationThesaurusRepository documentationThesaurusRepository = mock(DocumentationThesaurusRepository.class);
     private final ProjectCodeSourceRepository projectCodeSourceRepository = mock(ProjectCodeSourceRepository.class);
     private final ProjectThesaurusAssigner assigner = mock(ProjectThesaurusAssigner.class);
+    private final RelationRuleService relationRuleService = mock(RelationRuleService.class);
 
     private final ProjectCopyTemplateApplier applier = new ProjectCopyTemplateApplier(actionUnitRepository,
-            formConfigRepository, groupRepository, fieldRepository, stateRepository, documentationThesaurusRepository, projectCodeSourceRepository, assigner);
+            formConfigRepository, groupRepository, fieldRepository, stateRepository, documentationThesaurusRepository, projectCodeSourceRepository, assigner,
+            relationRuleService);
 
     private Institution institution;
     private ActionUnit source;
@@ -152,6 +156,13 @@ class ProjectCopyTemplateApplierTest {
         verify(documentationThesaurusRepository).save(saved.capture());
         assertThat(saved.getValue().getActionUnit()).isSameAs(target);
         assertThat(saved.getValue().getVocabulary()).isSameAs(vocabulary);
+    }
+
+    @Test
+    void apply_copiesTheRelationRuleSetsOfTheProject() {
+        applier.apply(null, "project:10", 20L);
+
+        verify(relationRuleService).copyProjectRules(10L, target);
     }
 
     @Test

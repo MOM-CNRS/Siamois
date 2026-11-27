@@ -8,7 +8,7 @@ import fr.siamois.domain.models.exporttemplate.ExportTechnicalSource;
 import fr.siamois.domain.models.exporttemplate.ExportTemplateDefinition.*;
 import fr.siamois.domain.models.phase.Phase;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.spatialunit.SpatialUnit;
 import fr.siamois.domain.models.specimen.Specimen;
 import fr.siamois.domain.models.study.Study;
@@ -19,7 +19,8 @@ import fr.siamois.infrastructure.database.repositories.PhaseRepository;
 import fr.siamois.infrastructure.database.repositories.StudyRepository;
 import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepository;
 import fr.siamois.infrastructure.database.repositories.recordingunit.RecordingUnitRepository;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationField;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepository;
 import fr.siamois.infrastructure.database.repositories.specimen.SpecimenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
@@ -44,7 +45,7 @@ public class ExportSourceReader {
     private final DocumentRepository documentRepository;
     private final ContainerRepository containerRepository;
     private final StudyRepository studyRepository;
-    private final StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
+    private final RelationLinkRepository relationLinkRepository;
 
     /**
      * @throws NoSuchElementException   si le projet n'existe pas
@@ -193,24 +194,34 @@ public class ExportSourceReader {
                 .toList();
     }
 
+    /**
+     * The stratigraphy of the units, one row per link, in the shape of the former table: unit1 the anterior unit and
+     * unit2 the posterior one for an order link (the qualifier as the posterior unit reads it), the pair in its stored
+     * order for a synchrony link.
+     */
     private List<ExportRow> stratigraphicRows(List<RecordingUnit> units) {
-        List<Long> ids = units.stream().map(RecordingUnit::getId).toList();
-        if (ids.isEmpty()) {
+        Map<Long, RecordingUnit> byId = new HashMap<>();
+        units.forEach(unit -> byId.put(unit.getId(), unit));
+        if (byId.isEmpty()) {
             return List.of();
         }
-        return stratigraphicRelationshipRepository.findAllByUnit1IdIn(ids).stream()
-                .map(ExportSourceReader::toRow)
+        return relationLinkRepository.findStratigraphicFromSources(byId.keySet()).stream()
+                .filter(link -> byId.containsKey(link.getTargetId()))
+                .map(link -> toRow(link, byId))
                 .toList();
     }
 
-    private static ExportRow toRow(StratigraphicRelationship rel) {
+    private static ExportRow toRow(RelationLink link, Map<Long, RecordingUnit> units) {
+        boolean asynchronous = link.getDefinition().getSourceField().getId() == RelationField.Stratigraphy.ORDER_SOURCE_FIELD;
+        RecordingUnit unit1 = units.get(asynchronous ? link.getTargetId() : link.getSourceId());
+        RecordingUnit unit2 = units.get(asynchronous ? link.getSourceId() : link.getTargetId());
         Map<String, Object> values = new HashMap<>();
-        if (rel.getConcept() != null) values.put("relationType", rel.getConcept());
-        if (rel.getIsAsynchronous() != null) values.put("asynchronous", rel.getIsAsynchronous());
-        if (rel.getUncertain() != null) values.put("uncertain", rel.getUncertain());
+        if (link.getQualifier() != null) values.put("relationType", link.getQualifier());
+        values.put("asynchronous", asynchronous);
+        values.put("uncertain", link.isUncertain());
         return ExportRow.technical(
-                Map.of("unit1", ExportRow.of(ExportSubject.RECORDING_UNIT, rel.getUnit1()),
-                        "unit2", ExportRow.of(ExportSubject.RECORDING_UNIT, rel.getUnit2())),
+                Map.of("unit1", ExportRow.of(ExportSubject.RECORDING_UNIT, unit1),
+                        "unit2", ExportRow.of(ExportSubject.RECORDING_UNIT, unit2)),
                 values);
     }
 

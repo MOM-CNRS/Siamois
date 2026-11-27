@@ -1,57 +1,161 @@
 package fr.siamois.infrastructure.database.initializer.seeder;
 
+import fr.siamois.domain.models.actionunit.ActionUnit;
 import fr.siamois.domain.models.recordingunit.RecordingUnit;
-import fr.siamois.domain.models.recordingunit.StratigraphicRelationship;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import fr.siamois.domain.models.relation.RelationKind;
+import fr.siamois.domain.models.relation.RelationLink;
 import fr.siamois.domain.models.vocabulary.Concept;
-import fr.siamois.infrastructure.database.repositories.recordingunit.StratigraphicRelationshipRepository;
+import fr.siamois.domain.services.relation.RelationRuleResolver;
+import fr.siamois.domain.services.relation.RelationRuleSet;
+import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
+import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepository;
 import fr.siamois.infrastructure.database.repositories.vocabulary.ConceptRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+/** The import of a stratigraphy sheet, as links of the stratigraphic definitions (docs/reprise-stratigraphie.md). */
 class RecordingUnitStratiRelSeederTest {
-
-    @Mock StratigraphicRelationshipRepository stratigraphicRelationshipRepository;
-    @Mock RecordingUnitSeeder recordingUnitSeeder;
-    @Mock ConceptRepository conceptRepository;
-    @Mock ConceptSeeder conceptSeeder;
-    @Mock EntityManager entityManager;
-
-    @InjectMocks
-    RecordingUnitStratiRelSeeder seeder;
 
     private static final String VOCABULARY_ID = "th240";
     private static final Long INSTITUTION_ID = 1L;
     private static final String ACTION_UNIT_ID = "action-01";
+    private static final long PROJECT = 7L;
+
+    private final RelationLinkRepository linkRepository = mock(RelationLinkRepository.class);
+    private final RelationDefinitionRepository definitionRepository = mock(RelationDefinitionRepository.class);
+    private final RelationRuleResolver ruleResolver = mock(RelationRuleResolver.class);
+    private final RecordingUnitSeeder recordingUnitSeeder = mock(RecordingUnitSeeder.class);
+    private final ConceptRepository conceptRepository = mock(ConceptRepository.class);
+    private final ConceptSeeder conceptSeeder = mock(ConceptSeeder.class);
+    private final EntityManager entityManager = mock(EntityManager.class);
+
+    private final RecordingUnitStratiRelSeeder seeder = new RecordingUnitStratiRelSeeder(linkRepository,
+            definitionRepository, ruleResolver, recordingUnitSeeder, conceptRepository, conceptSeeder);
+
+    private RelationDefinition order;
+    private RelationDefinition synchrony;
+    private Concept recouvre;
+    private Concept recouverte;
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(seeder, "entityManager", entityManager);
+        order = definition(10L, false);
+        synchrony = definition(11L, true);
+        when(definitionRepository.findByField(-328L)).thenReturn(Optional.of(order));
+        when(definitionRepository.findByField(-330L)).thenReturn(Optional.of(synchrony));
+        recouvre = concept(201L, "recouvre");
+        recouverte = concept(301L, "est-recouverte");
+        when(ruleResolver.rulesFor(order, PROJECT)).thenReturn(new RelationRuleSet(order, null, true, false, false,
+                List.of(), Map.of(201L, 301L), List.of()));
+        when(conceptRepository.findById(201L)).thenReturn(Optional.of(recouvre));
+        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq(VOCABULARY_ID), anyCollection()))
+                .thenReturn(List.of(recouvre, recouverte));
     }
 
-    private RecordingUnit unit(String fullIdentifier, long id) {
-        RecordingUnit ru = new RecordingUnit();
-        ru.setFullIdentifier(fullIdentifier);
-        ru.setId(id);
-        return ru;
+    @Test
+    void anOrderRelationGoesFromThePosteriorUnitWithTheQualifierItReads() {
+        stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, PROJECT));
+
+        // The file reads "US1 est recouverte par US2" from US1: the link stores US2 recouvre US1.
+        seeder.seed(List.of(spec("est-recouverte", true, true, false)), INSTITUTION_ID, ACTION_UNIT_ID);
+
+        RelationLink link = onlySaved();
+        assertThat(link.getDefinition()).isSameAs(order);
+        assertThat(link.getSourceId()).isEqualTo(2L);
+        assertThat(link.getTargetId()).isEqualTo(1L);
+        assertThat(link.getQualifier()).isSameAs(recouvre);
+        assertThat(link.getProjectId()).isEqualTo(PROJECT);
+        verify(entityManager).flush();
+        verify(entityManager).clear();
     }
 
-    private void stubRecordingUnits(RecordingUnit... units) {
+    @Test
+    void aSynchronousRelationStoresItsPairInOneOrderAndItsUncertainty() {
+        stubUnits(unit("US1", 5L, PROJECT), unit("US2", 3L, PROJECT));
+
+        seeder.seed(List.of(spec(null, null, false, true)), INSTITUTION_ID, ACTION_UNIT_ID);
+
+        RelationLink link = onlySaved();
+        assertThat(link.getDefinition()).isSameAs(synchrony);
+        assertThat(link.getSourceId()).isEqualTo(3L);
+        assertThat(link.getTargetId()).isEqualTo(5L);
+        assertThat(link.getQualifier()).isNull();
+        assertThat(link.isUncertain()).isTrue();
+    }
+
+    @Test
+    void aRelationAlreadyStoredIsSkipped() {
+        stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, PROJECT));
+        RelationLink existing = new RelationLink();
+        existing.setDefinition(order);
+        existing.setSourceId(2L);
+        existing.setTargetId(1L);
+        when(linkRepository.findStratigraphicFromSources(anyCollection())).thenReturn(List.of(existing));
+
+        seeder.seed(List.of(spec("recouvre", false, true, false)), INSTITUTION_ID, ACTION_UNIT_ID);
+
+        verify(linkRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void aMissingUnitOrTwoProjectsAreRefusedWithTheLine() {
+        stubUnits(unit("US2", 2L, PROJECT));
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = List.of(spec(null, null, true, false));
+        IllegalStateException missing = assertThrows(IllegalStateException.class,
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
+        assertThat(missing.getMessage()).contains("[Relation strati ligne 1]").contains("Recording unit introuvable");
+
+        stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, 99L));
+        IllegalStateException crossProject = assertThrows(IllegalStateException.class,
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
+        assertThat(crossProject.getMessage()).contains("même projet");
+    }
+
+    @Test
+    void anUnknownConceptIsRefused() {
+        stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, PROJECT));
+        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
+
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = List.of(spec("inconnu", false, true, false));
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
+
+        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
+    }
+
+    private RelationLink onlySaved() {
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<RelationLink>> saved = ArgumentCaptor.forClass(List.class);
+        verify(linkRepository).saveAll(saved.capture());
+        assertThat(saved.getValue()).hasSize(1);
+        return saved.getValue().get(0);
+    }
+
+    private static RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO spec(String concept, Boolean direction,
+                                                                               boolean asynchronous, boolean uncertain) {
+        return new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO("US1", "US2",
+                concept == null ? null : new ConceptSeeder.ConceptKey(VOCABULARY_ID, concept), direction, asynchronous,
+                uncertain, null);
+    }
+
+    private void stubUnits(RecordingUnit... units) {
         Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> byKey = new HashMap<>();
         for (RecordingUnit u : units) {
             byKey.put(new RecordingUnitSeeder.RecordingUnitKey(u.getFullIdentifier(), ACTION_UNIT_ID), u);
@@ -59,99 +163,28 @@ class RecordingUnitStratiRelSeederTest {
         when(recordingUnitSeeder.bulkGetRecordingUnitsFromKeys(anyCollection(), eq(INSTITUTION_ID))).thenReturn(byKey);
     }
 
-    private void stubConceptFound() {
-        Concept c = new Concept();
-        c.setExternalId("4287541");
-        when(conceptRepository.findAllByExternalVocabularyIdIgnoreCaseAndExternalIdIgnoreCaseIn(eq(VOCABULARY_ID), anyCollection()))
-                .thenReturn(List.of(c));
+    private static RecordingUnit unit(String fullIdentifier, long id, long project) {
+        RecordingUnit ru = new RecordingUnit();
+        ru.setFullIdentifier(fullIdentifier);
+        ru.setId(id);
+        ActionUnit actionUnit = new ActionUnit();
+        actionUnit.setId(project);
+        ru.setActionUnit(actionUnit);
+        return ru;
     }
 
-    @Test
-    void seed_us1DoesNotExist_throws() {
-        stubRecordingUnits(unit("US2", 2L));
-        // "US1" isn't in the bulk lookup result -> missing
-
-        var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", null, false, false, false, null));
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
-
-        assertThat(ex.getMessage()).contains("[Relation strati ligne 1]").contains("Recording unit introuvable");
+    private static RelationDefinition definition(long id, boolean symmetric) {
+        RelationDefinition definition = new RelationDefinition();
+        definition.setId(id);
+        definition.setKind(RelationKind.COMPLEX);
+        definition.setSymmetric(symmetric);
+        return definition;
     }
 
-    @Test
-    void seed_relNull_importsATypelessRelation() {
-        stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
-
-        var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", null, true, true, false, null));
-
-        seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
-
-        verify(stratigraphicRelationshipRepository).saveAll(argThat(list -> {
-            var it = list.iterator();
-            var rel = it.next();
-            return !it.hasNext() && rel.getConcept() == null && rel.getConceptDirection() == null
-                    && Boolean.TRUE.equals(rel.getIsAsynchronous());
-        }));
-    }
-
-    @Test
-    void seed_conceptNotFound_throws() {
-        stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
-        // conceptRepository left unstubbed -> empty -> concept not found
-        when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
-
-        var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false, null));
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
-
-        assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
-    }
-
-    @Test
-    void seed_alreadyExists_saveNeverCalled() {
-        stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
-        stubConceptFound();
-
-        StratigraphicRelationship existing = new StratigraphicRelationship();
-        when(stratigraphicRelationshipRepository.findAllByUnit1IdIn(anyCollection()))
-                .thenAnswer(inv -> {
-                    RecordingUnit u1 = unit("US1", 1L);
-                    RecordingUnit u2 = unit("US2", 2L);
-                    existing.setUnit1(u1);
-                    existing.setUnit2(u2);
-                    return List.of(existing);
-                });
-
-        var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), false, false, false, null));
-
-        seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
-
-        verify(stratigraphicRelationshipRepository, never()).saveAll(any());
-    }
-
-    @Test
-    void seed_created() {
-        stubRecordingUnits(unit("US1", 1L), unit("US2", 2L));
-        stubConceptFound();
-        // stratigraphicRelationshipRepository bulk-existence lookup left unstubbed -> empty -> not already present
-
-        var specs = List.of(new RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO(
-                "US1", "US2", new ConceptSeeder.ConceptKey(VOCABULARY_ID, "4287541"), true, false, false, null));
-
-        seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID);
-
-        verify(stratigraphicRelationshipRepository, times(1)).saveAll(argThat(list -> {
-            int count = 0;
-            for (var ignored : list) count++;
-            return count == 1;
-        }));
-        verify(entityManager, times(1)).flush();
-        verify(entityManager, times(1)).clear();
+    private static Concept concept(long id, String externalId) {
+        Concept concept = new Concept();
+        concept.setId(id);
+        concept.setExternalId(externalId);
+        return concept;
     }
 }

@@ -84,7 +84,7 @@ Points d'attention :
 
 ## 4. Réinsérer les liens
 
-Pour chaque table de liaison (`recording_unit_hierarchy`, `stratigraphic_relationship`,
+Pour chaque table de liaison (`recording_unit_hierarchy`,
 `recording_unit_phase`, `recording_unit_document`, `specimen_document`, `study_recording_unit`…),
 reprendre dans `<table>_aud` les lignes dont les deux extrémités existent de nouveau et dont la
 **dernière révision n'est pas** une suppression :

@@ -69,14 +69,14 @@ class RecordingUnitRelationGraphServiceTest {
     @Test
     void listsTheRelationsOfTheKindsAskedFor_inTheOrderOfTheKinds() {
         RelationFieldService.KindedPage page = new RelationFieldService.KindedPage(List.of(), 0);
-        when(relations.pageAcross(any(), eq(42L), eq(10), eq(20), eq("us"), eq(true), eq(false), eq("fr"))).thenReturn(page);
+        when(relations.pageAcross(any(), eq(42L), eq(new RelationFieldService.Window(10, 20, "us", true, false)), eq("fr"))).thenReturn(page);
 
         RelationFieldService.KindedPage result = service.relationsOf(unit(),
                 List.of(RecordingUnitRelationKind.SYNCHRONOUS, RecordingUnitRelationKind.PARENTS), "us", true, false, 10, 20, "fr");
 
         assertThat(result).isSameAs(page);
         org.mockito.ArgumentCaptor<java.util.Map<String, RelationField>> kinds = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
-        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), eq(42L), eq(10), eq(20), eq("us"), eq(true), eq(false), eq("fr"));
+        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), eq(42L), eq(new RelationFieldService.Window(10, 20, "us", true, false)), eq("fr"));
         // The enum's own order, whatever order they were asked in.
         assertThat(kinds.getValue()).containsOnlyKeys("parents", "synchronous")
                 .containsEntry("parents", RelationField.RECORDING_UNIT_PARENTS)
@@ -86,13 +86,13 @@ class RecordingUnitRelationGraphServiceTest {
 
     @Test
     void listsEveryKind_whenNoneIsAskedFor() {
-        when(relations.pageAcross(any(), anyLong(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean(), any()))
+        when(relations.pageAcross(any(), anyLong(), any(), any()))
                 .thenReturn(new RelationFieldService.KindedPage(List.of(), 0));
 
         service.relationsOf(unit(), List.of(), null, false, true, 0, 50, "fr");
 
         org.mockito.ArgumentCaptor<java.util.Map<String, RelationField>> kinds = org.mockito.ArgumentCaptor.forClass(java.util.Map.class);
-        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), anyLong(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean(), any());
+        org.mockito.Mockito.verify(relations).pageAcross(kinds.capture(), anyLong(), any(), any());
         assertThat(kinds.getValue().keySet()).containsExactly("parents", "children", "anterior", "posterior", "synchronous");
     }
 

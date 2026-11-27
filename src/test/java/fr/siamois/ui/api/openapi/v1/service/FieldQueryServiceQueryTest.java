@@ -1,5 +1,8 @@
 package fr.siamois.ui.api.openapi.v1.service;
 
+import fr.siamois.domain.models.form.customfield.CustomFieldRelation;
+import fr.siamois.domain.models.relation.RelationDefinition;
+import jakarta.persistence.TypedQuery;
 import fr.siamois.domain.models.ValidationStatus;
 import fr.siamois.domain.models.auth.Person;
 import fr.siamois.domain.models.form.customfield.CustomField;
@@ -39,6 +42,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 /**
@@ -386,6 +390,56 @@ class FieldQueryServiceQueryTest {
 
         verify(cb, atLeastOnce()).exists(any());
         verify(cb, atLeastOnce()).count(any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void aConfigurableRelationFieldIsFilteredAndSortedByItsLinks(boolean symmetric) {
+        field(new CustomFieldRelation(), false, null);
+        relationDefinition(symmetric ? FIELD : 77L, FIELD, symmetric);
+
+        run(build(RecordingUnit.class, filter(values("3"))));
+        run(build(RecordingUnit.class, filter(values(FilterOperator.NOT_EMPTY))));
+        run(build(RecordingUnit.class, sort(true)));
+
+        verify(cb, atLeastOnce()).exists(any());
+        verify(cb, atLeastOnce()).count(any());
+    }
+
+    @Test
+    void aRelationFieldReadFromItsSourceSideFiltersFromTheSource() {
+        field(new CustomFieldRelation(), false, null);
+        relationDefinition(FIELD, 77L, false);
+
+        run(build(RecordingUnit.class, filter(values("3"))));
+
+        verify(cb, atLeastOnce()).exists(any());
+    }
+
+    @Test
+    void aRelationFieldNoDefinitionUsesCannotBeQueried() {
+        field(new CustomFieldRelation(), false, null);
+        TypedQuery<RelationDefinition> none = mock(TypedQuery.class, RETURNS_SELF);
+        when(none.getResultStream()).thenReturn(java.util.stream.Stream.empty());
+        when(entityManager.createQuery(anyString(), eq(RelationDefinition.class))).thenReturn(none);
+
+        badRequest(RecordingUnit.class, sort(true));
+    }
+
+    /** A definition between {@code sourceField} and {@code targetField}, as linkSideOf reads it. */
+    private void relationDefinition(long sourceField, long targetField, boolean symmetric) {
+        RelationDefinition definition = new RelationDefinition();
+        definition.setId(10L);
+        CustomFieldRelation source = new CustomFieldRelation();
+        source.setId(sourceField);
+        CustomFieldRelation target = new CustomFieldRelation();
+        target.setId(targetField);
+        definition.setSourceField(source);
+        definition.setTargetField(target);
+        definition.setSymmetric(symmetric);
+        TypedQuery<RelationDefinition> found = mock(TypedQuery.class, RETURNS_SELF);
+        when(found.getResultStream()).thenAnswer(inv -> java.util.stream.Stream.of(definition));
+        when(entityManager.createQuery(anyString(), eq(RelationDefinition.class))).thenReturn(found);
     }
 
     @Test

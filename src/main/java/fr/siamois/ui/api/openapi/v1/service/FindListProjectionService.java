@@ -52,6 +52,6 @@ public class FindListProjectionService {
         List<Long> rowIds = rows.stream().filter(Objects::nonNull).map(SpecimenDTO::getId).filter(Objects::nonNull).toList();
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(specimenAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.SPECIMEN, rowIds, fieldsParam, fieldIds, lang);
-        return new FindListProjection(multiValueAnswers.shape(Specimen.class, answers, fieldIds, valuesLimit, lang));
+        return new FindListProjection(multiValueAnswers.shape(Specimen.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 }

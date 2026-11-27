@@ -5,6 +5,8 @@
 export interface GraphQualifier {
   concept?: { resourceId?: string; label?: string | null } | null;
   uncertain?: boolean | null;
+  // The link this value stands for, which /relation-links changes or removes.
+  linkId?: number | null;
 }
 
 export interface GraphUnitRef {

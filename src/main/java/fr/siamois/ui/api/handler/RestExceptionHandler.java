@@ -8,6 +8,7 @@ import fr.siamois.domain.models.identifier.ProjectIdentifierConstraints;
 import fr.siamois.domain.services.LangService;
 import fr.siamois.domain.services.identifier.IdentifierRangeExhaustedException;
 import fr.siamois.ui.api.openapi.v1.exception.IdentifierConflictException;
+import fr.siamois.domain.services.relation.RelationLinkException;
 import fr.siamois.ui.api.openapi.v1.exception.SyncRevisionConflictException;
 import fr.siamois.ui.api.openapi.v1.response.sync.SyncConflictResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
@@ -104,6 +105,32 @@ public class RestExceptionHandler {
     @ExceptionHandler({RecordingUnitNotFoundException.class, ActionUnitNotFoundException.class})
     public ResponseEntity<ApiError> notFound(RuntimeException ex) {
         return answer(HttpStatus.NOT_FOUND, ApiError.of(NOT_FOUND, ex.getMessage()));
+    }
+
+    /**
+     * A refused write on a relation (link, definition or rule set): the reason picks the status; the broken rules come
+     * back as details, with the links in cause in their message.
+     */
+    @ExceptionHandler(RelationLinkException.class)
+    public ResponseEntity<ApiError> relationLink(RelationLinkException ex) {
+        HttpStatus status = switch (ex.getReason()) {
+            case DEFINITION_NOT_FOUND, LINK_NOT_FOUND, ENDPOINT_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case FORBIDDEN -> HttpStatus.FORBIDDEN;
+            case DUPLICATE, RULE_VIOLATION -> HttpStatus.CONFLICT;
+            case INVALID_CONFIGURATION -> ex.getViolations().isEmpty() ? HttpStatus.BAD_REQUEST : HttpStatus.CONFLICT;
+            case KIND_NOT_ALLOWED, TYPE_NOT_ALLOWED, CROSS_PROJECT, SELF_LINK, INVALID_QUALIFIER -> HttpStatus.BAD_REQUEST;
+        };
+        List<ApiError.Detail> details = ex.getViolations().isEmpty() ? null : ex.getViolations().stream()
+                .map(v -> new ApiError.Detail(v.rule().name(), violationMessage(v)))
+                .toList();
+        return answer(status, new ApiError(codeOf(status), ex.getMessage(), details, null));
+    }
+
+    /** A broken rule's message, with the links that break it. */
+    private static String violationMessage(fr.siamois.domain.services.relation.RuleViolation violation) {
+        if (violation.linkIds().isEmpty()) return violation.message();
+        return violation.message() + " (liens : " + violation.linkIds().stream().map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(", ")) + ")";
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

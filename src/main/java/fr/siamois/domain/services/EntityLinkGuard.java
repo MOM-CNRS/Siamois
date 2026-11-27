@@ -73,9 +73,11 @@ public class EntityLinkGuard {
                             PARENT_ALONGSIDE),
                     new Link("des unités filles", PREFIX + "recording_unit_hierarchy WHERE fk_parent_id = :id",
                             CHILD_ALONGSIDE),
-                    new Link("des unités en relation stratigraphique", PREFIX + "stratigraphic_relationship "
-                            + "WHERE (fk_recording_unit_1_id = :id OR fk_recording_unit_2_id = :id)",
-                            "fk_recording_unit_1_id IN (:alongside) AND fk_recording_unit_2_id IN (:alongside)"),
+                    new Link("des fiches reliées (stratigraphie ou autre relation)", PREFIX + "relation_link "
+                            + "WHERE ((source_kind = 'RECORDING_UNIT' AND source_id = :id) "
+                            + "OR (target_kind = 'RECORDING_UNIT' AND target_id = :id))",
+                            "source_kind = 'RECORDING_UNIT' AND target_kind = 'RECORDING_UNIT' "
+                                    + "AND source_id IN (:alongside) AND target_id IN (:alongside)"),
                     new Link(L_SPECIMENS, PREFIX + "specimen WHERE fk_recording_unit_id = :id"),
                     new Link(L_DOCUMENTS, PREFIX + "recording_unit_document WHERE fk_recording_unit_id = :id"),
                     new Link(L_PHASES, PREFIX + "recording_unit_phase WHERE fk_recording_unit_id = :id"),

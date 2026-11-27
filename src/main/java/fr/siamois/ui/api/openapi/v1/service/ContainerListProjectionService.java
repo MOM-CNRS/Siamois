@@ -59,7 +59,7 @@ public class ContainerListProjectionService {
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(ContainerDTO::getId).filter(java.util.Objects::nonNull).toList();
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(containerAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.CONTAINER, rowIds, fieldsParam, fieldIds, lang);
-        return new ContainerListProjection(labels, multiValueAnswers.shape(Container.class, answers, fieldIds, valuesLimit, lang));
+        return new ContainerListProjection(labels, multiValueAnswers.shape(Container.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 
     /** Un seul contenant (détail) — les valeurs multiples coupées à la limite d'un détail. */

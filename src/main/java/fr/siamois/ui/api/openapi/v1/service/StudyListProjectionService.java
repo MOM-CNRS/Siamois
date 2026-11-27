@@ -59,7 +59,7 @@ public class StudyListProjectionService {
         List<Long> rowIds = rows.stream().filter(java.util.Objects::nonNull).map(StudyDTO::getId).filter(java.util.Objects::nonNull).toList();
         Map<Long, Map<String, Object>> answers = additionalAnswersListProjector.merge(studyAnswersProjector.project(rows, fieldIds, labels),
                 CustomFieldAnswerService.ListOwner.STUDY, rowIds, fieldsParam, fieldIds, lang);
-        return new StudyListProjection(labels, multiValueAnswers.shape(Study.class, answers, fieldIds, valuesLimit, lang));
+        return new StudyListProjection(labels, multiValueAnswers.shape(Study.class, answers, MultiValueAnswers.withRequested(fieldIds, fieldsParam), valuesLimit, lang));
     }
 
     /** Une seule étude (détail) — les valeurs multiples coupées à la limite d'un détail. */
