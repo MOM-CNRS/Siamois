@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,9 +39,9 @@ class RelationSourceResolverTest {
 
         Map<String, RelationSource> sources = resolver.configurable(RecordingUnit.class, List.of("151", "152", "fullIdentifier"));
 
-        assertThat(sources.get("151")).isEqualTo(new DefinitionRelation(1L, RelationSide.SOURCE, false, true,
+        assertThat(sources).containsEntry("151", new DefinitionRelation(1L, RelationSide.SOURCE, false, true,
                 RelationEndKind.RECORDING_UNIT));
-        assertThat(sources.get("152")).isEqualTo(new DefinitionRelation(1L, RelationSide.TARGET, false, true,
+        assertThat(sources).containsEntry("152", new DefinitionRelation(1L, RelationSide.TARGET, false, true,
                 RelationEndKind.RECORDING_UNIT));
         assertThat(sources).hasSize(2);
     }

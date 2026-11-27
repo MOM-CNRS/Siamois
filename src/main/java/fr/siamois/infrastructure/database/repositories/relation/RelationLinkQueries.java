@@ -114,19 +114,48 @@ public class RelationLinkQueries {
         return Boolean.TRUE.equals(result);
     }
 
+    private static final String COUNT_AT_EITHER_END_SQL = """
+            SELECT count(*) FROM relation_link l WHERE l.fk_relation_definition_id = :definition
+              AND ((l.source_kind = :kind AND l.source_id = :id) OR (l.target_kind = :kind AND l.target_id = :id))""";
+    private static final String COUNT_AT_SOURCE_SQL = """
+            SELECT count(*) FROM relation_link l WHERE l.fk_relation_definition_id = :definition
+              AND l.source_kind = :kind AND l.source_id = :id""";
+    private static final String COUNT_AT_TARGET_SQL = """
+            SELECT count(*) FROM relation_link l WHERE l.fk_relation_definition_id = :definition
+              AND l.target_kind = :kind AND l.target_id = :id""";
+
+    /** The projects of an institution that have no rule set of their own. */
+    private static final String PROJECTS_READING_INSTITUTION_SQL = """
+            SELECT DISTINCT l.fk_action_unit_id FROM relation_link l
+            JOIN action_unit au ON au.action_unit_id = l.fk_action_unit_id
+            WHERE l.fk_relation_definition_id = :definition
+              AND NOT EXISTS (SELECT 1 FROM relation_rule rp WHERE rp.fk_relation_definition_id = :definition
+                AND rp.fk_action_unit_id = au.action_unit_id)
+              AND au.fk_institution_id = :institution""";
+    /** The projects with no rule set of their own nor of their institution. */
+    private static final String PROJECTS_READING_PLATFORM_SQL = """
+            SELECT DISTINCT l.fk_action_unit_id FROM relation_link l
+            JOIN action_unit au ON au.action_unit_id = l.fk_action_unit_id
+            WHERE l.fk_relation_definition_id = :definition
+              AND NOT EXISTS (SELECT 1 FROM relation_rule rp WHERE rp.fk_relation_definition_id = :definition
+                AND rp.fk_action_unit_id = au.action_unit_id)
+              AND NOT EXISTS (SELECT 1 FROM relation_rule ri WHERE ri.fk_relation_definition_id = :definition
+                AND ri.fk_institution_id = au.fk_institution_id AND ri.fk_action_unit_id IS NULL)""";
+
     /**
      * How many links of the definition a record has on one side; {@code bothSides} counts it at either end, as a
      * symmetric relation does.
      */
     public long countAt(long definitionId, RelationSide side, boolean bothSides, RelationEndKind kind, long id) {
-        String condition = bothSides
-                ? "(l.source_kind = :kind AND l.source_id = :id) OR (l.target_kind = :kind AND l.target_id = :id)"
-                : side == RelationSide.SOURCE
-                ? "l.source_kind = :kind AND l.source_id = :id"
-                : "l.target_kind = :kind AND l.target_id = :id";
-        Number count = (Number) entityManager.createNativeQuery(
-                        "SELECT count(*) FROM relation_link l WHERE l.fk_relation_definition_id = :definition AND ("
-                                + condition + ")")
+        String sql;
+        if (bothSides) {
+            sql = COUNT_AT_EITHER_END_SQL;
+        } else if (side == RelationSide.SOURCE) {
+            sql = COUNT_AT_SOURCE_SQL;
+        } else {
+            sql = COUNT_AT_TARGET_SQL;
+        }
+        Number count = (Number) entityManager.createNativeQuery(sql)
                 .setParameter(DEFINITION, definitionId)
                 .setParameter("kind", kind.name()).setParameter("id", id)
                 .getSingleResult();
@@ -148,18 +177,8 @@ public class RelationLinkQueries {
                     .setParameter(DEFINITION, definitionId).setParameter("project", projectId)
                     .getResultList()).stream().map(Number::longValue).toList();
         }
-        String institutionCondition = institutionId != null
-                ? "au.fk_institution_id = :institution"
-                : """
-                  NOT EXISTS (SELECT 1 FROM relation_rule ri WHERE ri.fk_relation_definition_id = :definition
-                    AND ri.fk_institution_id = au.fk_institution_id AND ri.fk_action_unit_id IS NULL)""";
-        var query = entityManager.createNativeQuery("""
-                SELECT DISTINCT l.fk_action_unit_id FROM relation_link l
-                JOIN action_unit au ON au.action_unit_id = l.fk_action_unit_id
-                WHERE l.fk_relation_definition_id = :definition
-                  AND NOT EXISTS (SELECT 1 FROM relation_rule rp WHERE rp.fk_relation_definition_id = :definition
-                    AND rp.fk_action_unit_id = au.action_unit_id)
-                  AND\s""" + institutionCondition)
+        var query = entityManager.createNativeQuery(institutionId != null
+                        ? PROJECTS_READING_INSTITUTION_SQL : PROJECTS_READING_PLATFORM_SQL)
                 .setParameter(DEFINITION, definitionId);
         if (institutionId != null) query.setParameter("institution", institutionId);
         return ((List<Number>) query.getResultList()).stream().map(Number::longValue).toList();

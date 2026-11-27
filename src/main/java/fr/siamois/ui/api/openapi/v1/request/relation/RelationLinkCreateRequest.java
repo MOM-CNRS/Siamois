@@ -1,5 +1,6 @@
 package fr.siamois.ui.api.openapi.v1.request.relation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Un lien saisi depuis une fiche, par le champ d'un côté d'une relation")
@@ -13,7 +14,8 @@ public record RelationLinkCreateRequest(
                 + "Sans effet pour une relation symétrique", allowableValues = {"source", "target"}, defaultValue = "source")
         String side,
         @Schema(description = "La fiche en cours de saisie")
-        RelationEndRequest record,
+        @JsonProperty("record")
+        RelationEndRequest edited,
         @Schema(description = "La fiche à relier")
         RelationEndRequest other,
         @Schema(description = "Relation complexe : le qualificatif tel que la fiche en cours de saisie le montre "

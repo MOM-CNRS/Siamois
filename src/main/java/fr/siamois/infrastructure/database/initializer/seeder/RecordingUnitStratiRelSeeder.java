@@ -72,11 +72,11 @@ public class RecordingUnitStratiRelSeeder {
 
         Definitions definitions = new Definitions(
                 definitionRepository.findByField(RelationField.Stratigraphy.ORDER_SOURCE_FIELD).orElseThrow(),
-                definitionRepository.findByField(RelationField.Stratigraphy.SYNCHRONY_FIELD).orElseThrow(), new HashMap<>());
+                definitionRepository.findByField(RelationField.Stratigraphy.SYNCHRONY_FIELD).orElseThrow(), new HashMap<>(),
+                new HashSet<>());
         List<RelationLink> built = new ArrayList<>();
-        Set<String> queuedPairs = new HashSet<>();
         for (int i = 0; i < specs.size(); i++) {
-            buildRelationship(specs.get(i), i, actionUnitIdentifier, recordingUnitsByKey, conceptsByKey, queuedPairs,
+            buildRelationship(specs.get(i), i, actionUnitIdentifier, recordingUnitsByKey, conceptsByKey,
                     institutionId, definitions).ifPresent(built::add);
         }
 
@@ -91,8 +91,12 @@ public class RecordingUnitStratiRelSeeder {
         progress.advance(specs.size() - toInsert.size());
     }
 
-    /** The two stratigraphic definitions, and the order's rules of each project met (for its mirror pairs). */
-    private record Definitions(RelationDefinition order, RelationDefinition synchrony, Map<Long, RelationRuleSet> orderRules) {
+    /**
+     * The two stratigraphic definitions, the order's rules of each project met (for its mirror pairs), and the pairs
+     * already queued by the file.
+     */
+    private record Definitions(RelationDefinition order, RelationDefinition synchrony, Map<Long, RelationRuleSet> orderRules,
+                               Set<String> queuedPairs) {
     }
 
     /**
@@ -103,7 +107,7 @@ public class RecordingUnitStratiRelSeeder {
     private Optional<RelationLink> buildRelationship(RecordingUnitStratiRelDTO s, int index, String actionUnitIdentifier,
                                                      Map<RecordingUnitSeeder.RecordingUnitKey, RecordingUnit> recordingUnitsByKey,
                                                      Map<ConceptSeeder.ConceptKey, Concept> conceptsByKey,
-                                                     Set<String> queuedPairs, Long institutionId, Definitions definitions) {
+                                                     Long institutionId, Definitions definitions) {
         try {
             RecordingUnit us1 = resolveRecordingUnit(s.us1, actionUnitIdentifier, recordingUnitsByKey);
             RecordingUnit us2 = resolveRecordingUnit(s.us2, actionUnitIdentifier, recordingUnitsByKey);
@@ -137,7 +141,7 @@ public class RecordingUnitStratiRelSeeder {
                 link.setTargetId(Math.max(us1.getId(), us2.getId()));
                 link.setQualifier(rel);
             }
-            if (!queuedPairs.add(pairOf(link))) return Optional.empty();
+            if (!definitions.queuedPairs().add(pairOf(link))) return Optional.empty();
             return Optional.of(link);
         } catch (Exception e) {
             throw new IllegalStateException(

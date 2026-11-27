@@ -444,7 +444,6 @@ export function CellEditOverlay<TRow extends { id?: string | number }>({
       ) : stratigraphyPosition && target.row.id != null ? (
         <StratigraphyEditor
           fieldId={field.id}
-          position={stratigraphyPosition}
           unitId={target.row.id}
           projectId={context.projectId}
           organizationId={organizationId}

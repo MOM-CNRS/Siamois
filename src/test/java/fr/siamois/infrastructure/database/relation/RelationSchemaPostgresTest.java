@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -129,8 +130,8 @@ class RelationSchemaPostgresTest {
                     throw new IllegalStateException(e);
                 }
             });
-            Thread.sleep(300);
-            assertThat(concurrent).isNotDone();
+            // still waiting on the first transaction after a while
+            assertThatThrownBy(() -> concurrent.get(300, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
             first.commit();
 
             assertThatThrownBy(() -> concurrent.get(10, TimeUnit.SECONDS))

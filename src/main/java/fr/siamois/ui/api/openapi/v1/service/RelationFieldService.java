@@ -83,15 +83,21 @@ public class RelationFieldService {
      * @param byLabel sorted by label (then relation) rather than by relation (then label)
      */
     @Transactional(readOnly = true)
-    public KindedPage pageAcross(Map<String, ? extends RelationSource> kinds, long ownerId, int offset, int limit,
-                                 @Nullable String search, boolean byLabel, boolean ascending, String lang) {
-        List<RelationFieldRepository.KindedRow> rows =
-                relationFieldRepository.pageAcross(kinds, ownerId, offset, limit, search, byLabel, ascending);
-        long total = relationFieldRepository.countAcross(kinds, ownerId, search);
+    public KindedPage pageAcross(Map<String, ? extends RelationSource> kinds, long ownerId, Window window, String lang) {
+        List<RelationFieldRepository.KindedRow> rows = relationFieldRepository.pageAcross(kinds, ownerId,
+                window.offset(), window.limit(), window.search(), window.byLabel(), window.ascending());
+        long total = relationFieldRepository.countAcross(kinds, ownerId, window.search());
         Map<Long, String> conceptLabels = conceptLabels(rows.stream().map(RelationFieldRepository.KindedRow::row).toList(), lang);
         return new KindedPage(rows.stream()
                 .map(row -> new KindedValue(row.kind(), toRef(kinds.get(row.kind()), row.row(), conceptLabels)))
                 .toList(), total);
+    }
+
+    /**
+     * Which values of a page across relations: from {@code offset}, at most {@code limit}, those whose label contains
+     * {@code search}, sorted by label (then relation) when {@code byLabel}, else by relation (then label).
+     */
+    public record Window(int offset, int limit, @Nullable String search, boolean byLabel, boolean ascending) {
     }
 
     /** A relation between two units of a set: see {@link RelationFieldRepository.LinkRow}; its type is labelled. */

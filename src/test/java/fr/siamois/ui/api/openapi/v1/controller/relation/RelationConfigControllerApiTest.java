@@ -21,6 +21,7 @@ import fr.siamois.infrastructure.database.repositories.actionunit.ActionUnitRepo
 import fr.siamois.infrastructure.database.repositories.relation.RelationDefinitionRepository;
 import fr.siamois.infrastructure.database.repositories.relation.RelationLinkRepository;
 import fr.siamois.ui.api.handler.TestRestExceptionHandlers;
+import fr.siamois.ui.api.openapi.v1.response.relation.RelationDefinitionResponse;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiCaller;
 import fr.siamois.ui.api.openapi.v1.service.ProjectApiService;
 import fr.siamois.ui.api.openapi.v1.service.RelationOpenApiService;
@@ -41,7 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -173,5 +176,29 @@ class RelationConfigControllerApiTest {
                         .content("{\"mirrors\": [{\"concept\": 201, \"mirror\": 301}, {\"concept\": 201, \"mirror\": 302}]}"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(ruleService);
+    }
+
+    @Test
+    void readUpdateAndDeleteADefinitionAndDeleteRulesGoThroughTheService() throws Exception {
+        RelationOpenApiService api = mock(RelationOpenApiService.class);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new RelationConfigControllerApi(projectApiService, api))
+                .setControllerAdvice(TestRestExceptionHandlers.create())
+                .setMessageConverters(new MappingJackson2HttpMessageConverter(new ObjectMapper()))
+                .build();
+        RelationDefinitionResponse definition = new RelationDefinitionResponse(1L, -329L, -328L, "complex", false,
+                false, null, false);
+        when(api.definition(1L)).thenReturn(definition);
+        when(api.updateDefinition(eq(1L), any(), any())).thenReturn(definition);
+
+        mvc.perform(get("/api/v1/relation-definitions/1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
+        mvc.perform(patch("/api/v1/relation-definitions/1").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"kind\":\"simple\"}")).andExpect(status().isOk());
+        mvc.perform(delete("/api/v1/relation-definitions/1")).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/v1/relation-definitions/1/rules").param("projectId", "7"))
+                .andExpect(status().isNoContent());
+
+        verify(api).deleteDefinition(eq(1L), any());
+        verify(api).deleteRules(eq(1L), eq(null), eq(7L), any());
     }
 }

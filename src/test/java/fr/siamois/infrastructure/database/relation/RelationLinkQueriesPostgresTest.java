@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * The native queries of the configurable relations, on PostgreSQL: the cycle check along a definition's links, the
@@ -71,10 +73,11 @@ class RelationLinkQueriesPostgresTest {
     private long project;
     private long order;
     private long synchrony;
+    private long person;
 
     @BeforeEach
     void createFixtures() {
-        long person = id("INSERT INTO person (username, password) VALUES ('q-' || gen_random_uuid(), 'x') RETURNING person_id");
+        person = id("INSERT INTO person (username, password) VALUES ('q-' || gen_random_uuid(), 'x') RETURNING person_id");
         institution = id("INSERT INTO institution (creation_date, identifier, institution_name) "
                 + "VALUES (now(), 'q-' || gen_random_uuid(), 'q') RETURNING institution_id");
         otherInstitution = id("INSERT INTO institution (creation_date, identifier, institution_name) "
@@ -82,10 +85,7 @@ class RelationLinkQueriesPostgresTest {
         project = project(person, institution);
         order = definition();
         synchrony = definition();
-        this.person = person;
     }
-
-    private long person;
 
     @Test
     void reachesFollowsTheLinksOfTheDefinitionOnly() {
@@ -181,8 +181,8 @@ class RelationLinkQueriesPostgresTest {
         CompletableFuture<Void> second = CompletableFuture.runAsync(() -> transaction.executeWithoutResult(s ->
                 queries.lockProject(lockedProject)));
 
-        Thread.sleep(300);
-        assertThat(second).isNotDone();
+        // still waiting on the first transaction's lock after a while
+        assertThatThrownBy(() -> second.get(300, TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);
         release.countDown();
         first.get(10, TimeUnit.SECONDS);
         second.get(10, TimeUnit.SECONDS);

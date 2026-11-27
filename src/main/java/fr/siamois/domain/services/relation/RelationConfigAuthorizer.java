@@ -28,14 +28,16 @@ public class RelationConfigAuthorizer {
     }
 
     public boolean canEditRules(RelationScope scope, PersonDTO caller) {
-        if (scope.isPlatform()) return canEditDefinitions(caller);
-        InstitutionDTO institution = institutionRepository.findById(scope.institutionId())
+        Long institutionId = scope.institutionId();
+        if (institutionId == null) return canEditDefinitions(caller);
+        InstitutionDTO institution = institutionRepository.findById(institutionId)
                 .map(institutionMapper::convert).orElse(null);
         if (institution == null) return false;
-        return scope.projectId() == null
-                ? profilePermissionService.hasOrganizationPermission(caller, institution,
-                PermissionConstants.ORGANIZATION_MANAGE_SETTINGS)
-                : profilePermissionService.hasProjectSettingsPermission(new UserInfo(institution, caller, null),
-                scope.projectId());
+        Long projectId = scope.projectId();
+        if (projectId == null) {
+            return profilePermissionService.hasOrganizationPermission(caller, institution,
+                    PermissionConstants.ORGANIZATION_MANAGE_SETTINGS);
+        }
+        return profilePermissionService.hasProjectSettingsPermission(new UserInfo(institution, caller, null), projectId);
     }
 }

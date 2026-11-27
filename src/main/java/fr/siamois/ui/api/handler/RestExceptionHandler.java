@@ -121,11 +121,16 @@ public class RestExceptionHandler {
             case KIND_NOT_ALLOWED, TYPE_NOT_ALLOWED, CROSS_PROJECT, SELF_LINK, INVALID_QUALIFIER -> HttpStatus.BAD_REQUEST;
         };
         List<ApiError.Detail> details = ex.getViolations().isEmpty() ? null : ex.getViolations().stream()
-                .map(v -> new ApiError.Detail(v.rule().name(), v.linkIds().isEmpty() ? v.message()
-                        : v.message() + " (liens : " + v.linkIds().stream().map(String::valueOf)
-                        .collect(java.util.stream.Collectors.joining(", ")) + ")"))
+                .map(v -> new ApiError.Detail(v.rule().name(), violationMessage(v)))
                 .toList();
         return answer(status, new ApiError(codeOf(status), ex.getMessage(), details, null));
+    }
+
+    /** A broken rule's message, with the links that break it. */
+    private static String violationMessage(fr.siamois.domain.services.relation.RuleViolation violation) {
+        if (violation.linkIds().isEmpty()) return violation.message();
+        return violation.message() + " (liens : " + violation.linkIds().stream().map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(", ")) + ")";
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

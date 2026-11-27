@@ -202,7 +202,8 @@ class RelationRuleServiceTest {
         when(linkQueries.projectsReading(10L, INSTITUTION, PROJECT)).thenReturn(List.of(PROJECT));
         when(linkQueries.linksInCycles(10L, List.of(PROJECT))).thenReturn(List.of(901L));
 
-        assertThatThrownBy(() -> service.delete(10L, RelationScope.project(INSTITUTION, PROJECT), caller))
+        RelationScope projectScope = RelationScope.project(INSTITUTION, PROJECT);
+        assertThatThrownBy(() -> service.delete(10L, projectScope, caller))
                 .isInstanceOf(RelationLinkException.class);
         verify(ruleRepository, never()).delete(any());
     }
@@ -229,6 +230,114 @@ class RelationRuleServiceTest {
         verify(kindRepository).save(any());
         verify(mirrorRepository).save(any());
         verify(exclusionRepository).save(any());
+    }
+
+    @Test
+    void readsTheRulesAProjectObeysAndAScopesOwn() {
+        RelationRule own = new RelationRule();
+        RelationRuleSet loaded = RelationRuleSet.none(order);
+        when(ruleResolver.rulesFor(order, PROJECT)).thenReturn(loaded);
+        when(ruleRepository.findOfInstitution(10L, INSTITUTION)).thenReturn(Optional.of(own));
+        when(ruleResolver.load(own)).thenReturn(loaded);
+
+        assertThat(service.rulesFor(10L, PROJECT)).isSameAs(loaded);
+        assertThat(service.ownRules(10L, RelationScope.institution(INSTITUTION))).containsSame(loaded);
+        assertThatThrownBy(() -> service.rulesFor(99L, PROJECT)).isInstanceOf(RelationLinkException.class);
+    }
+
+    @Test
+    void deletingAProjectsRulesFallsBackThroughItsInstitutionToThePlatformDefault() {
+        RelationRule own = new RelationRule();
+        own.setId(42L);
+        RelationRule platform = new RelationRule();
+        when(ruleRepository.findOfProject(10L, PROJECT)).thenReturn(Optional.of(own));
+        when(ruleRepository.findOfInstitution(10L, INSTITUTION)).thenReturn(Optional.empty());
+        when(ruleRepository.findPlatformDefault(10L)).thenReturn(Optional.of(platform));
+        when(ruleResolver.load(platform)).thenReturn(RelationRuleSet.none(order));
+        when(linkQueries.projectsReading(10L, INSTITUTION, PROJECT)).thenReturn(List.of(PROJECT));
+
+        service.delete(10L, RelationScope.project(INSTITUTION, PROJECT), caller);
+
+        verify(kindRepository).deleteByRuleId(42L);
+        verify(ruleRepository).delete(own);
+    }
+
+    @Test
+    void deletingAnInstitutionsRulesWithNoDefaultLeavesNoRule() {
+        RelationRule own = new RelationRule();
+        own.setId(43L);
+        when(ruleRepository.findOfInstitution(10L, INSTITUTION)).thenReturn(Optional.of(own));
+        when(ruleRepository.findPlatformDefault(10L)).thenReturn(Optional.empty());
+
+        service.delete(10L, RelationScope.institution(INSTITUTION), caller);
+
+        verify(ruleRepository).delete(own);
+    }
+
+    @Test
+    void deletingRulesAScopeDoesNotHaveDoesNothingAndAllOfADefinitionGo() {
+        RelationRule first = new RelationRule();
+        first.setId(1L);
+        RelationRule second = new RelationRule();
+        second.setId(2L);
+        when(ruleRepository.findPlatformDefault(10L)).thenReturn(Optional.empty());
+        when(ruleRepository.findByDefinitionId(10L)).thenReturn(List.of(first, second));
+
+        service.delete(10L, RelationScope.platform(), caller);
+        service.deleteAllOf(order);
+
+        verify(ruleRepository).delete(first);
+        verify(ruleRepository).delete(second);
+    }
+
+    @Test
+    void invalidRulesAreRefused() {
+        when(ruleRepository.findPlatformDefault(anyLong())).thenReturn(Optional.empty());
+        RelationScope platform = RelationScope.platform();
+        RuleSpec sameMirror = new RuleSpec(false, false, false, List.of(), Map.of(201L, 301L, 202L, 301L), List.of());
+        RuleSpec selfExclusion = new RuleSpec(false, false, false, List.of(), Map.of(), List.of(10L));
+        RuleSpec unknownExclusion = new RuleSpec(false, false, false, List.of(), Map.of(), List.of(12L));
+        RuleSpec mirrorOfSimple = new RuleSpec(false, false, false, List.of(), Map.of(201L, 301L), List.of());
+
+        assertThatThrownBy(() -> service.save(10L, platform, sameMirror, caller)).isInstanceOf(RelationLinkException.class);
+        assertThatThrownBy(() -> service.save(10L, platform, selfExclusion, caller)).isInstanceOf(RelationLinkException.class);
+        assertThatThrownBy(() -> service.save(10L, platform, unknownExclusion, caller)).isInstanceOf(RelationLinkException.class);
+        order.setKind(RelationKind.SIMPLE);
+        assertThatThrownBy(() -> service.save(10L, platform, mirrorOfSimple, caller)).isInstanceOf(RelationLinkException.class);
+    }
+
+    @Test
+    void aProjectOfAnotherInstitutionOrAnUnknownScopeIsRefused() {
+        when(ruleRepository.findOfProject(anyLong(), anyLong())).thenReturn(Optional.empty());
+        when(ruleRepository.findOfInstitution(anyLong(), anyLong())).thenReturn(Optional.empty());
+        when(institutionRepository.findById(4L)).thenReturn(Optional.of(new Institution()));
+        when(institutionRepository.findById(5L)).thenReturn(Optional.empty());
+        when(actionUnitRepository.findById(8L)).thenReturn(Optional.empty());
+        RuleSpec none = spec(false, List.of());
+        RelationScope otherInstitution = RelationScope.project(4L, PROJECT);
+        RelationScope unknownInstitution = RelationScope.institution(5L);
+        RelationScope unknownProject = RelationScope.project(INSTITUTION, 8L);
+
+        assertThatThrownBy(() -> service.save(10L, otherInstitution, none, caller)).isInstanceOf(RelationLinkException.class);
+        assertThatThrownBy(() -> service.save(10L, unknownInstitution, none, caller)).isInstanceOf(RelationLinkException.class);
+        assertThatThrownBy(() -> service.save(10L, unknownProject, none, caller)).isInstanceOf(RelationLinkException.class);
+    }
+
+    @Test
+    void aSymmetricRelationCountsBothEndsOfItsLinksForASingleChoice() {
+        order.setSymmetric(true);
+        when(ruleRepository.findPlatformDefault(10L)).thenReturn(Optional.empty());
+        when(linkQueries.projectsReading(10L, null, null)).thenReturn(List.of(PROJECT));
+        // unit 1 is at the source of one link and the target of the other: two links for one record
+        when(linkRepository.findOfProjects(10L, List.of(PROJECT))).thenReturn(List.of(
+                link(1L, RelationEndKind.RECORDING_UNIT, 1L, RelationEndKind.RECORDING_UNIT, 2L),
+                link(2L, RelationEndKind.RECORDING_UNIT, 3L, RelationEndKind.RECORDING_UNIT, 1L)));
+        RuleSpec single = new RuleSpec(false, true, false, List.of(), Map.of(), List.of());
+        RelationScope platform = RelationScope.platform();
+
+        assertThatThrownBy(() -> service.save(10L, platform, single, caller))
+                .isInstanceOfSatisfying(RelationLinkException.class, e -> assertThat(e.getViolations())
+                        .anySatisfy(v -> assertThat(v.linkIds()).containsExactly(1L, 2L)));
     }
 
     private static RuleSpec spec(boolean noCycle, List<RelationRuleSet.AcceptedKind> kinds) {

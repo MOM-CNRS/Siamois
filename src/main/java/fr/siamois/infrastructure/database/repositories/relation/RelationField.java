@@ -47,7 +47,7 @@ public enum RelationField implements RelationSource {
                     + "COALESCE(mq.mirror_id, l.fk_qualifier_concept_id) AS concept_id, TRUE AS asynchronous, "
                     + "CASE WHEN l.fk_qualifier_concept_id IS NULL THEN NULL ELSE TRUE END AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
                     + "FROM relation_link l " + Stratigraphy.ORDER + DefinitionRelation.MIRROR_JOIN
-                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
+                    + Stratigraphy.BETWEEN_UNITS,
             Target.RECORDING_UNIT, true),
 
     RECORDING_UNIT_ANTERIOR(RecordingUnit.class, "anteriorRelationships",
@@ -55,18 +55,18 @@ public enum RelationField implements RelationSource {
                     + "l.fk_qualifier_concept_id AS concept_id, TRUE AS asynchronous, "
                     + "CASE WHEN l.fk_qualifier_concept_id IS NULL THEN NULL ELSE FALSE END AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
                     + "FROM relation_link l " + Stratigraphy.ORDER
-                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
+                    + Stratigraphy.BETWEEN_UNITS,
             Target.RECORDING_UNIT, true),
 
     RECORDING_UNIT_SYNCHRONOUS(RecordingUnit.class, "synchronousRelationships",
             "SELECT l.source_id AS owner_id, l.target_id AS target_id, 'unit1' AS role, l.fk_qualifier_concept_id AS concept_id, "
                     + "FALSE AS asynchronous, CAST(NULL AS boolean) AS concept_direction, l.uncertain, l.relation_link_id AS link_id "
                     + "FROM relation_link l " + Stratigraphy.SYNCHRONY
-                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT' "
+                    + Stratigraphy.BETWEEN_UNITS
                     + "UNION ALL "
                     + "SELECT l.target_id, l.source_id, 'unit2', l.fk_qualifier_concept_id, FALSE, CAST(NULL AS boolean), l.uncertain, l.relation_link_id "
                     + "FROM relation_link l " + Stratigraphy.SYNCHRONY
-                    + "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT'",
+                    + Stratigraphy.BETWEEN_UNITS,
             Target.RECORDING_UNIT, true),
 
     ACTION_UNIT_RECORDING_UNITS(ActionUnit.class, "recordingUnitList",
@@ -219,6 +219,8 @@ public enum RelationField implements RelationSource {
                 + "AND sd.fk_source_field_id = " + ORDER_SOURCE_FIELD + " ";
         static final String SYNCHRONY = "JOIN relation_definition sd ON sd.relation_definition_id = l.fk_relation_definition_id "
                 + "AND sd.fk_source_field_id = " + SYNCHRONY_FIELD + " ";
+        /** Both ends are units. */
+        static final String BETWEEN_UNITS = "WHERE l.source_kind = 'RECORDING_UNIT' AND l.target_kind = 'RECORDING_UNIT' ";
 
         private Stratigraphy() {
         }

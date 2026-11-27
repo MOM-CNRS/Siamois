@@ -42,7 +42,7 @@ function render(props: Partial<StratigraphyEditorProps> = {}, openEntity = vi.fn
     root.render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <EntityNavigationProvider value={openEntity}>
-          <StratigraphyEditor fieldId="-329" position="posterior" unitId="42" projectId="7" organizationId={1} typeConceptId="900" onChanged={onChanged} onClose={onClose} {...props} />
+          <StratigraphyEditor fieldId="-329" unitId="42" projectId="7" organizationId={1} typeConceptId="900" onChanged={onChanged} onClose={onClose} {...props} />
         </EntityNavigationProvider>
       </QueryClientProvider>,
     );

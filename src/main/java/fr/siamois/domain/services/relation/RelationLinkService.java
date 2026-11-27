@@ -59,11 +59,11 @@ public class RelationLinkService {
 
     /**
      * @param side      the side of the field the link is entered through
-     * @param record    the record being edited, on that side
+     * @param edited    the record being edited, on that side
      * @param other     the record at the other end
      * @param qualifier for a complex relation, the qualifier as the edited record shows it, or null
      */
-    public record CreateRequest(Long definitionId, RelationSide side, End record, End other,
+    public record CreateRequest(Long definitionId, RelationSide side, End edited, End other,
                                 @Nullable Long qualifier, boolean uncertain) {
     }
 
@@ -84,7 +84,7 @@ public class RelationLinkService {
         RelationDefinition definition = definitionRepository.findById(request.definitionId())
                 .orElseThrow(() -> new RelationLinkException(Reason.DEFINITION_NOT_FOUND,
                         "Relation inconnue : " + request.definitionId()));
-        RelationEndpoint edited = endpoint(request.record(), accessibleInstitutionIds);
+        RelationEndpoint edited = endpoint(request.edited(), accessibleInstitutionIds);
         RelationEndpoint other = endpoint(request.other(), accessibleInstitutionIds);
         boolean fromTarget = request.side() == RelationSide.TARGET && !definition.isSymmetric();
         RelationEndpoint source = fromTarget ? other : edited;
@@ -345,10 +345,10 @@ public class RelationLinkService {
             }
         }
         List<Long> path = new ArrayList<>();
-        for (String node = goal; reachedBy.containsKey(node); ) {
-            RelationLink link = reachedBy.get(node);
-            path.add(0, link.getId());
-            node = key(link.getSourceKind(), link.getSourceId());
+        RelationLink step = reachedBy.get(goal);
+        while (step != null) {
+            path.add(0, step.getId());
+            step = reachedBy.get(key(step.getSourceKind(), step.getSourceId()));
         }
         return path;
     }

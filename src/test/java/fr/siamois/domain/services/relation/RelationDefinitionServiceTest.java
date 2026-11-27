@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class RelationDefinitionServiceTest {
@@ -141,7 +140,7 @@ class RelationDefinitionServiceTest {
 
     private void field(long id, CustomField field) {
         field.setId(id);
-        when(fieldRepository.findById(eq(id))).thenReturn(Optional.of(field));
+        when(fieldRepository.findById(id)).thenReturn(Optional.of(field));
     }
 
     private static void assertInvalid(org.assertj.core.api.ThrowableAssert.ThrowingCallable call) {

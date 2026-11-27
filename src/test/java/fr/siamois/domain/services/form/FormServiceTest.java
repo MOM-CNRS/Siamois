@@ -863,13 +863,6 @@ class FormServiceTest {
         assertEquals(metreDto, answer.getValue().getUnit());
     }
 
-    // Helper method to create a RecordingUnitDTO with a specific ID
-    private RecordingUnitDTO createRecordingUnitDTO(Long id) {
-        RecordingUnitDTO unit = new RecordingUnitDTO();
-        unit.setId(id);
-        return unit;
-    }
-
     // =====================================================================
     // handlePhaseSet / handleRecordingUnitSet
     // Accessed via the private populateSystemFieldValue dispatcher.

@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Which fields are a side of a configurable relation, kept in memory: every list and fiche asks it of the fields
@@ -32,23 +33,26 @@ public class RelationFieldIndex {
     private final RelationDefinitionRepository definitionRepository;
     private final Clock clock = Clock.systemUTC();
 
-    private volatile Map<Long, Side> sides;
-    private volatile Instant loadedAt = Instant.MIN;
+    /** The loaded sides and when they were loaded, replaced as a whole. */
+    private record Snapshot(Map<Long, Side> sides, Instant loadedAt) {
+    }
+
+    private final AtomicReference<Snapshot> snapshot = new AtomicReference<>();
 
     /** The fields that are a side of a definition, by field id. */
     @Transactional(readOnly = true)
     public Map<Long, Side> sides() {
-        Map<Long, Side> current = sides;
-        if (current == null || Instant.now(clock).isAfter(loadedAt.plus(TTL))) {
-            current = load();
-            sides = current;
-            loadedAt = Instant.now(clock);
+        Snapshot current = snapshot.get();
+        Instant now = Instant.now(clock);
+        if (current == null || now.isAfter(current.loadedAt().plus(TTL))) {
+            current = new Snapshot(load(), now);
+            snapshot.set(current);
         }
-        return current;
+        return current.sides();
     }
 
     public void evict() {
-        sides = null;
+        snapshot.set(null);
     }
 
     private Map<Long, Side> load() {

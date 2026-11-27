@@ -70,7 +70,7 @@ class RelationFieldServiceTest {
         when(repository.countAcross(kinds, 1L, null)).thenReturn(2L);
         when(labels.resolveLabels(any(), eq("fr"))).thenReturn(Map.of(77L, "coupe"));
 
-        RelationFieldService.KindedPage page = service.pageAcross(kinds, 1L, 0, 50, null, false, true, "fr");
+        RelationFieldService.KindedPage page = service.pageAcross(kinds, 1L, new RelationFieldService.Window(0, 50, null, false, true), "fr");
 
         assertThat(page.total()).isEqualTo(2);
         assertThat(page.values()).extracting(RelationFieldService.KindedValue::kind).containsExactly("parents", "anterior");

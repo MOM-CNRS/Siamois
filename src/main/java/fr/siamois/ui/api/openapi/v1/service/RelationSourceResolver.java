@@ -33,8 +33,8 @@ public class RelationSourceResolver {
         Map<String, RelationSource> out = new LinkedHashMap<>();
         Map<Long, RelationFieldIndex.Side> sides = null;
         for (String fieldId : fieldIds) {
-            if (MultiValueAnswers.relationFieldOf(ownerType, fieldId).isPresent()) continue;
-            Long id = parse(fieldId);
+            // a system relation field, or a computed column: no configurable relation behind it
+            Long id = MultiValueAnswers.relationFieldOf(ownerType, fieldId).isPresent() ? null : parse(fieldId);
             if (id == null) continue;
             if (sides == null) sides = fieldIndex.sides();
             RelationFieldIndex.Side side = sides.get(id);

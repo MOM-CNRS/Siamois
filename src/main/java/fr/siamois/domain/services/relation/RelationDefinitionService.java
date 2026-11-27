@@ -117,15 +117,16 @@ public class RelationDefinitionService {
     private void applyIdentity(RelationDefinition definition, IdentityUpdate update) {
         definition.setKind(update.kind());
         definition.setHierarchical(update.hierarchical());
-        if (update.qualifierFieldId() == null) {
+        Long qualifierFieldId = update.qualifierFieldId();
+        if (qualifierFieldId == null) {
             definition.setQualifierField(null);
             return;
         }
         if (update.kind() != RelationKind.COMPLEX) {
             throw invalid("Seule une relation complexe a un qualificatif");
         }
-        CustomField qualifier = fieldRepository.findById(update.qualifierFieldId())
-                .orElseThrow(() -> invalid("Champ inconnu : " + update.qualifierFieldId()));
+        CustomField qualifier = fieldRepository.findById(qualifierFieldId)
+                .orElseThrow(() -> invalid("Champ inconnu : " + qualifierFieldId));
         if (!(qualifier instanceof CustomFieldSelectOne) && !(qualifier instanceof CustomFieldSelectOneFromFieldCode)) {
             throw invalid("Le qualificatif doit être un champ de vocabulaire à choix unique");
         }

@@ -61,7 +61,7 @@ public class RelationOpenApiService {
 
     @Transactional(rollbackFor = Exception.class)
     public RelationLinkResponse createLink(RelationLinkCreateRequest body, ProjectApiCaller caller) {
-        if (body == null || (body.field() == null && body.definition() == null) || body.record() == null
+        if (body == null || (body.field() == null && body.definition() == null) || body.edited() == null
                 || body.other() == null) {
             throw badRequest("field (ou definition), record et other sont obligatoires");
         }
@@ -69,7 +69,7 @@ public class RelationOpenApiService {
         RelationLinkService.Result result = linkService.create(new RelationLinkService.CreateRequest(
                 fieldDefinition != null ? fieldDefinition.getId() : body.definition(),
                 fieldDefinition != null ? sideOfField(fieldDefinition, body.field()) : sideOf(body.side()),
-                end(body.record()), end(body.other()),
+                end(body.edited()), end(body.other()),
                 body.qualifier(), Boolean.TRUE.equals(body.uncertain())), caller.person(), caller.accessibleInstitutionIds());
         return responseOf(result);
     }
@@ -115,16 +115,19 @@ public class RelationOpenApiService {
         boolean isSource = definition.isSymmetric() || definition.getSourceField().getId().equals(fieldId);
         RelationSide side = isSource ? RelationSide.SOURCE : RelationSide.TARGET;
         RelationSide other = isSource ? RelationSide.TARGET : RelationSide.SOURCE;
-        boolean singleChoice = definition.isSymmetric()
-                ? rules.sourceUnique() || rules.targetUnique()
-                : isSource ? rules.sourceUnique() : rules.targetUnique();
+        boolean singleChoice;
+        if (definition.isSymmetric()) {
+            singleChoice = rules.sourceUnique() || rules.targetUnique();
+        } else {
+            singleChoice = isSource ? rules.sourceUnique() : rules.targetUnique();
+        }
         List<RelationFieldResponse.AcceptedEnd> accepts = rules.kindsOf(definition.isSymmetric() ? side : other).stream()
                 .map(k -> new RelationFieldResponse.AcceptedEnd(typeOf(k.kind()), k.subtypeId()))
                 .toList();
         List<RelationFieldResponse.Qualifier> qualifiers = new ArrayList<>();
-        rules.mirrorByConcept().forEach((concept, mirror) -> qualifiers.add(isSource || definition.isSymmetric()
-                ? new RelationFieldResponse.Qualifier(concept, concept)
-                : new RelationFieldResponse.Qualifier(mirror, concept)));
+        boolean readsStored = isSource || definition.isSymmetric();
+        rules.mirrorByConcept().forEach((concept, mirror) ->
+                qualifiers.add(new RelationFieldResponse.Qualifier(readsStored ? concept : mirror, concept)));
         qualifiers.sort((a, b) -> Long.compare(a.stored(), b.stored()));
         Long mirrorField = isSource ? definition.getTargetField().getId() : definition.getSourceField().getId();
         return new RelationFieldResponse(fieldId, definitionOf(definition), nameOf(side), mirrorField, singleChoice,
@@ -225,9 +228,16 @@ public class RelationOpenApiService {
 
     private static RelationRulesResponse rulesOf(Long definitionId, RelationRuleSet rules, boolean own) {
         RelationRule rule = rules.rule();
-        String scope = rule == null ? "none"
-                : rule.getActionUnit() != null ? "project"
-                : rule.getInstitution() != null ? "institution" : "platform";
+        String scope;
+        if (rule == null) {
+            scope = "none";
+        } else if (rule.getActionUnit() != null) {
+            scope = "project";
+        } else if (rule.getInstitution() != null) {
+            scope = "institution";
+        } else {
+            scope = "platform";
+        }
         Map<Long, Long> sorted = new LinkedHashMap<>();
         rules.mirrorByConcept().entrySet().stream().sorted(Map.Entry.comparingByKey())
                 .forEach(e -> sorted.put(e.getKey(), e.getValue()));

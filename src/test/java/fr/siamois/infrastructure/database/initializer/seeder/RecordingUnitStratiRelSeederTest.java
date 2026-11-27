@@ -117,13 +117,14 @@ class RecordingUnitStratiRelSeederTest {
     @Test
     void aMissingUnitOrTwoProjectsAreRefusedWithTheLine() {
         stubUnits(unit("US2", 2L, PROJECT));
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = List.of(spec(null, null, true, false));
         IllegalStateException missing = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec(null, null, true, false)), INSTITUTION_ID, ACTION_UNIT_ID));
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
         assertThat(missing.getMessage()).contains("[Relation strati ligne 1]").contains("Recording unit introuvable");
 
         stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, 99L));
         IllegalStateException crossProject = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec(null, null, true, false)), INSTITUTION_ID, ACTION_UNIT_ID));
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
         assertThat(crossProject.getMessage()).contains("même projet");
     }
 
@@ -132,8 +133,9 @@ class RecordingUnitStratiRelSeederTest {
         stubUnits(unit("US1", 1L, PROJECT), unit("US2", 2L, PROJECT));
         when(conceptSeeder.describeMissingConcept(any(), any())).thenReturn("Concept non chargé dans Siamois (test)");
 
+        List<RecordingUnitStratiRelSeeder.RecordingUnitStratiRelDTO> specs = List.of(spec("inconnu", false, true, false));
         IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> seeder.seed(List.of(spec("inconnu", false, true, false)), INSTITUTION_ID, ACTION_UNIT_ID));
+                () -> seeder.seed(specs, INSTITUTION_ID, ACTION_UNIT_ID));
 
         assertThat(ex.getMessage()).contains("Concept non chargé dans Siamois");
     }

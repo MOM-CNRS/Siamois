@@ -56,7 +56,7 @@ class RecordingUnitStratigraphyWriteServiceTest {
         RelationLinkService.CreateRequest created = created();
         assertThat(created.definitionId()).isEqualTo(10L);
         assertThat(created.side()).isEqualTo(RelationSide.SOURCE);
-        assertThat(created.record()).isEqualTo(new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, 12L));
+        assertThat(created.edited()).isEqualTo(new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, 12L));
         assertThat(created.other()).isEqualTo(new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, 5L));
         assertThat(created.qualifier()).isEqualTo(201L);
     }
@@ -75,14 +75,16 @@ class RecordingUnitStratigraphyWriteServiceTest {
     void twoUnitsAlreadyRelatedAreRefused() {
         when(linkRepository.findStratigraphicBetween(12L, 5L)).thenReturn(List.of(new RelationLink()));
 
-        assertThatThrownBy(() -> service.add("12", request(5L, "anterior", null), person, REACH))
+        var body = request(5L, "anterior", null);
+        assertThatThrownBy(() -> service.add("12", body, person, REACH))
                 .isInstanceOf(ResponseStatusException.class).hasMessageContaining("déjà reliées");
         verifyNoInteractions(linkService);
     }
 
     @Test
     void anUnknownPositionIsABadRequest() {
-        assertThatThrownBy(() -> service.add("12", request(5L, "left", null), person, REACH))
+        var body = request(5L, "left", null);
+        assertThatThrownBy(() -> service.add("12", body, person, REACH))
                 .isInstanceOf(ResponseStatusException.class);
     }
 

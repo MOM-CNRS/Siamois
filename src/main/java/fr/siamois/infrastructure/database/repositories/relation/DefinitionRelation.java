@@ -23,14 +23,17 @@ public record DefinitionRelation(long definitionId, RelationSide side, boolean s
                                  RelationEndKind ownerKind) implements RelationSource {
 
     /** Each kind a link can reach, with its table, id column and label. Places are not accepted yet. */
+    private static final String FULL_IDENTIFIER = "t.full_identifier";
+    private static final String IDENTIFIER = "t.identifier";
+
     private static final Map<RelationEndKind, String[]> TABLES = Map.of(
-            RelationEndKind.RECORDING_UNIT, new String[]{"recording_unit", "recording_unit_id", "t.full_identifier", "recording-units"},
-            RelationEndKind.SPECIMEN, new String[]{"specimen", "specimen_id", "t.full_identifier", "finds"},
-            RelationEndKind.PHASE, new String[]{"phase", "phase_id", "t.identifier", "phases"},
-            RelationEndKind.CONTAINER, new String[]{"container", "container_id", "t.identifier", "containers"},
-            RelationEndKind.DOCUMENT, new String[]{"siamois_document", "document_id", "t.identifier", "documents"},
-            RelationEndKind.STUDY, new String[]{"study", "study_id", "t.identifier", "studies"},
-            RelationEndKind.ACTION_UNIT, new String[]{"action_unit", "action_unit_id", "t.full_identifier", "projects"});
+            RelationEndKind.RECORDING_UNIT, new String[]{"recording_unit", "recording_unit_id", FULL_IDENTIFIER, "recording-units"},
+            RelationEndKind.SPECIMEN, new String[]{"specimen", "specimen_id", FULL_IDENTIFIER, "finds"},
+            RelationEndKind.PHASE, new String[]{"phase", "phase_id", IDENTIFIER, "phases"},
+            RelationEndKind.CONTAINER, new String[]{"container", "container_id", IDENTIFIER, "containers"},
+            RelationEndKind.DOCUMENT, new String[]{"siamois_document", "document_id", IDENTIFIER, "documents"},
+            RelationEndKind.STUDY, new String[]{"study", "study_id", IDENTIFIER, "studies"},
+            RelationEndKind.ACTION_UNIT, new String[]{"action_unit", "action_unit_id", FULL_IDENTIFIER, "projects"});
 
     /**
      * The mirror of the stored qualifier in the rule set the link's project follows: the project's own, else its
@@ -66,8 +69,14 @@ public record DefinitionRelation(long definitionId, RelationSide side, boolean s
         String owner = fromSource ? "source" : "target";
         String other = fromSource ? "target" : "source";
         boolean mirrored = complex && !fromSource && !symmetric;
-        String concept = !complex ? "CAST(NULL AS bigint)"
-                : mirrored ? "COALESCE(mq.mirror_id, l.fk_qualifier_concept_id)" : "l.fk_qualifier_concept_id";
+        String concept;
+        if (!complex) {
+            concept = "CAST(NULL AS bigint)";
+        } else if (mirrored) {
+            concept = "COALESCE(mq.mirror_id, l.fk_qualifier_concept_id)";
+        } else {
+            concept = "l.fk_qualifier_concept_id";
+        }
         return "SELECT l." + owner + "_id AS owner_id, l." + other + "_id AS target_id, " + table[2] + " AS label, "
                 + "CAST('" + table[3] + "' AS text) AS role, " + concept + " AS concept_id, "
                 + "c.external_id AS concept_external_id, CAST(NULL AS boolean) AS asynchronous, "

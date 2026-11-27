@@ -98,7 +98,7 @@ public class RelationRuleService {
     @Transactional(rollbackFor = Exception.class)
     public RelationRuleSet save(Long definitionId, RelationScope scope, RuleSpec spec, PersonDTO caller) {
         requireCanEdit(scope, caller);
-        return saveWithoutPermission(definition(definitionId), scope, spec);
+        return store(definition(definitionId), scope, spec);
     }
 
     /**
@@ -142,6 +142,10 @@ public class RelationRuleService {
     /** Saves a rule set with no permission check: for the definition service, which checked its own. */
     @Transactional(rollbackFor = Exception.class)
     RelationRuleSet saveWithoutPermission(RelationDefinition definition, RelationScope scope, RuleSpec spec) {
+        return store(definition, scope, spec);
+    }
+
+    private RelationRuleSet store(RelationDefinition definition, RelationScope scope, RuleSpec spec) {
         RuleSpec normalized = normalize(definition, spec);
         List<Long> projects = linkQueries.projectsReading(definition.getId(), scope.institutionId(), scope.projectId());
         requireNoViolation(checkAgainstLinks(definition, normalized, projects));
@@ -229,24 +233,37 @@ public class RelationRuleService {
         boolean bySource = rules.sourceUnique() || (symmetric && rules.targetUnique());
         boolean byTarget = rules.targetUnique() || (symmetric && rules.sourceUnique());
         if (!bySource && !byTarget) return List.of();
+        Set<Long> breaking = new TreeSet<>();
+        for (Map<String, List<Long>> ends : linksByEnd(links, symmetric, bySource, byTarget)) {
+            ends.values().stream().filter(ids -> ids.size() > 1).forEach(breaking::addAll);
+        }
+        return List.copyOf(breaking);
+    }
+
+    /**
+     * The links grouped by the record at their unique end(s): by source and by target, or both ends together for a
+     * symmetric relation.
+     */
+    private static List<Map<String, List<Long>>> linksByEnd(List<RelationLink> links, boolean symmetric,
+                                                            boolean bySource, boolean byTarget) {
         Map<String, List<Long>> bySourceEnd = new HashMap<>();
         Map<String, List<Long>> byTargetEnd = new HashMap<>();
         for (RelationLink link : links) {
             String source = link.getSourceKind() + ":" + link.getSourceId();
             String target = link.getTargetKind() + ":" + link.getTargetId();
             if (symmetric) {
-                bySourceEnd.computeIfAbsent(source, k -> new ArrayList<>()).add(link.getId());
-                bySourceEnd.computeIfAbsent(target, k -> new ArrayList<>()).add(link.getId());
-            } else {
-                if (bySource) bySourceEnd.computeIfAbsent(source, k -> new ArrayList<>()).add(link.getId());
-                if (byTarget) byTargetEnd.computeIfAbsent(target, k -> new ArrayList<>()).add(link.getId());
+                addTo(bySourceEnd, source, link.getId());
+                addTo(bySourceEnd, target, link.getId());
+                continue;
             }
+            if (bySource) addTo(bySourceEnd, source, link.getId());
+            if (byTarget) addTo(byTargetEnd, target, link.getId());
         }
-        Set<Long> breaking = new TreeSet<>();
-        for (Map<String, List<Long>> ends : List.of(bySourceEnd, byTargetEnd)) {
-            ends.values().stream().filter(ids -> ids.size() > 1).forEach(breaking::addAll);
-        }
-        return List.copyOf(breaking);
+        return List.of(bySourceEnd, byTargetEnd);
+    }
+
+    private static void addTo(Map<String, List<Long>> ends, String end, Long linkId) {
+        ends.computeIfAbsent(end, k -> new ArrayList<>()).add(linkId);
     }
 
     // ---- internals ----
@@ -295,16 +312,18 @@ public class RelationRuleService {
     private RelationRule newRule(RelationDefinition definition, RelationScope scope) {
         RelationRule rule = new RelationRule();
         rule.setDefinition(definition);
-        if (scope.institutionId() != null) {
-            Institution institution = institutionRepository.findById(scope.institutionId())
-                    .orElseThrow(() -> invalid("Institution inconnue : " + scope.institutionId()));
+        Long institutionId = scope.institutionId();
+        Long projectId = scope.projectId();
+        if (institutionId != null) {
+            Institution institution = institutionRepository.findById(institutionId)
+                    .orElseThrow(() -> invalid("Institution inconnue : " + institutionId));
             rule.setInstitution(institution);
         }
-        if (scope.projectId() != null) {
-            ActionUnit project = actionUnitRepository.findById(scope.projectId())
-                    .orElseThrow(() -> invalid("Projet inconnu : " + scope.projectId()));
+        if (projectId != null) {
+            ActionUnit project = actionUnitRepository.findById(projectId)
+                    .orElseThrow(() -> invalid("Projet inconnu : " + projectId));
             if (project.getCreatedByInstitution() == null
-                    || !project.getCreatedByInstitution().getId().equals(scope.institutionId())) {
+                    || !project.getCreatedByInstitution().getId().equals(institutionId)) {
                 throw invalid("Ce projet n'appartient pas à cette institution");
             }
             rule.setActionUnit(project);

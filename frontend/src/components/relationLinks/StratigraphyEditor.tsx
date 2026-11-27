@@ -12,7 +12,6 @@ import {
     linkIdOf,
     removeStratigraphyLink,
     searchProjectUnits,
-    type StratigraphyZone,
     updateStratigraphyLink
 } from "./api";
 import {FitToViewport} from "./FitToViewport";
@@ -37,8 +36,6 @@ const qualifierOf = (ref: StratigraphyRef): Qualifier => {
 export interface StratigraphyEditorProps {
   // The field that holds this side of the stratigraphy: its values are the chips, its list gives the types.
   fieldId: string;
-  // Where the units of this field stand relative to the unit being edited (the field says it to the server).
-  position: StratigraphyZone;
   unitId: string | number;
   projectId?: string | null;
   organizationId?: number;
@@ -57,7 +54,7 @@ export interface StratigraphyEditorProps {
  * header, no footer, it is the content of a cell's editing overlay, not a form of its own. Each
  * change is written at once, through /relation-links by this field.
  */
-export function StratigraphyEditor({ fieldId, unitId, projectId, organizationId, typeConceptId, onChanged, onClose }: StratigraphyEditorProps) {
+export function StratigraphyEditor({ fieldId, unitId, projectId, organizationId, typeConceptId, onChanged, onClose }: Readonly<StratigraphyEditorProps>) {
   const queryClient = useQueryClient();
   const openEntity = useOpenEntity();
   const [form, setForm] = useState<Form | null>(null);

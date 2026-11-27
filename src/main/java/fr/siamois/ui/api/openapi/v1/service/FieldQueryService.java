@@ -158,6 +158,8 @@ public class FieldQueryService {
 
     /** The attribute of a configurable relation field's target: not a property, the links of its definition. */
     private static final String RELATION_LINK = "relationLink";
+    private static final String SOURCE_ID = "sourceId";
+    private static final String TARGET_ID = "targetId";
 
     private enum Kind {
         TEXT("contains", FilterOperator.CONTAINS, Match.EQUAL, Match.CONTAINS, Match.STARTS_WITH, Match.ENDS_WITH),
@@ -422,16 +424,24 @@ public class FieldQueryService {
     @Nullable
     private Target resolveAdditional(Class<?> entityType, CustomField field) {
         if (!ANSWER_OWNERS.containsKey(entityType)) return null;
-        if (Hibernate.unproxy(field) instanceof CustomFieldRelation) {
-            // The links of its definition, from the field's side: filtered and sorted like a collection of references.
-            LinkSide side = linkSideOf(field.getId());
-            return side == null ? null
-                    : new Target(false, RELATION_LINK, Kind.REFERENCES, Object.class, null, false, null, true, null, side);
-        }
+        if (Hibernate.unproxy(field) instanceof CustomFieldRelation) return relationTarget(field);
         Function<Void, ? extends CustomFieldAnswer> creator =
                 CustomFieldAnswerFactory.ANSWER_ENTITY_CREATORS.get(Hibernate.getClass(field));
         if (creator == null) return null;
-        Class<? extends CustomFieldAnswer> answerClass = creator.apply(null).getClass();
+        return answerTarget(field, creator.apply(null).getClass());
+    }
+
+    /** The links of a relation field's definition, from its side: filtered and sorted like a collection of references. */
+    @Nullable
+    private Target relationTarget(CustomField field) {
+        LinkSide side = linkSideOf(field.getId());
+        return side == null ? null
+                : new Target(false, RELATION_LINK, Kind.REFERENCES, Object.class, null, false, null, true, null, side);
+    }
+
+    /** An additional field stored as answers of {@code answerClass}. */
+    @Nullable
+    private Target answerTarget(CustomField field, Class<? extends CustomFieldAnswer> answerClass) {
         boolean single = FieldAnswerWireService.answerTypeOf(field).startsWith("SELECT_ONE");
         Kind refKind = single ? Kind.REFERENCE : Kind.REFERENCES;
 
@@ -541,8 +551,8 @@ public class FieldQueryService {
         Path<Object> sourceField = link.get("definition").get("sourceField").get("id");
         Predicate units = cb.and(cb.equal(link.get("sourceKind"), RelationEndKind.RECORDING_UNIT),
                 cb.equal(link.get("targetKind"), RelationEndKind.RECORDING_UNIT));
-        Predicate ownerIsSource = cb.and(cb.equal(link.get("sourceId"), unit.get("id")), otherIs(cb, link, "targetId", otherIds));
-        Predicate ownerIsTarget = cb.and(cb.equal(link.get("targetId"), unit.get("id")), otherIs(cb, link, "sourceId", otherIds));
+        Predicate ownerIsSource = cb.and(cb.equal(link.get(SOURCE_ID), unit.get("id")), otherIs(cb, link, TARGET_ID, otherIds));
+        Predicate ownerIsTarget = cb.and(cb.equal(link.get(TARGET_ID), unit.get("id")), otherIs(cb, link, SOURCE_ID, otherIds));
         Predicate order = cb.equal(sourceField, RelationField.Stratigraphy.ORDER_SOURCE_FIELD);
         return switch (position) {
             // The other unit is posterior to the owner: the owner is the order's target.
@@ -574,11 +584,11 @@ public class FieldQueryService {
         RelationEndKind ownerKind = DefinitionRelation.kindOfOwner(owner.getJavaType());
         Predicate ofDefinition = cb.equal(link.get("definition").get("id"), side.definitionId());
         Predicate fromSource = cb.and(cb.equal(link.get("sourceKind"), ownerKind),
-                cb.equal(link.get("sourceId"), owner.get("id")),
-                otherIds == null ? cb.conjunction() : link.get("targetId").in(otherIds));
+                cb.equal(link.get(SOURCE_ID), owner.get("id")),
+                otherIds == null ? cb.conjunction() : link.get(TARGET_ID).in(otherIds));
         Predicate fromTarget = cb.and(cb.equal(link.get("targetKind"), ownerKind),
-                cb.equal(link.get("targetId"), owner.get("id")),
-                otherIds == null ? cb.conjunction() : link.get("sourceId").in(otherIds));
+                cb.equal(link.get(TARGET_ID), owner.get("id")),
+                otherIds == null ? cb.conjunction() : link.get(SOURCE_ID).in(otherIds));
         if (side.symmetric()) return cb.and(ofDefinition, cb.or(fromSource, fromTarget));
         return cb.and(ofDefinition, side.ownerIsSource() ? fromSource : fromTarget);
     }

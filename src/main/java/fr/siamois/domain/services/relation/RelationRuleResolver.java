@@ -32,12 +32,16 @@ public class RelationRuleResolver {
 
     @Transactional(readOnly = true)
     public RelationRuleSet rulesFor(RelationDefinition definition, long projectId) {
-        return storedRuleFor(definition, projectId).map(this::load).orElseGet(() -> RelationRuleSet.none(definition));
+        return findStoredRule(definition, projectId).map(this::loadRule).orElseGet(() -> RelationRuleSet.none(definition));
     }
 
     /** The stored rule set a project reads, if the definition has one in some scope. */
     @Transactional(readOnly = true)
     public Optional<RelationRule> storedRuleFor(RelationDefinition definition, long projectId) {
+        return findStoredRule(definition, projectId);
+    }
+
+    private Optional<RelationRule> findStoredRule(RelationDefinition definition, long projectId) {
         Optional<RelationRule> ofProject = ruleRepository.findOfProject(definition.getId(), projectId);
         if (ofProject.isPresent()) return ofProject;
         Long institutionId = actionUnitRepository.findById(projectId)
@@ -54,6 +58,10 @@ public class RelationRuleResolver {
     /** A stored rule set, with its accepted kinds, mirror pairs and exclusions. */
     @Transactional(readOnly = true)
     public RelationRuleSet load(RelationRule rule) {
+        return loadRule(rule);
+    }
+
+    private RelationRuleSet loadRule(RelationRule rule) {
         var kinds = kindRepository.findByRuleId(rule.getId()).stream()
                 .map(k -> new RelationRuleSet.AcceptedKind(k.getSide(), k.getKind(),
                         k.getSubtype() != null ? k.getSubtype().getId() : null))

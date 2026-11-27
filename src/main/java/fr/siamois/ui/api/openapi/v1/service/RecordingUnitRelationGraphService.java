@@ -103,7 +103,8 @@ public class RecordingUnitRelationGraphService {
         for (RecordingUnitRelationKind kind : RecordingUnitRelationKind.values()) {
             if (kinds.isEmpty() || kinds.contains(kind)) fields.put(kind.wireName(), kind.field());
         }
-        return relationFieldService.pageAcross(fields, unit.getId(), offset, limit, search, byLabel, ascending, lang);
+        return relationFieldService.pageAcross(fields, unit.getId(),
+                new RelationFieldService.Window(offset, limit, search, byLabel, ascending), lang);
     }
 
     private MultiValue zone(RelationField relation, long id, int limit, String lang) {

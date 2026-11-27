@@ -94,7 +94,7 @@ class RelationLinksControllerApiTest {
         ArgumentCaptor<RelationLinkService.CreateRequest> request = ArgumentCaptor.forClass(RelationLinkService.CreateRequest.class);
         verify(linkService).create(request.capture(), eq(person), eq(Set.of(3L)));
         assertThat(request.getValue().side()).isEqualTo(RelationSide.TARGET);
-        assertThat(request.getValue().record()).isEqualTo(new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, 5L));
+        assertThat(request.getValue().edited()).isEqualTo(new RelationLinkService.End(RelationEndKind.RECORDING_UNIT, 5L));
         assertThat(request.getValue().qualifier()).isEqualTo(301L);
         assertThat(request.getValue().uncertain()).isTrue();
     }
